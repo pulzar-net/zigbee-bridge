@@ -59,6 +59,7 @@ jobs:
         timeout-minutes: 10
         with:
           toolchain: ${{ env.NIGHTLY }}
+          targets: x86_64-unknown-linux-gnu
       - uses: taiki-e/install-action@v2
         timeout-minutes: 10
         with:
@@ -67,12 +68,14 @@ jobs:
         timeout-minutes: 10
         with:
           workspaces: fuzz
+      # The sanitizers need glibc; name the target so a runner whose default
+      # is musl does not pick it.
       - name: Fuzz every parser for a short while
         run: |
           set -euo pipefail
           for target in $(cargo +"${NIGHTLY}" fuzz list); do
             echo "::group::${target}"
-            cargo +"${NIGHTLY}" fuzz run "${target}" -- -max_total_time=30 -rss_limit_mb=512 -max_len=512
+            cargo +"${NIGHTLY}" fuzz run --target x86_64-unknown-linux-gnu "${target}" -- -max_total_time=30 -rss_limit_mb=512 -max_len=512
             echo "::endgroup::"
           done
 
