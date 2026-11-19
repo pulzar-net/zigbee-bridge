@@ -5,6 +5,8 @@
 #   aarch64-unknown-linux-musl   Raspberry Pi 3, 4 and 5 class boards
 #   mipsel-unknown-linux-musl    MT7621/MT7628 class routers (128 MB RAM)
 #
+# A public repository: GitHub-hosted runners only.
+#
 # mipsel is a tier 3 target: no prebuilt std, so it builds std itself on a
 # pinned nightly (-Zbuild-std) and links against zig's musl.
 
@@ -13,6 +15,10 @@ on:
   push:
     branches: [main]
   pull_request:
+
+# The workflow only reads the repository.
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -28,7 +34,7 @@ env:
 
 jobs:
   test:
-    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +57,7 @@ jobs:
         run: cargo doc --workspace --no-deps
 
   fuzz:
-    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +86,7 @@ jobs:
           done
 
   cross:
-    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
