@@ -926,7 +926,11 @@ impl Simulator {
         // Only this connection's channel: a newer connection may have
         // replaced it already.
         let mut state = lock(&self.state);
-        if state.actions.as_ref().is_some_and(|a| a.same_channel(&action_tx)) {
+        if state
+            .actions
+            .as_ref()
+            .is_some_and(|a| a.same_channel(&action_tx))
+        {
             state.actions = None;
         }
         result
