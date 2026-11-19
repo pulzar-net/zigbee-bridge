@@ -864,7 +864,7 @@ impl Simulator {
         let (link, mut link_events) = Link::spawn(io, Role::Ncp, AshConfig::default());
         let (action_tx, mut actions) = mpsc::unbounded_channel::<(Duration, Action)>();
         let (due_tx, mut due) = mpsc::unbounded_channel::<Action>();
-        lock(&self.state).actions = Some(action_tx);
+        lock(&self.state).actions = Some(action_tx.clone());
         let mut extended = false;
         let mut callback_seq: u8 = 0;
         let result = loop {
@@ -923,7 +923,12 @@ impl Simulator {
                 },
             }
         };
-        lock(&self.state).actions = None;
+        // Only this connection's channel: a newer connection may have
+        // replaced it already.
+        let mut state = lock(&self.state);
+        if state.actions.as_ref().is_some_and(|a| a.same_channel(&action_tx)) {
+            state.actions = None;
+        }
         result
     }
 }

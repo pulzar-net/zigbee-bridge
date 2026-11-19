@@ -457,7 +457,7 @@ async fn probe_identifies_the_ncp_without_changing_it() {
         let sim = sim(protocol, vec![]);
         let (host_io, ncp_io) = tokio::io::duplex(4096);
         let s = sim.clone();
-        tokio::spawn(async move {
+        let served = tokio::spawn(async move {
             let _ = s.serve(ncp_io).await;
         });
         let started = std::time::Instant::now();
@@ -465,6 +465,11 @@ async fn probe_identifies_the_ncp_without_changing_it() {
             .await
             .unwrap()
             .expect("an EZSP NCP");
+        // The probe closed its end: the simulator sees the stream end.
+        tokio::time::timeout(Duration::from_secs(2), served)
+            .await
+            .expect("the probe left the port open")
+            .unwrap();
         assert!(started.elapsed() < zigbee_host::probe::PROBE_TIMEOUT);
         assert_eq!(id.protocol, protocol);
         assert!(id.supported);

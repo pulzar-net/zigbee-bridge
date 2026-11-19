@@ -216,7 +216,9 @@ impl Ezsp {
             timeout: config.response_timeout,
         });
         let (event_tx, event_rx) = mpsc::unbounded_channel();
-        tokio::spawn(reader(inner.clone(), link_events, event_tx));
+        // The reader holds the client weakly: dropping the last `Ezsp` drops
+        // the link, which ends the link task and closes the port.
+        tokio::spawn(reader(Arc::downgrade(&inner), link_events, event_tx));
         let ezsp = Ezsp { inner };
 
         // First `version` in the legacy format, asking for the newest we speak.
@@ -390,7 +392,7 @@ impl Ezsp {
 }
 
 async fn reader(
-    inner: Arc<Inner>,
+    weak: std::sync::Weak<Inner>,
     mut link_events: mpsc::Receiver<LinkEvent>,
     events: mpsc::UnboundedSender<EzspEvent>,
 ) {
@@ -398,6 +400,7 @@ async fn reader(
         let Some(event) = link_events.recv().await else {
             break "link task stopped".to_string();
         };
+        let Some(inner) = weak.upgrade() else { return };
         let data = match event {
             LinkEvent::Ash(AshEvent::Data(data)) => data,
             LinkEvent::Ash(AshEvent::Connected { .. }) => continue,
@@ -478,6 +481,7 @@ async fn reader(
         let _ = pending.reply.send(result);
     };
     tracing::warn!(%reason, "EZSP link down");
+    let Some(inner) = weak.upgrade() else { return };
     if let Ok(mut down) = inner.down.lock() {
         *down = Some(reason.clone());
     }

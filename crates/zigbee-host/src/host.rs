@@ -234,6 +234,7 @@ struct Inner<A: Adapter> {
     in_flight: Semaphore,
     stopped: AtomicBool,
     shutdown: tokio::sync::watch::Sender<bool>,
+    backup_lock: tokio::sync::Mutex<()>,
 }
 
 /// A running coordinator host. Clones share it.
@@ -309,6 +310,7 @@ impl<A: Adapter> Host<A> {
                 in_flight: Semaphore::new(max_in_flight),
                 stopped: AtomicBool::new(false),
                 shutdown: tokio::sync::watch::channel(false).0,
+                backup_lock: tokio::sync::Mutex::new(()),
             }),
         };
         host.emit(HostEvent::Started {
@@ -762,7 +764,11 @@ impl<A: Adapter> Host<A> {
         if seconds > 0 {
             let host = self.clone();
             tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_secs(u64::from(seconds))).await;
+                let mut shutdown = host.inner.shutdown.subscribe();
+                tokio::select! {
+                    _ = tokio::time::sleep(Duration::from_secs(u64::from(seconds))) => {}
+                    _ = shutdown.wait_for(|stop| *stop) => return,
+                }
                 if host.state().permit_generation == generation {
                     // The NCP closed itself; restore the rejoin-only policy.
                     if let Err(e) = host
@@ -935,6 +941,7 @@ impl<A: Adapter> Host<A> {
 
     /// Take a backup now, and write it if a backup path is configured.
     pub async fn backup(&self) -> Result<Backup, HostError> {
+        let _one_at_a_time = self.inner.backup_lock.lock().await;
         let mut backup = self.inner.adapter.backup().await?;
         {
             let state = self.state();

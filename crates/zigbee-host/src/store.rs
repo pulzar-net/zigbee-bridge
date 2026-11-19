@@ -75,7 +75,14 @@ pub fn load(path: &Path) -> Result<BTreeMap<Ieee, Device>, StoreError> {
 /// readable by its owner only, since backups hold the network key.
 pub fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
-    let tmp = path.with_extension("tmp");
+    static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    // A temporary name of its own, so concurrent writers never share one.
+    let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let tmp = path.with_file_name(format!(".{name}.{}.{n}.tmp", std::process::id()));
     {
         let mut options = std::fs::OpenOptions::new();
         options.write(true).create(true).truncate(true);
