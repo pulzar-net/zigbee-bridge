@@ -66,5 +66,5 @@ pub use error::HostError;
 #[cfg(feature = "host")]
 pub use ezsp_adapter::{random_network, EzspAdapter};
 #[cfg(feature = "host")]
-pub use host::{Host, HostConfig, HostEvent, HOST_ENDPOINT};
+pub use host::{FrameLink, Host, HostConfig, HostEvent, RawZcl, HOST_ENDPOINT};
 pub use probe::{NcpIdentity, NcpKind, ProbeError};

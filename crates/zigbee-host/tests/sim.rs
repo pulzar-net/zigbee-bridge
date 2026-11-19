@@ -127,6 +127,10 @@ async fn forms_joins_interviews_and_reports() {
         assert_eq!(th.model.as_deref(), Some("SIM-TH1"));
         assert_eq!(th.manufacturer.as_deref(), Some("zigbee-bridge-sim"));
         assert_eq!(th.power_source, Some(3));
+        assert_eq!(
+            (th.zcl_version, th.stack_version, th.hw_version),
+            (Some(8), Some(2), Some(1))
+        );
         assert!(th.is_sleepy());
         assert!(th.unique_link_key);
         assert_eq!(th.interview.stage, InterviewStage::Done);
@@ -166,6 +170,29 @@ async fn forms_joins_interviews_and_reports() {
             ),
             1
         );
+        let frame = wait_for(&mut rx, |e| match e {
+            HostEvent::Frame { ieee, link, frame }
+                if *ieee == TH && link.cluster == cluster_id::TEMPERATURE_MEASUREMENT =>
+            {
+                assert_eq!(
+                    (
+                        link.source_endpoint,
+                        link.destination_endpoint,
+                        link.profile
+                    ),
+                    (1, 1, 0x0104)
+                );
+                assert_eq!(link.lqi, 180);
+                Some(frame.clone())
+            }
+            _ => None,
+        })
+        .await;
+        // Report attributes, measured_value, int16, 2150.
+        assert_eq!(
+            frame.get(2..),
+            Some(&[0x0A, 0x00, 0x00, 0x29, 0x66, 0x08][..])
+        );
         let value = wait_for(&mut rx, |e| match e {
             HostEvent::Attributes {
                 ieee,
@@ -185,6 +212,60 @@ async fn forms_joins_interviews_and_reports() {
                 Value::i16(2150)
             )
         );
+
+        // Raw ZCL: read attribute 0 with a frame built by the caller; the
+        // host writes its own sequence number and returns the reply as is.
+        let reply = host
+            .zcl_raw(
+                TH,
+                zigbee_host::RawZcl {
+                    endpoint: 1,
+                    cluster: cluster_id::TEMPERATURE_MEASUREMENT,
+                    frame: vec![0x00, 0x00, 0x00, 0x00, 0x00],
+                    profile: None,
+                    source_endpoint: 1,
+                    response: true,
+                    timeout: None,
+                },
+            )
+            .await
+            .unwrap()
+            .expect("a reply");
+        let parsed = zigbee_zcl::Frame::parse(&reply).unwrap();
+        assert_eq!(
+            zigbee_zcl::Global::decode(parsed.header.command, &parsed.payload).unwrap(),
+            zigbee_zcl::Global::ReadAttributesResponse(vec![zigbee_zcl::foundation::ReadRecord {
+                attribute: 0,
+                status: 0,
+                value: Some(Value::i16(2150)),
+            }])
+        );
+        // Without a response, the host waits for APS delivery only.
+        let identify = host
+            .zcl_raw(
+                TH,
+                zigbee_host::RawZcl {
+                    endpoint: 1,
+                    cluster: cluster_id::IDENTIFY,
+                    frame: vec![0x11, 0x00, 0x00, 0x05, 0x00],
+                    profile: Some(0x0104),
+                    source_endpoint: 1,
+                    response: false,
+                    timeout: None,
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(identify, None);
+        // Raw ZDO: a node descriptor request, sequence number placeholder first.
+        let nwk = host.device(TH).unwrap().nwk.to_le_bytes();
+        let zdo = host
+            .zdo_raw(TH, 0x0002, vec![0, nwk[0], nwk[1]], true, None)
+            .await
+            .unwrap()
+            .expect("a ZDO reply");
+        assert_eq!(zdo.get(1), Some(&0u8), "status success");
+        assert_eq!(zdo.get(2..4), Some(&nwk[..]));
 
         // A read goes to the device and back.
         let records = host

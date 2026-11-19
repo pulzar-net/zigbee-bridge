@@ -6,6 +6,22 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `zigbee-host`: `HostEvent::Frame`, every ZCL frame from a device exactly as
+  received with how it arrived (endpoints, profile, cluster, group, link
+  quality, last hop), for embedders with their own device library.
+- `zigbee-host`: `Host::zcl_raw` and `Host::zdo_raw` send caller-built frames,
+  write the host's own sequence number, and return the reply as received or
+  wait for APS delivery only.
+- `zigbee-host`: the interview also reads the ZCL, stack and hardware
+  versions.
+
+### Fixed
+
+- `zigbee-host`: a delivery report that arrived before its request was
+  registered no longer goes unnoticed.
+
 ## [0.1.0]
 
 The first milestone: Silicon Labs EmberZNet coordinators.

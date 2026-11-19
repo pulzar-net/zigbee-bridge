@@ -345,6 +345,9 @@ impl Bridge {
                 let action = json!({"endpoint": endpoint, "cluster": cluster_name, "command": name.map(str::to_string).unwrap_or_else(|| format!("{command:#04x}")), "fields": fields});
                 self.mqtt.publish_json(topic, &action, false).await;
             }
+            // The bridge publishes decoded readings; raw frames are for
+            // embedders with their own device library.
+            HostEvent::Frame { .. } => {}
             HostEvent::BackupWritten { path } => {
                 tracing::info!(path = %path.display(), "backup written")
             }

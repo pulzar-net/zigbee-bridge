@@ -128,6 +128,8 @@ pub enum AdapterEvent {
         aps: Aps,
         /// Sent as a broadcast or multicast.
         broadcast: bool,
+        /// The group, for a multicast.
+        group: Option<u16>,
         /// Last hop link quality.
         lqi: u8,
         /// Last hop signal strength, dBm.

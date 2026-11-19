@@ -26,6 +26,11 @@ const BASIC_SECOND: &[u16] = &[
     attr::basic::DATE_CODE,
     attr::basic::SW_BUILD_ID,
 ];
+const BASIC_THIRD: &[u16] = &[
+    attr::basic::ZCL_VERSION,
+    attr::basic::STACK_VERSION,
+    attr::basic::HW_VERSION,
+];
 
 /// Run or resume the interview of `ieee`.
 pub(crate) async fn run<A: Adapter>(host: &Host<A>, ieee: Ieee) {
@@ -172,13 +177,16 @@ async fn step<A: Adapter>(
             else {
                 return Ok(());
             };
-            for (i, batch) in [BASIC_FIRST, BASIC_SECOND].into_iter().enumerate() {
+            for (i, batch) in [BASIC_FIRST, BASIC_SECOND, BASIC_THIRD]
+                .into_iter()
+                .enumerate()
+            {
                 let records = match host
                     .read_attributes(ieee, endpoint, cluster_id::BASIC, batch)
                     .await
                 {
                     Ok(r) => r,
-                    // The second batch is optional.
+                    // Only the first batch is required.
                     Err(e) if i > 0 => {
                         tracing::debug!(%ieee, error = %e, "second Basic read");
                         continue;
@@ -198,6 +206,15 @@ async fn step<A: Adapter>(
                             }
                             attr::basic::APPLICATION_VERSION => {
                                 dev.app_version = value.as_u64().map(|v| v as u8)
+                            }
+                            attr::basic::ZCL_VERSION => {
+                                dev.zcl_version = value.as_u64().map(|v| v as u8)
+                            }
+                            attr::basic::STACK_VERSION => {
+                                dev.stack_version = value.as_u64().map(|v| v as u8)
+                            }
+                            attr::basic::HW_VERSION => {
+                                dev.hw_version = value.as_u64().map(|v| v as u8)
                             }
                             attr::basic::DATE_CODE => dev.date_code = value.as_str().map(clean),
                             attr::basic::SW_BUILD_ID => dev.sw_build_id = value.as_str().map(clean),

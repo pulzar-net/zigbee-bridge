@@ -169,6 +169,19 @@ pub enum HostEvent {
         /// Sent by the cluster's server (true) or a client.
         from_server: bool,
     },
+    /// A ZCL frame from a device, exactly as received, with how it arrived.
+    /// Sent for every frame that is not a reply to the host's own request,
+    /// before the decoded [`HostEvent::Attributes`] or
+    /// [`HostEvent::Command`], so a device library can decode what the
+    /// host does not.
+    Frame {
+        /// The device.
+        ieee: Ieee,
+        /// How it arrived.
+        link: FrameLink,
+        /// The ZCL frame: header and payload.
+        frame: Vec<u8>,
+    },
     /// A backup was written.
     BackupWritten {
         /// The file.
@@ -181,21 +194,85 @@ pub enum HostEvent {
     },
 }
 
+/// How a frame arrived.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FrameLink {
+    /// The sender's network address.
+    pub nwk: NodeId,
+    /// The sender's endpoint.
+    pub source_endpoint: u8,
+    /// The endpoint it was sent to.
+    pub destination_endpoint: u8,
+    /// Application profile.
+    pub profile: u16,
+    /// Cluster.
+    pub cluster: u16,
+    /// The group, for a multicast.
+    pub group: Option<u16>,
+    /// Sent as a broadcast or multicast.
+    pub broadcast: bool,
+    /// Last hop link quality.
+    pub lqi: u8,
+    /// Last hop signal strength, dBm.
+    pub rssi: i8,
+    /// The device the frame came from on its last hop: the last relay of
+    /// the sender's recorded route, or the sender itself.
+    pub last_hop: NodeId,
+}
+
+/// A ZCL frame for [`Host::zcl_raw`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawZcl {
+    /// The device's endpoint.
+    pub endpoint: u8,
+    /// Cluster.
+    pub cluster: u16,
+    /// The ZCL frame (header and payload); its sequence number is replaced.
+    pub frame: Vec<u8>,
+    /// Application profile; the endpoint's own when `None`.
+    pub profile: Option<u16>,
+    /// The host's endpoint to send from.
+    pub source_endpoint: u8,
+    /// Wait for the device's reply.
+    pub response: bool,
+    /// How long to wait; the host's request timeout when `None`.
+    pub timeout: Option<Duration>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum WaitKey {
     Zdo { nwk: NodeId, cluster: u16, tsn: u8 },
     Zcl { nwk: NodeId, cluster: u16, seq: u8 },
 }
 
+/// A reply, decoded and as received.
 enum Reply {
-    Zdo(Message),
-    Zcl(Frame),
+    Zdo(Message, Vec<u8>),
+    Zcl(Frame, Vec<u8>),
 }
 
 #[derive(Default)]
 struct Waiters {
     pending: HashMap<WaitKey, oneshot::Sender<Result<Reply, HostError>>>,
     tags: HashMap<u16, WaitKey>,
+    /// Sends that wait only for APS delivery, by tag.
+    deliveries: HashMap<u16, oneshot::Sender<bool>>,
+    /// The latest delivery reports, for a report that arrives before its
+    /// sender has registered the tag.
+    recent: std::collections::VecDeque<(u16, bool)>,
+}
+
+/// How many delivery reports are remembered.
+const RECENT_DELIVERIES: usize = 64;
+
+impl Waiters {
+    fn recent_delivery(&self, tag: u16) -> Option<bool> {
+        self.recent
+            .iter()
+            .rev()
+            .find(|(t, _)| *t == tag)
+            .map(|(_, d)| *d)
+    }
 }
 
 #[derive(Default)]
@@ -428,7 +505,14 @@ impl<A: Adapter> Host<A> {
                 return Err(e);
             }
         };
-        lock(&self.inner.waiters).tags.insert(tag, key);
+        {
+            let mut w = lock(&self.inner.waiters);
+            if w.recent_delivery(tag) == Some(false) {
+                w.pending.remove(&key);
+                return Err(HostError::DeliveryFailed(nwk));
+            }
+            w.tags.insert(tag, key);
+        }
         let result = tokio::time::timeout(timeout, rx).await;
         {
             let mut w = lock(&self.inner.waiters);
@@ -451,6 +535,146 @@ impl<A: Adapter> Host<A> {
         }
     }
 
+    /// Send a frame and wait for its APS delivery report.
+    async fn send_confirmed(
+        &self,
+        nwk: NodeId,
+        aps: Aps,
+        payload: Vec<u8>,
+        timeout: Duration,
+    ) -> Result<(), HostError> {
+        if self.inner.stopped.load(Ordering::SeqCst) {
+            return Err(HostError::Stopped);
+        }
+        let _permit = self
+            .inner
+            .in_flight
+            .acquire()
+            .await
+            .map_err(|_| HostError::Stopped)?;
+        let tag = self.inner.adapter.send_unicast(nwk, aps, payload).await?;
+        let rx = {
+            let mut w = lock(&self.inner.waiters);
+            if let Some(delivered) = w.recent_delivery(tag) {
+                return if delivered {
+                    Ok(())
+                } else {
+                    Err(HostError::DeliveryFailed(nwk))
+                };
+            }
+            let (tx, rx) = oneshot::channel();
+            w.deliveries.insert(tag, tx);
+            rx
+        };
+        let result = tokio::time::timeout(timeout, rx).await;
+        lock(&self.inner.waiters).deliveries.remove(&tag);
+        match result {
+            Ok(Ok(true)) => Ok(()),
+            Ok(Ok(false)) => Err(HostError::DeliveryFailed(nwk)),
+            Ok(Err(_)) => Err(HostError::Stopped),
+            Err(_) => Err(HostError::Timeout(nwk)),
+        }
+    }
+
+    /// Send a ZCL frame given as bytes, for a caller that builds frames
+    /// itself (a device library). The frame's transaction sequence number
+    /// is overwritten with the host's own. With `response`, waits for the
+    /// device's reply with that sequence number and returns it exactly as
+    /// received; otherwise waits for APS delivery and returns `None`.
+    pub async fn zcl_raw(&self, ieee: Ieee, request: RawZcl) -> Result<Option<Vec<u8>>, HostError> {
+        let nwk = self.nwk_of(ieee)?;
+        let mut frame = request.frame;
+        let tsn_at = match frame.first() {
+            Some(control) if control & 0x04 != 0 => 3,
+            Some(_) => 1,
+            None => return Err(HostError::Invalid("empty ZCL frame".into())),
+        };
+        if frame.len() < tsn_at + 2 {
+            return Err(HostError::Invalid(
+                "ZCL frame shorter than its header".into(),
+            ));
+        }
+        let seq = self.next_seq();
+        if let Some(b) = frame.get_mut(tsn_at) {
+            *b = seq;
+        }
+        let profile = request.profile.unwrap_or_else(|| {
+            self.device(ieee)
+                .map(|d| d.profile_of(request.endpoint))
+                .unwrap_or(zigbee_zcl::PROFILE_HOME_AUTOMATION)
+        });
+        let aps = Aps {
+            profile,
+            cluster: request.cluster,
+            source_endpoint: request.source_endpoint,
+            destination_endpoint: request.endpoint,
+        };
+        let timeout = request.timeout.unwrap_or_else(|| self.timeout_for(nwk));
+        if !request.response {
+            return self
+                .send_confirmed(nwk, aps, frame, timeout)
+                .await
+                .map(|_| None);
+        }
+        let key = WaitKey::Zcl {
+            nwk,
+            cluster: request.cluster,
+            seq,
+        };
+        match self.request(key, nwk, aps, frame, timeout).await? {
+            Reply::Zcl(_, raw) => Ok(Some(raw)),
+            Reply::Zdo(..) => Err(HostError::BadFrame("ZDO reply to a ZCL request".into())),
+        }
+    }
+
+    /// Send a ZDO request given as bytes (transaction sequence number
+    /// first, then the request). The sequence number is overwritten with
+    /// the host's own. With `response`, returns the response payload
+    /// exactly as received (sequence number first); otherwise waits for
+    /// APS delivery and returns `None`.
+    pub async fn zdo_raw(
+        &self,
+        ieee: Ieee,
+        cluster: u16,
+        mut payload: Vec<u8>,
+        response: bool,
+        timeout: Option<Duration>,
+    ) -> Result<Option<Vec<u8>>, HostError> {
+        if cluster & 0x8000 != 0 {
+            return Err(HostError::Invalid(format!(
+                "{cluster:#06x} is a ZDO response, not a request"
+            )));
+        }
+        let nwk = self.nwk_of(ieee)?;
+        let tsn = self.next_seq();
+        match payload.first_mut() {
+            Some(b) => *b = tsn,
+            None => return Err(HostError::Invalid("empty ZDO payload".into())),
+        }
+        let aps = Aps {
+            profile: zigbee_zdo::PROFILE_ID,
+            cluster,
+            source_endpoint: 0,
+            destination_endpoint: 0,
+        };
+        let timeout = timeout.unwrap_or_else(|| self.timeout_for(nwk));
+        if !response {
+            return self
+                .send_confirmed(nwk, aps, payload, timeout)
+                .await
+                .map(|_| None);
+        }
+        let key = WaitKey::Zdo {
+            nwk,
+            cluster: cluster | 0x8000,
+            tsn,
+        };
+        match self.request(key, nwk, aps, payload, timeout).await? {
+            Reply::Zdo(_, raw) => Ok(Some(raw)),
+            Reply::Zcl(..) => Err(HostError::BadFrame("ZCL reply to a ZDO request".into())),
+        }
+    }
+
     /// Send a ZDO request to `nwk` and wait for its response.
     pub async fn zdo_request(&self, nwk: NodeId, body: Body) -> Result<Message, HostError> {
         let tsn = self.next_seq();
@@ -470,8 +694,8 @@ impl<A: Adapter> Host<A> {
             .request(key, nwk, aps, payload, self.timeout_for(nwk))
             .await?
         {
-            Reply::Zdo(m) => Ok(m),
-            Reply::Zcl(_) => Err(HostError::BadFrame("ZCL reply to a ZDO request".into())),
+            Reply::Zdo(m, _) => Ok(m),
+            Reply::Zcl(..) => Err(HostError::BadFrame("ZCL reply to a ZDO request".into())),
         }
     }
 
@@ -524,8 +748,8 @@ impl<A: Adapter> Host<A> {
             .request(key, nwk, aps, frame.encode(), self.timeout_for(nwk))
             .await?
         {
-            Reply::Zcl(f) => Ok(f),
-            Reply::Zdo(_) => Err(HostError::BadFrame("ZDO reply to a ZCL request".into())),
+            Reply::Zcl(f, _) => Ok(f),
+            Reply::Zdo(..) => Err(HostError::BadFrame("ZDO reply to a ZCL request".into())),
         }
     }
 
@@ -1084,10 +1308,20 @@ impl<A: Adapter> Host<A> {
                     source_ieee,
                     aps,
                     broadcast,
+                    group,
                     lqi,
                     rssi,
                     payload,
-                } => self.on_message(source, source_ieee, aps, broadcast, lqi, rssi, payload),
+                } => self.on_message(
+                    source,
+                    source_ieee,
+                    aps,
+                    broadcast,
+                    group,
+                    lqi,
+                    rssi,
+                    payload,
+                ),
                 AdapterEvent::Joined {
                     nwk,
                     ieee,
@@ -1134,6 +1368,13 @@ impl<A: Adapter> Host<A> {
                 }
                 AdapterEvent::Delivery { tag, delivered } => {
                     let mut w = lock(&self.inner.waiters);
+                    if w.recent.len() >= RECENT_DELIVERIES {
+                        w.recent.pop_front();
+                    }
+                    w.recent.push_back((tag, delivered));
+                    if let Some(tx) = w.deliveries.remove(&tag) {
+                        let _ = tx.send(delivered);
+                    }
                     if let Some(key) = w.tags.remove(&tag) {
                         if !delivered {
                             let nwk = match key {
@@ -1271,6 +1512,7 @@ impl<A: Adapter> Host<A> {
         source_ieee: Option<Ieee>,
         aps: Aps,
         broadcast: bool,
+        group: Option<u16>,
         lqi: u8,
         rssi: i8,
         payload: Vec<u8>,
@@ -1305,7 +1547,7 @@ impl<A: Adapter> Host<A> {
                         cluster: aps.cluster,
                         tsn: m.tsn,
                     },
-                    Reply::Zdo(m),
+                    Reply::Zdo(m, payload.clone()),
                 ),
                 Ok(Message {
                     body: Body::DeviceAnnce { nwk, ieee, .. },
@@ -1333,8 +1575,30 @@ impl<A: Adapter> Host<A> {
         };
         let is_reply = lock(&self.inner.waiters).pending.contains_key(&key) && !broadcast;
         if is_reply {
-            self.resolve(key, Reply::Zcl(frame));
+            self.resolve(key, Reply::Zcl(frame, payload));
         } else if let Some(ieee) = known {
+            let last_hop = self
+                .state()
+                .topology
+                .route(source)
+                .and_then(|r| r.last().copied())
+                .unwrap_or(source);
+            self.emit(HostEvent::Frame {
+                ieee,
+                link: FrameLink {
+                    nwk: source,
+                    source_endpoint: aps.source_endpoint,
+                    destination_endpoint: aps.destination_endpoint,
+                    profile: aps.profile,
+                    cluster: aps.cluster,
+                    group,
+                    broadcast,
+                    lqi,
+                    rssi,
+                    last_hop,
+                },
+                frame: payload,
+            });
             self.on_zcl(ieee, source, aps, broadcast, lqi, frame);
         } else {
             tracing::debug!(

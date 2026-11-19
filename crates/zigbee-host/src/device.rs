@@ -110,6 +110,15 @@ pub struct Device {
     /// Basic cluster: date code.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub date_code: Option<String>,
+    /// Basic cluster: ZCL version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zcl_version: Option<u8>,
+    /// Basic cluster: stack version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stack_version: Option<u8>,
+    /// Basic cluster: hardware version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hw_version: Option<u8>,
     /// Basic cluster: application version.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub app_version: Option<u8>,
@@ -160,6 +169,9 @@ impl Device {
             power_source: None,
             sw_build_id: None,
             date_code: None,
+            zcl_version: None,
+            stack_version: None,
+            hw_version: None,
             app_version: None,
             interview: Interview::default(),
             reporting: Vec::new(),

@@ -52,6 +52,8 @@ fn basic(manufacturer: &str, model: &str, power_source: u8) -> BTreeMap<u16, Val
     BTreeMap::from([
         (attr::basic::ZCL_VERSION, Value::u8(8)),
         (attr::basic::APPLICATION_VERSION, Value::u8(1)),
+        (attr::basic::STACK_VERSION, Value::u8(2)),
+        (attr::basic::HW_VERSION, Value::u8(1)),
         (attr::basic::MANUFACTURER_NAME, Value::string(manufacturer)),
         (attr::basic::MODEL_IDENTIFIER, Value::string(model)),
         (attr::basic::DATE_CODE, Value::string("20261119")),

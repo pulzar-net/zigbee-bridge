@@ -123,6 +123,11 @@ fn translate(
                 destination_endpoint: aps.destination_endpoint,
             },
             broadcast: !matches!(kind, ids::incoming::UNICAST | ids::incoming::UNICAST_REPLY),
+            group: matches!(
+                kind,
+                ids::incoming::MULTICAST | ids::incoming::MULTICAST_LOOPBACK
+            )
+            .then_some(aps.group_id),
             lqi: info.last_hop_lqi,
             rssi: info.last_hop_rssi,
             payload,
