@@ -1,0 +1,28 @@
+[package]
+name = "zigbee-ash"
+description = "Silicon Labs ASHv2 (Asynchronous Serial Host) framing and link layer for EZSP"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "ezsp", "ash", "silabs"]
+categories = ["embedded", "network-programming"]
+
+[dependencies]
+crc.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, optional = true, features = ["io-util", "sync", "time", "macros", "rt"] }
+tracing.workspace = true
+
+[features]
+default = ["tokio"]
+## The async driver over any AsyncRead + AsyncWrite.
+tokio = ["dep:tokio"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "sync", "time", "macros", "rt", "rt-multi-thread", "test-util"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,34 @@
+[package]
+name = "zigbee-zcl"
+description = "The Zigbee Cluster Library: data types, frames, global commands and cluster definitions generated from data files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "zcl", "iot"]
+categories = ["embedded", "network-programming", "parser-implementations"]
+build = "build.rs"
+include = ["src/**", "data/**", "build.rs", "Cargo.toml"]
+
+[dependencies]
+zigbee-types.workspace = true
+half = { version = "2", default-features = false }
+serde = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[features]
+default = ["serde"]
+## `Serialize` for values (numbers, strings, lists, null for invalid).
+serde = ["dep:serde"]
+
+[build-dependencies]
+serde.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

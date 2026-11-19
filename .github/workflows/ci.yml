@@ -1,0 +1,124 @@
+# Every commit: format, lints, the whole test suite (which drives the EZSP
+# NCP simulator end to end), a short fuzz run of every frame parser, and
+# static musl builds for the gateways with their tests run under qemu.
+#
+#   aarch64-unknown-linux-musl   Raspberry Pi 3, 4 and 5 class boards
+#   mipsel-unknown-linux-musl    MT7621/MT7628 class routers (128 MB RAM)
+#
+# mipsel is a tier 3 target: no prebuilt std, so it builds std itself on a
+# pinned nightly (-Zbuild-std) and links against zig's musl.
+
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  NIGHTLY: nightly-2026-11-14
+  ZIG: 0.16.0
+  ZIGBUILD: 0.24.1
+  # Static binary budget for the gateways, bytes.
+  MAX_BINARY_SIZE: 4194304
+
+jobs:
+  test:
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        timeout-minutes: 10
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Docs build without warnings
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --no-deps
+
+  fuzz:
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        timeout-minutes: 10
+        with:
+          toolchain: ${{ env.NIGHTLY }}
+      - uses: taiki-e/install-action@v2
+        timeout-minutes: 10
+        with:
+          tool: cargo-fuzz
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          workspaces: fuzz
+      - name: Fuzz every parser for a short while
+        run: |
+          set -euo pipefail
+          for target in $(cargo +"${NIGHTLY}" fuzz list); do
+            echo "::group::${target}"
+            cargo +"${NIGHTLY}" fuzz run "${target}" -- -max_total_time=30 -rss_limit_mb=512 -max_len=512
+            echo "::endgroup::"
+          done
+
+  cross:
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        timeout-minutes: 10
+        with:
+          toolchain: ${{ env.NIGHTLY }}
+          components: rust-src
+          targets: aarch64-unknown-linux-musl
+      - uses: mlugg/setup-zig@v2
+        timeout-minutes: 10
+        with:
+          version: ${{ env.ZIG }}
+      - uses: taiki-e/install-action@v2
+        timeout-minutes: 10
+        with:
+          tool: cargo-zigbuild@${{ env.ZIGBUILD }}
+      - name: qemu-user
+        timeout-minutes: 10
+        run: sudo apt-get update -q && sudo apt-get install -y -q qemu-user
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+      - name: Test under qemu and build static binaries
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUNNER: qemu-aarch64
+          CARGO_TARGET_MIPSEL_UNKNOWN_LINUX_MUSL_RUNNER: qemu-mipsel
+          CARGO_TARGET_MIPSEL_UNKNOWN_LINUX_MUSL_RUSTFLAGS: -C target-feature=+crt-static -C link-self-contained=no
+        run: |
+          set -euo pipefail
+          for target in aarch64-unknown-linux-musl mipsel-unknown-linux-musl; do
+            echo "::group::${target}"
+            std=()
+            case "${target}" in mips*) std=(-Zbuild-std) ;; esac
+            cargo-zigbuild test --workspace --target "${target}" "${std[@]}"
+            case "${target}" in mips*) std=(-Zbuild-std=std,panic_abort) ;; esac
+            bins="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].targets[] | select(.kind[] == "bin") | .name')"
+            for bin_name in ${bins}; do
+              cargo zigbuild --release --bin "${bin_name}" --target "${target}" "${std[@]}"
+              bin="target/${target}/release/${bin_name}"
+              file "${bin}" | grep -q 'statically linked' || { file "${bin}"; echo "${target}: ${bin_name} is not static" >&2; exit 1; }
+              size="$(stat -c %s "${bin}")"
+              echo "${target} ${bin_name}: ${size} bytes"
+              [ "${size}" -le "${MAX_BINARY_SIZE}" ] || { echo "${bin_name} is over the ${MAX_BINARY_SIZE} byte budget" >&2; exit 1; }
+              runner="CARGO_TARGET_$(echo "${target}" | tr 'a-z-' 'A-Z_')_RUNNER"
+              "${!runner}" "${bin}" --version
+            done
+            echo "::endgroup::"
+          done

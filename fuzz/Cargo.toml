@@ -1,0 +1,54 @@
+[package]
+name = "zigbee-bridge-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+zigbee-types = { path = "../crates/zigbee-types" }
+zigbee-ash = { path = "../crates/zigbee-ash", default-features = false }
+zigbee-ezsp = { path = "../crates/zigbee-ezsp", default-features = false }
+zigbee-zcl = { path = "../crates/zigbee-zcl" }
+zigbee-zdo = { path = "../crates/zigbee-zdo" }
+
+[[bin]]
+name = "ash_decoder"
+path = "fuzz_targets/ash_decoder.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ash_connection"
+path = "fuzz_targets/ash_connection.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ezsp_frames"
+path = "fuzz_targets/ezsp_frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "zcl_frames"
+path = "fuzz_targets/zcl_frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "zdo_frames"
+path = "fuzz_targets/zdo_frames.rs"
+test = false
+doc = false
+bench = false
+
+[profile.release]
+debug = 1

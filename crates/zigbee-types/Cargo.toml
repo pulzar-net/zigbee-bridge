@@ -1,0 +1,22 @@
+[package]
+name = "zigbee-types"
+description = "Zigbee address, key and wire-format types shared by the zigbee-bridge crates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "iot"]
+categories = ["embedded", "network-programming"]
+
+[dependencies]
+serde = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
+
+[lints]
+workspace = true

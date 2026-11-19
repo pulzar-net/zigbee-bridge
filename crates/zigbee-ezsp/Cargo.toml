@@ -1,0 +1,29 @@
+[package]
+name = "zigbee-ezsp"
+description = "Silicon Labs EZSP (EmberZNet Serial Protocol) frames and an async client, EmberZNet 7.4 to 8.x"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "ezsp", "emberznet", "silabs"]
+categories = ["embedded", "network-programming"]
+
+[dependencies]
+zigbee-types.workspace = true
+zigbee-ash = { workspace = true, optional = true }
+thiserror.workspace = true
+tokio = { workspace = true, optional = true, features = ["sync", "time", "rt", "macros"] }
+tracing.workspace = true
+
+[features]
+default = ["client"]
+## The async client over an ASH link.
+client = ["dep:tokio", "dep:zigbee-ash", "zigbee-ash/tokio"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "rt-multi-thread", "io-util"] }
+
+[lints]
+workspace = true
