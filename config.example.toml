@@ -1,0 +1,41 @@
+# zigbee-bridge configuration. Only [serial] is required.
+
+[serial]
+# A serial device, or tcp://host:port for a network coordinator or the
+# simulator (zigbee-ncp-sim).
+port = "/dev/ttyUSB0"
+baud = 115200
+# none, hardware (RTS/CTS) or software
+flow_control = "none"
+
+[mqtt]
+host = "localhost"
+port = 1883
+# username = "zigbee"
+# password_file = "/etc/zigbee-bridge/mqtt-password"
+client_id = "zigbee-bridge"
+base_topic = "zigbee"
+retain_state = true
+
+[homeassistant]
+enabled = true
+discovery_prefix = "homeassistant"
+status_topic = "homeassistant/status"
+
+[network]
+# Used once, when the bridge creates data/network.json with random PAN ids
+# and network key. To supply your own keys, write that file before the
+# first start.
+channel = 15
+# tx_power = 8
+# Leave a different network found on the coordinator and form ours.
+# Off by default: an unknown network is never wiped silently.
+replace_other = false
+
+[join]
+install_code_only = false
+# Accept devices older than Zigbee 3.0, which never get a unique link key.
+allow_legacy = true
+
+[data]
+dir = "/var/lib/zigbee-bridge"

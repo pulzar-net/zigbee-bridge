@@ -1,0 +1,55 @@
+[package]
+name = "zigbee-host"
+description = "A Zigbee coordinator host: network formation, trust center, interview, reporting, device store, backup and restore, topology, and NCP probing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "coordinator", "ezsp", "iot"]
+categories = ["embedded", "network-programming"]
+
+[features]
+default = ["host", "serial"]
+## The coordinator host. Without it only `probe` remains, which keeps a
+## detection tool small.
+host = [
+    "dep:zigbee-zcl",
+    "dep:zigbee-zdo",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:getrandom",
+    "dep:aes",
+    "dep:crc",
+    "zigbee-types/serde",
+    "tokio/fs",
+]
+## Identify the NCP on a port (one ASH reset and read-only queries).
+probe = []
+## Open serial ports (and tcp:// network coordinators) by name.
+serial = ["dep:tokio-serial", "tokio/net"]
+
+[dependencies]
+zigbee-types.workspace = true
+zigbee-ash.workspace = true
+zigbee-ezsp.workspace = true
+zigbee-zcl = { workspace = true, optional = true }
+zigbee-zdo = { workspace = true, optional = true }
+aes = { workspace = true, optional = true }
+crc = { workspace = true, optional = true }
+getrandom = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+thiserror.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "io-util"] }
+tokio-serial = { version = "5.4", optional = true, default-features = false }
+tracing.workspace = true
+
+[dev-dependencies]
+zigbee-sim.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "rt-multi-thread", "io-util", "test-util"] }
+tempfile = "3"
+
+[lints]
+workspace = true

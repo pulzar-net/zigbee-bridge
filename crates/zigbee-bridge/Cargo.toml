@@ -1,0 +1,39 @@
+[package]
+name = "zigbee-bridge"
+description = "A standalone Zigbee to MQTT bridge with Home Assistant discovery, on the zigbee-host stack"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "mqtt", "home-assistant", "ezsp"]
+categories = ["command-line-utilities", "network-programming"]
+
+[[bin]]
+name = "zigbee-bridge"
+path = "src/main.rs"
+
+[dependencies]
+zigbee-types.workspace = true
+zigbee-ezsp.workspace = true
+zigbee-zcl.workspace = true
+zigbee-zdo.workspace = true
+zigbee-host = { workspace = true, features = ["host", "serial"] }
+lexopt = "0.3"
+rumqttc = { version = "0.25", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "sync", "time", "fs"] }
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "ansi"] }
+
+[dev-dependencies]
+zigbee-sim.workspace = true
+rumqttd = { version = "0.20", default-features = false }
+tempfile = "3"
+
+[lints]
+workspace = true

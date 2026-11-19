@@ -6,9 +6,9 @@ members = [
     "crates/zigbee-ezsp",
     "crates/zigbee-zcl",
     "crates/zigbee-zdo",
-    # "crates/zigbee-host",
-    # "crates/zigbee-sim",
-    # "crates/zigbee-bridge",
+    "crates/zigbee-host",
+    "crates/zigbee-sim",
+    "crates/zigbee-bridge",
 ]
 exclude = ["fuzz"]
 

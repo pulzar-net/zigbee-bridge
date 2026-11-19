@@ -1,0 +1,29 @@
+[package]
+name = "zigbee-sim"
+description = "An EZSP network co-processor simulator with simulated Zigbee devices, for testing Zigbee hosts without hardware"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "ezsp", "simulator", "testing"]
+categories = ["development-tools::testing", "simulation"]
+
+[[bin]]
+name = "zigbee-ncp-sim"
+path = "src/bin/zigbee-ncp-sim.rs"
+
+[dependencies]
+zigbee-types.workspace = true
+zigbee-ash.workspace = true
+zigbee-ezsp = { workspace = true, default-features = false }
+zigbee-zcl.workspace = true
+zigbee-zdo.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "io-util", "net", "rt-multi-thread", "signal"] }
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "ansi"] }
+
+[lints]
+workspace = true
