@@ -216,18 +216,18 @@ every payload with examples.
 
 The bridge is a thin layer over library crates you can use on their own.
 
-| Crate | What it is |
-|---|---|
-| [`zigbee-host`](crates/zigbee-host) | the coordinator host: formation, trust center, interview, reporting, device store, backup and restore, topology, probe |
-| [`zigbee-zcl`](crates/zigbee-zcl) | the Zigbee Cluster Library: data types, frames, global commands, cluster definitions |
-| [`zigbee-zdo`](crates/zigbee-zdo) | Zigbee Device Object frames: discovery, binding, network management |
-| [`zigbee-ezsp`](crates/zigbee-ezsp) | Silicon Labs EZSP frames and an async client |
-| [`zigbee-ash`](crates/zigbee-ash) | the ASHv2 serial link that carries EZSP, as a sans-IO state machine |
-| [`zigbee-znp`](crates/zigbee-znp) | Texas Instruments Z-Stack ZNP frames and an async client |
-| [`zigbee-deconz`](crates/zigbee-deconz) | dresden elektronik deCONZ serial frames and an async client |
-| [`zigbee-primitives`](crates/zigbee-primitives) | addresses, keys and a bounds-checked wire reader shared by all crates |
-| [`zigbee-sim`](crates/zigbee-sim) | a coordinator simulator with simulated devices, for tests without hardware |
-| [`zigbee-bridge`](crates/zigbee-bridge) | the MQTT bridge, as a binary and a library |
+| Crate | What it is | |
+|---|---|---|
+| [`zigbee-host`](crates/zigbee-host) | the coordinator host: formation, trust center, interview, reporting, device store, backup and restore, topology, probe  [crates.io](https://crates.io/crates/zigbee-host), [docs.rs](https://docs.rs/zigbee-host) |
+| [`zigbee-zcl`](crates/zigbee-zcl) | the Zigbee Cluster Library: data types, frames, global commands, cluster definitions  [crates.io](https://crates.io/crates/zigbee-zcl), [docs.rs](https://docs.rs/zigbee-zcl) |
+| [`zigbee-zdo`](crates/zigbee-zdo) | Zigbee Device Object frames: discovery, binding, network management  [crates.io](https://crates.io/crates/zigbee-zdo), [docs.rs](https://docs.rs/zigbee-zdo) |
+| [`zigbee-ezsp`](crates/zigbee-ezsp) | Silicon Labs EZSP frames and an async client  [crates.io](https://crates.io/crates/zigbee-ezsp), [docs.rs](https://docs.rs/zigbee-ezsp) |
+| [`zigbee-ash`](crates/zigbee-ash) | the ASHv2 serial link that carries EZSP, as a sans-IO state machine  [crates.io](https://crates.io/crates/zigbee-ash), [docs.rs](https://docs.rs/zigbee-ash) |
+| [`zigbee-znp`](crates/zigbee-znp) | Texas Instruments Z-Stack ZNP frames and an async client  [crates.io](https://crates.io/crates/zigbee-znp), [docs.rs](https://docs.rs/zigbee-znp) |
+| [`zigbee-deconz`](crates/zigbee-deconz) | dresden elektronik deCONZ serial frames and an async client  [crates.io](https://crates.io/crates/zigbee-deconz), [docs.rs](https://docs.rs/zigbee-deconz) |
+| [`zigbee-primitives`](crates/zigbee-primitives) | addresses, keys and a bounds-checked wire reader shared by all crates  [crates.io](https://crates.io/crates/zigbee-primitives), [docs.rs](https://docs.rs/zigbee-primitives) |
+| [`zigbee-sim`](crates/zigbee-sim) | a coordinator simulator with simulated devices, for tests without hardware  [crates.io](https://crates.io/crates/zigbee-sim), [docs.rs](https://docs.rs/zigbee-sim) |
+| [`zigbee-bridge`](crates/zigbee-bridge) | the MQTT bridge, as a binary and a library  [crates.io](https://crates.io/crates/zigbee-bridge), [docs.rs](https://docs.rs/zigbee-bridge) |
 
 Each is on [crates.io](https://crates.io/search?q=zigbee-host) with its API
 on [docs.rs](https://docs.rs/zigbee-host). For the example below:

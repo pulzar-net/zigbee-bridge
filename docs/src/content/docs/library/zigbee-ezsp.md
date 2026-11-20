@@ -4,8 +4,10 @@ description: "The two protocols between a host and a Silicon Labs EmberZNet NCP.
 ---
 
 The two protocols between a host and a Silicon Labs EmberZNet NCP.
-[zigbee-ezsp API](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_ezsp/index.html),
-[zigbee-ash API](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_ash/index.html).
+zigbee-ezsp on [crates.io](https://crates.io/crates/zigbee-ezsp) and [docs.rs](https://docs.rs/zigbee-ezsp);
+zigbee-ash on [crates.io](https://crates.io/crates/zigbee-ash) and [docs.rs](https://docs.rs/zigbee-ash);
+API docs for `main`: [zigbee-ezsp](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_ezsp/index.html),
+[zigbee-ash](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_ash/index.html).
 
 ## zigbee-ash
 

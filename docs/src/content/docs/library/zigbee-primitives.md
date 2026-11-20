@@ -3,7 +3,7 @@ title: "zigbee-primitives"
 description: "The types every other crate shares."
 ---
 
-The types every other crate shares. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_primitives/index.html).
+The types every other crate shares. [crates.io](https://crates.io/crates/zigbee-primitives), [docs.rs](https://docs.rs/zigbee-primitives), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_primitives/index.html).
 
 | Type | What it is |
 |---|---|

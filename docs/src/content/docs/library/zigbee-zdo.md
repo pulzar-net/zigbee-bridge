@@ -5,7 +5,7 @@ description: "Zigbee Device Object frames (Zigbee specification section 2.4): de
 
 Zigbee Device Object frames (Zigbee specification section 2.4): device and
 service discovery, binding, and network management. No I/O.
-[API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_zdo/index.html).
+[crates.io](https://crates.io/crates/zigbee-zdo), [docs.rs](https://docs.rs/zigbee-zdo), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_zdo/index.html).
 
 `Message` is one ZDO frame: a transaction sequence number and a typed
 `Body`. Requests and responses both encode and decode, so a host and a

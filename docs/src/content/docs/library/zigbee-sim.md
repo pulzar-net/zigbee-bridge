@@ -4,7 +4,7 @@ description: "A Zigbee coordinator simulator with simulated devices, for testing
 ---
 
 A Zigbee coordinator simulator with simulated devices, for testing Zigbee
-hosts without hardware. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_sim/index.html).
+hosts without hardware. [crates.io](https://crates.io/crates/zigbee-sim), [docs.rs](https://docs.rs/zigbee-sim), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_sim/index.html).
 
 `Simulator` plays one coordinator family over any byte stream:
 

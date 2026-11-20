@@ -4,7 +4,7 @@ description: "The coordinator host: the application that runs a Zigbee network o
 ---
 
 The coordinator host: the application that runs a Zigbee network on top of
-an NCP. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html).
+an NCP. [crates.io](https://crates.io/crates/zigbee-host), [docs.rs](https://docs.rs/zigbee-host), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html).
 
 ## What it does
 
