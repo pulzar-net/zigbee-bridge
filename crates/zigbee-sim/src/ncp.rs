@@ -53,6 +53,21 @@ pub struct SimConfig {
     pub reply_delay: Duration,
     /// Key table entries (EZSP).
     pub key_table_size: u16,
+    /// Other networks in range, which an active scan hears.
+    pub neighbors: Vec<SimNeighbor>,
+}
+
+/// Another network in range of the simulated coordinator.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimNeighbor {
+    /// Channel.
+    pub channel: u8,
+    /// PAN id.
+    pub pan_id: u16,
+    /// Extended PAN id.
+    pub extended_pan_id: zigbee_types::ExtPanId,
+    /// Accepting joins.
+    pub permit_joining: bool,
 }
 
 impl Default for SimConfig {
@@ -64,6 +79,7 @@ impl Default for SimConfig {
             join_delay: Duration::from_millis(200),
             reply_delay: Duration::from_millis(20),
             key_table_size: 12,
+            neighbors: Vec::new(),
         }
     }
 }
@@ -162,12 +178,13 @@ pub(crate) fn lock(m: &Mutex<SimState>) -> MutexGuard<'_, SimState> {
 impl Simulator {
     /// A simulator with `config`'s devices, all powered on.
     pub fn new(config: SimConfig) -> Simulator {
-        let mesh = Mesh::new(
+        let mut mesh = Mesh::new(
             config.ieee,
             &config.devices,
             config.join_delay,
             config.reply_delay,
         );
+        mesh.neighbors = config.neighbors.clone();
         let front = match config.ncp {
             SimNcp::Ezsp { protocol } => {
                 Front::Ezsp(EzspFront::new(protocol, config.key_table_size))

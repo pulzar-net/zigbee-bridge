@@ -70,6 +70,8 @@ pub mod af {
 pub mod zdo {
     /// Install a link key for a device.
     pub const SET_LINK_KEY: u8 = 0x23;
+    /// Discover networks (an active scan).
+    pub const NWK_DISCOVERY_REQ: u8 = 0x26;
     /// Send a raw ZDO frame.
     pub const SEND_DATA: u8 = 0x28;
     /// Permit joining.
@@ -88,6 +90,10 @@ pub mod zdo {
     pub const END_DEVICE_ANNCE_IND: u8 = 0xC1;
     /// Source route (AREQ).
     pub const SRC_RTG_IND: u8 = 0xC4;
+    /// Beacons heard by a network discovery (AREQ).
+    pub const BEACON_NOTIFY_IND: u8 = 0xC5;
+    /// Network discovery finished (AREQ).
+    pub const NWK_DISCOVERY_CNF: u8 = 0xC7;
     /// A device left (AREQ).
     pub const LEAVE_IND: u8 = 0xC9;
     /// The trust center admitted a device (AREQ).

@@ -53,6 +53,14 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   always; Z-Stack's link key seed or EmberZNet's root key when restoring
   onto the same family, and the backup's per-device link keys otherwise.
   Backups written by other open-coordinator-backup hosts read as well.
+- `zigbee-host`: `Adapter::active_scan` and `Host::active_scan` (other
+  networks' beacons: EmberZNet's network-found callbacks, Z-Stack's network
+  discovery; deCONZ has none), `Adapter::leave` and `Host::leave` (erase the
+  network from the coordinator and forget every device), and
+  `Host::set_install_codes` (replace the whole list, checked first).
+- `zigbee-ezsp`: the `networkFoundHandler` callback. `zigbee-znp`:
+  `ZDO_NWK_DISCOVERY_REQ`, beacon notifications and the discovery confirm.
+- `zigbee-sim`: networks in range (`SimConfig::neighbors`).
 
 ### Changed
 

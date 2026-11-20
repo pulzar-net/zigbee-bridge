@@ -18,6 +18,7 @@ pub mod frame {
     pub const NETWORK_STATE: u16 = 0x0018;
     pub const STACK_STATUS_HANDLER: u16 = 0x0019;
     pub const START_SCAN: u16 = 0x001A;
+    pub const NETWORK_FOUND_HANDLER: u16 = 0x001B;
     pub const SCAN_COMPLETE_HANDLER: u16 = 0x001C;
     pub const FORM_NETWORK: u16 = 0x001E;
     pub const LEAVE_NETWORK: u16 = 0x0020;

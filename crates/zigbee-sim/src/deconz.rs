@@ -189,6 +189,14 @@ impl DeconzFront {
                 }
                 self.params.insert(p, value.to_vec());
             }
+            param::APS_DESIGNED_COORDINATOR => {
+                // No longer a coordinator, while offline: the network is
+                // gone.
+                if value.first() == Some(&0) && !mesh.up {
+                    mesh.leave();
+                }
+                self.params.insert(p, value.to_vec());
+            }
             param::NWK_UPDATE_ID => {
                 if let (Some(n), Some(id)) = (mesh.network.as_mut(), value.first()) {
                     if mesh.up {

@@ -1073,6 +1073,44 @@ impl<A: Adapter> Host<A> {
         self.inner.adapter.add_join_key(ieee, key).await
     }
 
+    /// Replace every install code the host holds with `entries` (IEEE
+    /// address, install code with its CRC). All are checked before any is
+    /// taken. Returns how many there are now.
+    pub async fn set_install_codes(&self, entries: &[(Ieee, Vec<u8>)]) -> Result<usize, HostError> {
+        let mut keys = HashMap::new();
+        for (ieee, code) in entries {
+            let key = install_code::link_key(code)
+                .map_err(|e| HostError::Invalid(format!("{ieee}: {e}")))?;
+            keys.insert(*ieee, key);
+        }
+        let n = keys.len();
+        self.state().install_codes = keys.clone();
+        for (ieee, key) in keys {
+            self.inner.adapter.add_join_key(ieee, key).await?;
+        }
+        Ok(n)
+    }
+
+    /// Other networks heard on every channel (an active scan).
+    pub async fn active_scan(&self) -> Result<Vec<crate::adapter::Beacon>, HostError> {
+        self.inner.adapter.active_scan(0x07FF_F800).await
+    }
+
+    /// Leave the network and erase it from the coordinator, then forget
+    /// every device. The host stops; start a new one to form again.
+    pub async fn leave(&self) -> Result<(), HostError> {
+        self.inner.adapter.leave().await?;
+        let devices: Vec<Ieee> = self.state().devices.keys().copied().collect();
+        for ieee in devices {
+            self.forget(ieee, None);
+        }
+        self.state().backup_wanted = false;
+        self.inner.dirty.mark();
+        self.flush().await?;
+        self.stop();
+        Ok(())
+    }
+
     /// Ask a device to leave and forget it. With `force`, it is forgotten
     /// even if it does not answer (a dead or sleepy device).
     pub async fn remove(&self, ieee: Ieee, force: bool) -> Result<(), HostError> {

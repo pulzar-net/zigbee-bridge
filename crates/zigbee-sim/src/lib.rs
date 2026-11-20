@@ -9,4 +9,4 @@ mod znp;
 
 pub use device::{Outgoing, SimDevice, SimEndpoint, SimFirmware};
 pub use mesh::SimNetwork;
-pub use ncp::{SimConfig, SimError, SimNcp, SimSnapshot, Simulator};
+pub use ncp::{SimConfig, SimError, SimNcp, SimNeighbor, SimSnapshot, Simulator};

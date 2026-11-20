@@ -133,6 +133,13 @@ pub enum Request {
         /// The key.
         key: Key,
     },
+    /// `ZDO_NWK_DISCOVERY_REQ`: an active scan.
+    ZdoNwkDiscovery {
+        /// Channels.
+        channel_mask: u32,
+        /// Scan duration exponent per channel.
+        scan_duration: u8,
+    },
     /// `ZDO_SEND_DATA`: a raw ZDO frame with the host's sequence number.
     ZdoSendData {
         /// Destination.
@@ -317,6 +324,7 @@ impl Request {
             NvWrite { .. } => (sub::SYS, sys::NV_WRITE),
             UtilGetDeviceInfo => (sub::UTIL, util::GET_DEVICE_INFO),
             ZdoSetLinkKey { .. } => (sub::ZDO, zdo::SET_LINK_KEY),
+            ZdoNwkDiscovery { .. } => (sub::ZDO, zdo::NWK_DISCOVERY_REQ),
             ZdoSendData { .. } => (sub::ZDO, zdo::SEND_DATA),
             ZdoMgmtPermitJoin { .. } => (sub::ZDO, zdo::MGMT_PERMIT_JOIN_REQ),
             ZdoMgmtNwkUpdate { .. } => (sub::ZDO, zdo::MGMT_NWK_UPDATE_REQ),
@@ -401,6 +409,13 @@ impl Request {
                 w.put_u16(*nwk);
                 w.put_ieee(*ieee);
                 w.put_key(key);
+            }
+            ZdoNwkDiscovery {
+                channel_mask,
+                scan_duration,
+            } => {
+                w.put_u32(*channel_mask);
+                w.put_u8(*scan_duration);
             }
             ZdoSendData {
                 destination,
@@ -580,6 +595,10 @@ impl Request {
                 ieee: r.ieee()?,
                 key: r.key()?,
             },
+            (Kind::Sreq, sub::ZDO, zdo::NWK_DISCOVERY_REQ) => ZdoNwkDiscovery {
+                channel_mask: r.u32()?,
+                scan_duration: r.u8()?,
+            },
             (Kind::Sreq, sub::ZDO, zdo::SEND_DATA) => ZdoSendData {
                 destination: r.u16()?,
                 tsn: r.u8()?,
@@ -709,6 +728,35 @@ pub struct IncomingMsg {
     pub extended: bool,
 }
 
+/// A beacon from `ZDO_BEACON_NOTIFY_IND`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Beacon {
+    /// The sender.
+    pub source: NodeId,
+    /// PAN id.
+    pub pan_id: u16,
+    /// Channel.
+    pub channel: u8,
+    /// Accepting joins.
+    pub permit_joining: bool,
+    /// Router capacity left.
+    pub router_capacity: bool,
+    /// End device capacity left.
+    pub device_capacity: bool,
+    /// Protocol version.
+    pub protocol_version: u8,
+    /// Stack profile.
+    pub stack_profile: u8,
+    /// Link quality.
+    pub lqi: u8,
+    /// Depth.
+    pub depth: u8,
+    /// Network update id.
+    pub update_id: u8,
+    /// Extended PAN id.
+    pub extended_pan_id: zigbee_types::ExtPanId,
+}
+
 /// An asynchronous frame from the NCP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Indication {
@@ -760,6 +808,13 @@ pub enum Indication {
         source: NodeId,
         /// Relays.
         relays: Vec<NodeId>,
+    },
+    /// `ZDO_BEACON_NOTIFY_IND`.
+    Beacons(Vec<Beacon>),
+    /// `ZDO_NWK_DISCOVERY_CNF`.
+    DiscoveryDone {
+        /// Status.
+        status: u8,
     },
     /// `ZDO_LEAVE_IND`.
     Leave {
@@ -928,6 +983,28 @@ impl Indication {
                     relays: r.u16_list(usize::from(n))?,
                 }
             }
+            (sub::ZDO, zdo::BEACON_NOTIFY_IND) => {
+                let n = usize::from(r.u8()?);
+                let mut beacons = Vec::with_capacity(n.min(r.remaining() / 21 + 1));
+                for _ in 0..n {
+                    beacons.push(Beacon {
+                        source: r.u16()?,
+                        pan_id: r.u16()?,
+                        channel: r.u8()?,
+                        permit_joining: r.u8()? != 0,
+                        router_capacity: r.u8()? != 0,
+                        device_capacity: r.u8()? != 0,
+                        protocol_version: r.u8()?,
+                        stack_profile: r.u8()?,
+                        lqi: r.u8()?,
+                        depth: r.u8()?,
+                        update_id: r.u8()?,
+                        extended_pan_id: r.ext_pan_id()?,
+                    });
+                }
+                Beacons(beacons)
+            }
+            (sub::ZDO, zdo::NWK_DISCOVERY_CNF) => DiscoveryDone { status: r.u8()? },
             (sub::ZDO, zdo::LEAVE_IND) => Leave {
                 nwk: r.u16()?,
                 ieee: r.ieee()?,
@@ -1053,6 +1130,28 @@ impl Indication {
                 w.put_u16(*source);
                 put_u16_list(&mut w, relays);
                 (sub::ZDO, zdo::SRC_RTG_IND)
+            }
+            Beacons(beacons) => {
+                w.put_u8(beacons.len().min(255) as u8);
+                for b in beacons.iter().take(255) {
+                    w.put_u16(b.source);
+                    w.put_u16(b.pan_id);
+                    w.put_u8(b.channel);
+                    w.put_u8(u8::from(b.permit_joining));
+                    w.put_u8(u8::from(b.router_capacity));
+                    w.put_u8(u8::from(b.device_capacity));
+                    w.put_u8(b.protocol_version);
+                    w.put_u8(b.stack_profile);
+                    w.put_u8(b.lqi);
+                    w.put_u8(b.depth);
+                    w.put_u8(b.update_id);
+                    w.put_ext_pan_id(b.extended_pan_id);
+                }
+                (sub::ZDO, zdo::BEACON_NOTIFY_IND)
+            }
+            DiscoveryDone { status } => {
+                w.put_u8(*status);
+                (sub::ZDO, zdo::NWK_DISCOVERY_CNF)
             }
             Leave {
                 nwk,

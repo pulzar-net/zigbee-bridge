@@ -120,6 +120,25 @@ pub struct Aps {
     pub destination_endpoint: u8,
 }
 
+/// A network heard during an active scan.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Beacon {
+    /// Channel.
+    pub channel: u8,
+    /// PAN id.
+    pub pan_id: PanId,
+    /// Extended PAN id.
+    pub extended_pan_id: ExtPanId,
+    /// It accepts joins now.
+    pub permit_joining: bool,
+    /// Its network update id.
+    pub nwk_update_id: u8,
+    /// Link quality of the beacon.
+    pub lqi: u8,
+    /// Signal strength of the beacon, dBm, when the NCP reports it.
+    pub rssi: Option<i8>,
+}
+
 /// Something the NCP reported.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AdapterEvent {
@@ -245,6 +264,18 @@ pub trait Adapter: Send + Sync + 'static {
 
     /// Export everything a restore needs.
     fn backup(&self) -> impl Future<Output = Result<Backup, HostError>> + Send;
+
+    /// Listen for other networks' beacons on the channels in the mask
+    /// (an active scan). Works before a network is formed. An NCP family
+    /// that cannot scan returns none.
+    fn active_scan(
+        &self,
+        channel_mask: u32,
+    ) -> impl Future<Output = Result<Vec<Beacon>, HostError>> + Send;
+
+    /// Leave the NCP's network and erase it (keys, PAN ids, frame counter)
+    /// from the NCP, whether or not it was started.
+    fn leave(&self) -> impl Future<Output = Result<(), HostError>> + Send;
 
     /// Measure each channel's energy; returns (channel, max RSSI dBm).
     fn energy_scan(

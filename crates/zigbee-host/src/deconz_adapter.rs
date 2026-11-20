@@ -25,8 +25,8 @@ use zigbee_types::wire::Reader;
 use zigbee_types::{ExtPanId, Ieee, Key, NodeId};
 
 use crate::adapter::{
-    Adapter, AdapterEvent, AdapterInfo, Aps, JoinPolicy, NetworkInfo, NetworkSettings, StartMode,
-    StartOutcome,
+    Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,
+    StartMode, StartOutcome,
 };
 use crate::backup::{self, Backup, Internal, Metadata, NetworkKey};
 use crate::error::HostError;
@@ -584,6 +584,18 @@ impl Adapter for DeconzAdapter {
             },
             devices: Vec::new(),
         })
+    }
+
+    async fn active_scan(&self, _channel_mask: u32) -> Result<Vec<Beacon>, HostError> {
+        // The serial protocol has no network discovery.
+        Ok(Vec::new())
+    }
+
+    async fn leave(&self) -> Result<(), HostError> {
+        self.set_net_state(net_state::OFFLINE).await?;
+        self.write(param::APS_DESIGNED_COORDINATOR, &[0]).await?;
+        self.write(param::NETWORK_KEY, &[0; 17]).await?;
+        self.write(param::NWK_PANID, &0xFFFFu16.to_le_bytes()).await
     }
 
     async fn energy_scan(&self, channel_mask: u32) -> Result<Vec<(u8, i8)>, HostError> {

@@ -6,7 +6,8 @@ use tokio::sync::mpsc;
 use zigbee_types::{Ieee, Key, NodeId};
 
 use crate::adapter::{
-    Adapter, AdapterEvent, AdapterInfo, Aps, JoinPolicy, NetworkInfo, StartMode, StartOutcome,
+    Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, StartMode,
+    StartOutcome,
 };
 use crate::backup::Backup;
 use crate::deconz_adapter::DeconzAdapter;
@@ -117,6 +118,14 @@ impl Adapter for AnyAdapter {
 
     async fn backup(&self) -> Result<Backup, HostError> {
         each!(self, a => a.backup().await)
+    }
+
+    async fn active_scan(&self, channel_mask: u32) -> Result<Vec<Beacon>, HostError> {
+        each!(self, a => a.active_scan(channel_mask).await)
+    }
+
+    async fn leave(&self) -> Result<(), HostError> {
+        each!(self, a => a.leave().await)
     }
 
     async fn energy_scan(&self, channel_mask: u32) -> Result<Vec<(u8, i8)>, HostError> {

@@ -97,6 +97,8 @@ pub(crate) struct Mesh {
     pub join_keys: HashMap<Ieee, Key>,
     next_nwk: NodeId,
     aps_seq: u8,
+    /// Other networks in range.
+    pub neighbors: Vec<crate::ncp::SimNeighbor>,
     pub sink: Option<mpsc::UnboundedSender<(Duration, Scheduled)>>,
 }
 
@@ -123,6 +125,7 @@ impl Mesh {
             join_keys: HashMap::new(),
             next_nwk: 0x1A2B,
             aps_seq: 0,
+            neighbors: Vec::new(),
             sink: None,
         }
     }

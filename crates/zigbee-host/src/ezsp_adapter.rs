@@ -22,8 +22,8 @@ use zigbee_ezsp::{ApsFrame, Callback, Command, Response, Status};
 use zigbee_types::{ExtPanId, Ieee, Key, NodeId};
 
 use crate::adapter::{
-    Adapter, AdapterEvent, AdapterInfo, Aps, JoinPolicy, NetworkInfo, NetworkSettings, StartMode,
-    StartOutcome,
+    Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,
+    StartMode, StartOutcome,
 };
 use crate::backup::{
     self, Backup, BackupDevice, EzspSpecific, Internal, LinkKey, Metadata, NetworkKey,
@@ -59,10 +59,11 @@ enum NetState {
     Down,
 }
 
-type ScanResult = Result<Vec<(u8, i8)>, HostError>;
+type ScanResult = Result<(Vec<(u8, i8)>, Vec<Beacon>), HostError>;
 
 struct ScanCollector {
     results: Vec<(u8, i8)>,
+    beacons: Vec<Beacon>,
     done: Option<tokio::sync::oneshot::Sender<ScanResult>>,
 }
 
@@ -196,10 +197,40 @@ fn translate(
             }
             None
         }
+        Callback::NetworkFound {
+            channel,
+            pan_id,
+            extended_pan_id,
+            allowing_join,
+            nwk_update_id,
+            lqi,
+            rssi,
+            ..
+        } => {
+            if let Ok(mut s) = scan.lock() {
+                if let Some(c) = s.as_mut() {
+                    if c.beacons.len() < 256 {
+                        c.beacons.push(Beacon {
+                            channel,
+                            pan_id,
+                            extended_pan_id,
+                            permit_joining: allowing_join,
+                            nwk_update_id,
+                            lqi,
+                            rssi: Some(rssi),
+                        });
+                    }
+                }
+            }
+            None
+        }
         Callback::ScanComplete { status, channel } => {
             if let Some(mut c) = scan.lock().ok().and_then(|mut s| s.take()) {
                 let result = if status.is_ok() {
-                    Ok(std::mem::take(&mut c.results))
+                    Ok((
+                        std::mem::take(&mut c.results),
+                        std::mem::take(&mut c.beacons),
+                    ))
                 } else {
                     Err(HostError::Ncp(format!(
                         "scan failed on channel {channel}: {status}"
@@ -386,7 +417,7 @@ impl EzspAdapter {
         }
     }
 
-    async fn leave(&self) -> Result<(), HostError> {
+    async fn leave_network(&self) -> Result<(), HostError> {
         self.ok(Command::LeaveNetwork { options: 0 }).await?;
         self.wait_net(NetState::Down).await?;
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -639,7 +670,7 @@ impl Adapter for EzspAdapter {
         match mode {
             StartMode::Restore(backup) => {
                 if has_network {
-                    self.leave().await?;
+                    self.leave_network().await?;
                 }
                 self.restore(&backup).await?;
                 Ok((StartOutcome::Restored, self.after_up(None).await?))
@@ -667,7 +698,7 @@ impl Adapter for EzspAdapter {
                         });
                     }
                     tracing::warn!(found = %describe(&p), "leaving the NCP's other network, as configured");
-                    self.leave().await?;
+                    self.leave_network().await?;
                 }
                 self.form(&settings, random_key()?, None).await?;
                 Ok((
@@ -858,7 +889,42 @@ impl Adapter for EzspAdapter {
         })
     }
 
+    async fn active_scan(&self, channel_mask: u32) -> Result<Vec<Beacon>, HostError> {
+        Ok(self.scan(ids::scan_type::ACTIVE, channel_mask).await?.1)
+    }
+
+    async fn leave(&self) -> Result<(), HostError> {
+        let joined = |r: Response| matches!(r, Response::NetworkState { state } if state != ids::network_status::NO_NETWORK);
+        let mut up = joined(self.ezsp.call(Command::NetworkState).await?);
+        if !up {
+            // Bring up a stored network first, so leaving erases it.
+            let init = self
+                .ezsp
+                .call(Command::NetworkInit {
+                    bitmask: ids::network_init::PARENT_INFO_IN_TOKEN,
+                })
+                .await?;
+            if init.status().is_some_and(|s| s.is_ok()) {
+                self.wait_net(NetState::Up).await?;
+                up = true;
+            }
+        }
+        if up {
+            self.leave_network().await?;
+        }
+        if let Err(e) = self.ok(Command::ClearKeyTable).await {
+            tracing::warn!(error = %e, "clearing the key table");
+        }
+        Ok(())
+    }
+
     async fn energy_scan(&self, channel_mask: u32) -> Result<Vec<(u8, i8)>, HostError> {
+        Ok(self.scan(ids::scan_type::ENERGY, channel_mask).await?.0)
+    }
+}
+
+impl EzspAdapter {
+    async fn scan(&self, scan_type: u8, channel_mask: u32) -> ScanResult {
         let (tx, rx) = tokio::sync::oneshot::channel();
         if let Ok(mut s) = self.scan.lock() {
             if s.is_some() {
@@ -866,13 +932,14 @@ impl Adapter for EzspAdapter {
             }
             *s = Some(ScanCollector {
                 results: Vec::new(),
+                beacons: Vec::new(),
                 done: Some(tx),
             });
         }
         let started = self
             .ezsp
             .call_ok(Command::StartScan {
-                scan_type: ids::scan_type::ENERGY,
+                scan_type,
                 channel_mask,
                 duration: 3,
             })
@@ -889,7 +956,7 @@ impl Adapter for EzspAdapter {
                 if let Ok(mut s) = self.scan.lock() {
                     *s = None;
                 }
-                Err(HostError::Ncp("energy scan did not complete".into()))
+                Err(HostError::Ncp("the scan did not complete".into()))
             }
         }
     }

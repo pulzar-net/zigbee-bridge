@@ -1,7 +1,7 @@
 //! Typed EZSP callbacks (NCP to host, unsolicited).
 
 use zigbee_types::wire::{Reader, Writer};
-use zigbee_types::{Ieee, NodeId};
+use zigbee_types::{ExtPanId, Ieee, NodeId};
 
 use crate::command::DecodeError;
 use crate::ids::frame as id;
@@ -93,6 +93,25 @@ pub enum Callback {
         /// Strongest signal heard, dBm.
         max_rssi: i8,
     },
+    /// An active scan heard a network's beacon.
+    NetworkFound {
+        /// Channel.
+        channel: u8,
+        /// PAN id.
+        pan_id: u16,
+        /// Extended PAN id.
+        extended_pan_id: ExtPanId,
+        /// Its routers accept joins.
+        allowing_join: bool,
+        /// Stack profile (2: Zigbee PRO).
+        stack_profile: u8,
+        /// Network update id.
+        nwk_update_id: u8,
+        /// Link quality of the beacon.
+        lqi: u8,
+        /// Signal strength of the beacon, dBm.
+        rssi: i8,
+    },
     /// A scan finished (or failed on `channel`).
     ScanComplete {
         /// Channel that failed, or the last channel.
@@ -156,6 +175,7 @@ impl Callback {
             Callback::IncomingRouteRecord { .. } => id::INCOMING_ROUTE_RECORD_HANDLER,
             Callback::ZigbeeKeyEstablishment { .. } => id::ZIGBEE_KEY_ESTABLISHMENT_HANDLER,
             Callback::EnergyScanResult { .. } => id::ENERGY_SCAN_RESULT_HANDLER,
+            Callback::NetworkFound { .. } => id::NETWORK_FOUND_HANDLER,
             Callback::ScanComplete { .. } => id::SCAN_COMPLETE_HANDLER,
             Callback::IdConflict { .. } => id::ID_CONFLICT_HANDLER,
             Callback::IncomingRouteError { .. } => id::INCOMING_ROUTE_ERROR_HANDLER,
@@ -268,6 +288,16 @@ impl Callback {
             id::ENERGY_SCAN_RESULT_HANDLER => Callback::EnergyScanResult {
                 channel: r.u8()?,
                 max_rssi: r.i8()?,
+            },
+            id::NETWORK_FOUND_HANDLER => Callback::NetworkFound {
+                channel: r.u8()?,
+                pan_id: r.u16()?,
+                extended_pan_id: r.ext_pan_id()?,
+                allowing_join: r.u8()? != 0,
+                stack_profile: r.u8()?,
+                nwk_update_id: r.u8()?,
+                lqi: r.u8()?,
+                rssi: r.i8()?,
             },
             id::SCAN_COMPLETE_HANDLER => Callback::ScanComplete {
                 channel: r.u8()?,
@@ -392,6 +422,25 @@ impl Callback {
                 w.put_u8(*channel);
                 w.put_u8(*max_rssi as u8);
             }
+            Callback::NetworkFound {
+                channel,
+                pan_id,
+                extended_pan_id,
+                allowing_join,
+                stack_profile,
+                nwk_update_id,
+                lqi,
+                rssi,
+            } => {
+                w.put_u8(*channel);
+                w.put_u16(*pan_id);
+                w.put_ext_pan_id(*extended_pan_id);
+                w.put_u8(u8::from(*allowing_join));
+                w.put_u8(*stack_profile);
+                w.put_u8(*nwk_update_id);
+                w.put_u8(*lqi);
+                w.put_u8(*rssi as u8);
+            }
             Callback::ScanComplete { channel, status } => {
                 w.put_u8(*channel);
                 status.write(&mut w);
@@ -444,6 +493,16 @@ mod tests {
                 last_hop_timestamp: if v.sl_status() { 1234 } else { 0 },
             };
             let callbacks = vec![
+                Callback::NetworkFound {
+                    channel: 20,
+                    pan_id: 0x1A62,
+                    extended_pan_id: ExtPanId(0xDDDD_DDDD_DDDD_DDDD),
+                    allowing_join: true,
+                    stack_profile: 2,
+                    nwk_update_id: 3,
+                    lqi: 180,
+                    rssi: -61,
+                },
                 Callback::StackStatus {
                     status: Status::network_up(v),
                 },

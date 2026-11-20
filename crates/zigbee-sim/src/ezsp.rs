@@ -234,7 +234,9 @@ impl EzspFront {
                 frame_id: fid::SET_MANUFACTURER_CODE,
             },
             Command::NetworkInit { .. } => {
-                if mesh.network.is_some() {
+                if mesh.up {
+                    status(fid::NETWORK_INIT, Status::invalid_call(v))
+                } else if mesh.network.is_some() {
                     mesh.up = true;
                     self.stack_status(mesh, Status::network_up(v));
                     status(fid::NETWORK_INIT, ok)
@@ -503,6 +505,34 @@ impl EzspFront {
                 channel_mask,
                 ..
             } => {
+                if scan_type == ids::scan_type::ACTIVE {
+                    for n in mesh
+                        .neighbors
+                        .iter()
+                        .filter(|n| channel_mask & (1 << n.channel) != 0)
+                    {
+                        mesh.schedule(
+                            Duration::from_millis(u64::from(n.channel)),
+                            Scheduled::Ezsp(Callback::NetworkFound {
+                                channel: n.channel,
+                                pan_id: n.pan_id,
+                                extended_pan_id: n.extended_pan_id,
+                                allowing_join: n.permit_joining,
+                                stack_profile: 2,
+                                nwk_update_id: 0,
+                                lqi: 150,
+                                rssi: -70,
+                            }),
+                        );
+                    }
+                    mesh.schedule(
+                        Duration::from_millis(40),
+                        Scheduled::Ezsp(Callback::ScanComplete {
+                            channel: 26,
+                            status: Status::ok(v),
+                        }),
+                    );
+                }
                 if scan_type == ids::scan_type::ENERGY {
                     let mut last = 11;
                     for (channel, max_rssi) in Mesh::energy(channel_mask) {

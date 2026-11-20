@@ -821,3 +821,69 @@ async fn restores_a_backup_onto_another_coordinator_family() {
         assert!(host.device(TH).is_some());
     }
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn hears_other_networks_and_leaves_its_own() {
+    for ncp in NCPS {
+        let dir = tempfile::tempdir().unwrap();
+        let sim = Simulator::new(SimConfig {
+            ncp,
+            devices: vec![SimDevice::plug(PLUG)],
+            neighbors: vec![zigbee_sim::SimNeighbor {
+                channel: 20,
+                pan_id: 0x4242,
+                extended_pan_id: zigbee_types::ExtPanId(0x0102_0304_0506_0708),
+                permit_joining: false,
+            }],
+            ..SimConfig::default()
+        });
+        let mut cfg = config(dir.path());
+        cfg.join.install_code_only = false;
+        let (host, mut rx) = start(
+            &sim,
+            ncp,
+            StartMode::Normal {
+                settings: random_network(15).unwrap(),
+                replace_other: false,
+            },
+            cfg,
+        )
+        .await
+        .unwrap();
+        let beacons = host.active_scan().await.unwrap();
+        if ncp == SimNcp::Deconz {
+            assert!(beacons.is_empty(), "deCONZ cannot scan for networks");
+        } else {
+            assert_eq!(beacons.len(), 1, "{ncp:?}");
+            assert_eq!((beacons[0].channel, beacons[0].pan_id), (20, 0x4242));
+        }
+        // Install codes replace one another; a bad one changes nothing.
+        let code =
+            zigbee_host::install_code::parse_hex("83FED3407A939723A5C639B26916D505C3B5").unwrap();
+        assert_eq!(
+            host.set_install_codes(&[(DOOR, code.clone()), (TH, code.clone())])
+                .await
+                .unwrap(),
+            2
+        );
+        assert!(host
+            .set_install_codes(&[(DOOR, vec![1, 2, 3])])
+            .await
+            .is_err());
+        assert_eq!(host.set_install_codes(&[]).await.unwrap(), 0);
+
+        host.permit_join(30, None).await.unwrap();
+        wait_for(&mut rx, |e| {
+            matches!(e, HostEvent::InterviewDone { .. }).then_some(())
+        })
+        .await;
+        host.leave().await.unwrap();
+        assert!(
+            sim.snapshot().network.is_none(),
+            "{ncp:?}: the network is erased"
+        );
+        assert!(host.devices().is_empty());
+        let store = std::fs::read_to_string(dir.path().join("devices.json")).unwrap();
+        assert!(!store.contains("00124b0000000003"), "{store}");
+    }
+}

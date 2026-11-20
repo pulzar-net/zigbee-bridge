@@ -347,6 +347,38 @@ impl ZnpFront {
                 self.link_keys.insert(ieee, key);
                 status_only(status::SUCCESS)
             }
+            ZdoNwkDiscovery { channel_mask, .. } => {
+                let beacons = mesh
+                    .neighbors
+                    .iter()
+                    .filter(|n| channel_mask & (1 << n.channel) != 0)
+                    .map(|n| zigbee_znp::Beacon {
+                        source: 0x0000,
+                        pan_id: n.pan_id,
+                        channel: n.channel,
+                        permit_joining: n.permit_joining,
+                        router_capacity: true,
+                        device_capacity: true,
+                        protocol_version: 2,
+                        stack_profile: 2,
+                        lqi: 150,
+                        depth: 0,
+                        update_id: 0,
+                        extended_pan_id: n.extended_pan_id,
+                    })
+                    .collect::<Vec<_>>();
+                if !beacons.is_empty() {
+                    mesh.schedule(
+                        Duration::from_millis(20),
+                        Scheduled::Znp(Indication::Beacons(beacons)),
+                    );
+                }
+                mesh.schedule(
+                    Duration::from_millis(40),
+                    Scheduled::Znp(Indication::DiscoveryDone { status: 0 }),
+                );
+                status_only(status::SUCCESS)
+            }
             ZdoSendData {
                 destination,
                 tsn,

@@ -29,8 +29,8 @@ use zigbee_znp::ids::{
 use zigbee_znp::{Indication, Request};
 
 use crate::adapter::{
-    Adapter, AdapterEvent, AdapterInfo, Aps, JoinPolicy, NetworkInfo, NetworkSettings, StartMode,
-    StartOutcome,
+    Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,
+    StartMode, StartOutcome,
 };
 use crate::backup::{
     self, Backup, BackupDevice, Internal, Metadata, NetworkKey, StackSpecific, ZstackSpecific,
@@ -59,6 +59,7 @@ const ENDPOINT_OUTPUT_CLUSTERS: &[u16] = &[
 ];
 
 type ScanResult = Result<Vec<(u8, i8)>, HostError>;
+type Discovery = (Vec<Beacon>, oneshot::Sender<Result<Vec<Beacon>, HostError>>);
 
 struct Shared {
     /// Device state from `ZDO_STATE_CHANGE_IND`.
@@ -71,6 +72,8 @@ struct Shared {
     endpoints: Mutex<HashMap<u8, u16>>,
     /// An energy scan waiting for its notify.
     scan: Mutex<Option<oneshot::Sender<ScanResult>>>,
+    /// An active scan: beacons so far, and who waits for the end.
+    discovery: Mutex<Option<Discovery>>,
 }
 
 /// A Z-Stack 3 coordinator.
@@ -220,6 +223,39 @@ fn translate(ind: Indication, shared: &Shared) -> Option<AdapterEvent> {
             tag: u16::from(trans_id),
             delivered: s == status::SUCCESS,
         }),
+        Indication::Beacons(beacons) => {
+            if let Ok(mut d) = shared.discovery.lock() {
+                if let Some((found, _)) = d.as_mut() {
+                    for b in beacons
+                        .into_iter()
+                        .take(256usize.saturating_sub(found.len()))
+                    {
+                        found.push(Beacon {
+                            channel: b.channel,
+                            pan_id: b.pan_id,
+                            extended_pan_id: b.extended_pan_id,
+                            permit_joining: b.permit_joining,
+                            nwk_update_id: b.update_id,
+                            lqi: b.lqi,
+                            rssi: None,
+                        });
+                    }
+                }
+            }
+            None
+        }
+        Indication::DiscoveryDone { status: s } => {
+            if let Some((found, done)) = shared.discovery.lock().ok().and_then(|mut d| d.take()) {
+                let _ = done.send(if s == status::SUCCESS {
+                    Ok(found)
+                } else {
+                    Err(HostError::Ncp(format!(
+                        "network discovery failed ({s:#04x})"
+                    )))
+                });
+            }
+            None
+        }
         // The raw announce arrives as a forwarded ZDO frame as well.
         Indication::DeviceAnnounce { .. } | Indication::PermitJoin { .. } => None,
     }
@@ -265,6 +301,7 @@ impl ZnpAdapter {
             commissioning: watch::channel(None).0,
             endpoints: Mutex::new(HashMap::new()),
             scan: Mutex::new(None),
+            discovery: Mutex::new(None),
         });
         let (tx, rx) = mpsc::unbounded_channel();
         let events = tx.clone();
@@ -827,6 +864,48 @@ impl Adapter for ZnpAdapter {
             },
             devices: Vec::<BackupDevice>::new(),
         })
+    }
+
+    async fn active_scan(&self, channel_mask: u32) -> Result<Vec<Beacon>, HostError> {
+        let (tx, rx) = oneshot::channel();
+        if let Ok(mut d) = self.shared.discovery.lock() {
+            if d.is_some() {
+                return Err(HostError::Invalid("a scan is already running".into()));
+            }
+            *d = Some((Vec::new(), tx));
+        }
+        let sent = self
+            .ok(Request::ZdoNwkDiscovery {
+                channel_mask,
+                scan_duration: 3,
+            })
+            .await;
+        if let Err(e) = sent {
+            if let Ok(mut d) = self.shared.discovery.lock() {
+                *d = None;
+            }
+            return Err(e);
+        }
+        match tokio::time::timeout(Duration::from_secs(30), rx).await {
+            Ok(Ok(result)) => result,
+            _ => {
+                if let Ok(mut d) = self.shared.discovery.lock() {
+                    *d = None;
+                }
+                Err(HostError::Ncp("network discovery did not complete".into()))
+            }
+        }
+    }
+
+    async fn leave(&self) -> Result<(), HostError> {
+        // Z-Stack forgets its network and configuration at the next reset.
+        self.znp
+            .nv_write(
+                nv::STARTUP_OPTION,
+                &[startup_option::CLEAR_STATE | startup_option::CLEAR_CONFIG],
+            )
+            .await?;
+        self.reset().await
     }
 
     async fn energy_scan(&self, channel_mask: u32) -> Result<Vec<(u8, i8)>, HostError> {

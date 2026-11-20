@@ -34,8 +34,8 @@ pub mod znp_adapter;
 
 #[cfg(feature = "host")]
 pub use adapter::{
-    Adapter, AdapterEvent, AdapterInfo, JoinPolicy, NetworkInfo, NetworkSettings, StartMode,
-    StartOutcome,
+    Adapter, AdapterEvent, AdapterInfo, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,
+    StartMode, StartOutcome,
 };
 #[cfg(feature = "host")]
 pub use any_adapter::AnyAdapter;
