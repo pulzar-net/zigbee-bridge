@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/pulzar-net/zigbee-bridge)](https://github.com/pulzar-net/zigbee-bridge/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-pulzar--net.github.io-blue)](https://pulzar-net.github.io/zigbee-bridge/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue)](Cargo.toml)
+[![MSRV](https://img.shields.io/badge/MSRV-1.89-blue)](Cargo.toml)
 
 A Zigbee coordinator stack and Zigbee to MQTT bridge, written in Rust. It
 runs a Zigbee network through a USB or network coordinator, interviews the
@@ -157,7 +157,7 @@ see [installation](#installation).
   has static Linux binaries for `x86_64`, `aarch64` (Raspberry Pi 3 and newer
   with a 64-bit OS) and `mipsel` (MT7621 and MT7628 routers), with a
   `SHA256SUMS` file. They have no runtime dependencies.
-- **From source**, with Rust 1.85 or newer:
+- **From source**, with Rust 1.89 or newer:
   `cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge`
 - **systemd**: a hardened unit is in [`dist/systemd/`](dist/systemd/zigbee-bridge.service).
 - **OpenWrt**: a procd init script is in [`dist/openwrt/`](dist/openwrt/zigbee-bridge.init).

@@ -19,7 +19,7 @@ through [private reporting](SECURITY.md), never a public issue.
 
 ## Build
 
-You need Rust 1.85 or newer ([rustup.rs](https://rustup.rs)). Nothing else:
+You need Rust 1.89 or newer ([rustup.rs](https://rustup.rs)). Nothing else:
 the build has no system dependencies, and the tests start their own MQTT
 broker.
 

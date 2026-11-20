@@ -30,7 +30,8 @@ cleanup() {
 trap cleanup EXIT
 
 echo "--- 1. Download, verify and install the release"
-(cd "${work}" && bash -euxo pipefail -c "$(block download)")
+download="$(block download)"
+(cd "${work}" && bash -euxo pipefail -c "${download}")
 
 echo "--- Build the simulator and this commit's bridge"
 cargo build --locked -p zigbee-bridge -p zigbee-sim

@@ -6,7 +6,7 @@ stick. Every step is the same with a real coordinator, except the port.
 
 You need:
 
-- Rust 1.85 or newer, to build the simulator (`rustup` from
+- Rust 1.89 or newer, to build the simulator (`rustup` from
   [rustup.rs](https://rustup.rs));
 - an MQTT broker and its command-line clients, for example Mosquitto
   (`apt install mosquitto mosquitto-clients`, or `brew install mosquitto`);

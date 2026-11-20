@@ -33,7 +33,7 @@ MIPS routers (such as Atheros ath79) are not supported.
 
 ## From source
 
-With Rust 1.85 or newer:
+With Rust 1.89 or newer:
 
 ```sh
 cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge
