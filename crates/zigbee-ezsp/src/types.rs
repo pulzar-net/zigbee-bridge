@@ -5,8 +5,13 @@ use std::fmt;
 use zigbee_primitives::wire::{Reader, Truncated, Writer};
 use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId, PanId};
 
-/// The oldest EZSP protocol version this crate speaks (EmberZNet 7.4).
-pub const MIN_PROTOCOL_VERSION: u8 = 13;
+/// The oldest EZSP protocol version this crate speaks (EmberZNet 6.7 to
+/// 6.10, the last firmware for the EM35x). Versions 9 to 12 (EmberZNet 7.0
+/// to 7.3) are refused: [`ProtocolVersion::is_supported`].
+pub const MIN_PROTOCOL_VERSION: u8 = 8;
+/// The oldest version with the security manager key commands (EmberZNet
+/// 7.4); older versions use `getKey` and the key table commands.
+pub const SEC_MAN_PROTOCOL_VERSION: u8 = 13;
 /// The newest EZSP protocol version this crate speaks (EmberZNet 8.x).
 pub const MAX_PROTOCOL_VERSION: u8 = 19;
 
@@ -25,9 +30,18 @@ impl ProtocolVersion {
         self.0 >= 14
     }
 
-    /// True when this crate can speak the version.
+    /// From version 13 (EmberZNet 7.4) keys go through the security
+    /// manager (`exportKey`, `importLinkKey`, `importTransientKey`); before
+    /// it through `getKey`, `getKeyTableEntry`, `setKeyTableEntry` and
+    /// `addTransientLinkKey`.
+    pub fn sec_man(self) -> bool {
+        self.0 >= SEC_MAN_PROTOCOL_VERSION
+    }
+
+    /// True when this crate can speak the version: 8, and 13 to 19.
     pub fn is_supported(self) -> bool {
-        (MIN_PROTOCOL_VERSION..=MAX_PROTOCOL_VERSION).contains(&self.0)
+        self.0 == MIN_PROTOCOL_VERSION
+            || (SEC_MAN_PROTOCOL_VERSION..=MAX_PROTOCOL_VERSION).contains(&self.0)
     }
 }
 
@@ -444,6 +458,52 @@ impl NetworkKeyInfo {
     }
 }
 
+/// `EmberKeyStruct`: a key and its counters, from `getKey` and
+/// `getKeyTableEntry` (protocol versions before 13).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct KeyStruct {
+    /// [`crate::ids::key_struct`] bits: which fields are valid.
+    pub bitmask: u16,
+    /// [`crate::ids::ember_key_type`].
+    pub key_type: u8,
+    /// The key.
+    pub key: Key,
+    /// Outgoing frame counter.
+    pub outgoing_frame_counter: u32,
+    /// Incoming frame counter.
+    pub incoming_frame_counter: u32,
+    /// Key sequence number (network keys).
+    pub sequence_number: u8,
+    /// The partner's IEEE address (link keys).
+    pub partner: Ieee,
+}
+
+impl KeyStruct {
+    /// Decode.
+    pub fn read(r: &mut Reader<'_>) -> Result<Self, Truncated> {
+        Ok(KeyStruct {
+            bitmask: r.u16()?,
+            key_type: r.u8()?,
+            key: r.key()?,
+            outgoing_frame_counter: r.u32()?,
+            incoming_frame_counter: r.u32()?,
+            sequence_number: r.u8()?,
+            partner: r.ieee()?,
+        })
+    }
+
+    /// Encode.
+    pub fn write(&self, w: &mut Vec<u8>) {
+        w.put_u16(self.bitmask);
+        w.put_u8(self.key_type);
+        w.put_key(&self.key);
+        w.put_u32(self.outgoing_frame_counter);
+        w.put_u32(self.incoming_frame_counter);
+        w.put_u8(self.sequence_number);
+        w.put_ieee(self.partner);
+    }
+}
+
 /// `EmberVersion`, from the `VERSION_INFO` value: the EmberZNet release.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct StackVersion {
@@ -560,5 +620,29 @@ mod tests {
             v
         );
         assert_eq!(v.to_string(), "7.4.4.0 build 380");
+        let k = KeyStruct {
+            bitmask: 0x0B,
+            key_type: crate::ids::ember_key_type::APPLICATION_LINK,
+            key: Key([9; 16]),
+            outgoing_frame_counter: 7,
+            incoming_frame_counter: 8,
+            sequence_number: 0,
+            partner: Ieee(0x00124B0000000001),
+        };
+        let mut w = Vec::new();
+        k.write(&mut w);
+        assert_eq!(w.len(), 36);
+        assert_eq!(KeyStruct::read(&mut Reader::new(&w)).unwrap(), k);
+    }
+
+    #[test]
+    fn supported_versions() {
+        let supported: Vec<u8> = (0..=25)
+            .filter(|v| ProtocolVersion(*v).is_supported())
+            .collect();
+        assert_eq!(supported, [8, 13, 14, 15, 16, 17, 18, 19]);
+        assert!(!ProtocolVersion(8).sec_man());
+        assert!(!ProtocolVersion(8).sl_status());
+        assert!(ProtocolVersion(13).sec_man());
     }
 }

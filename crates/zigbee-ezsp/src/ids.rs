@@ -41,7 +41,13 @@ pub mod frame {
     pub const SET_SOURCE_ROUTE_DISCOVERY_MODE: u16 = 0x005A;
     pub const LOOKUP_EUI64_BY_NODE_ID: u16 = 0x0061;
     pub const SET_INITIAL_SECURITY_STATE: u16 = 0x0068;
+    /// Before protocol 13 only.
+    pub const GET_KEY: u16 = 0x006A;
     pub const CLEAR_TRANSIENT_LINK_KEYS: u16 = 0x006B;
+    /// Before protocol 13 only.
+    pub const GET_KEY_TABLE_ENTRY: u16 = 0x0071;
+    /// Before protocol 13 only.
+    pub const SET_KEY_TABLE_ENTRY: u16 = 0x0072;
     pub const ERASE_KEY_TABLE_ENTRY: u16 = 0x0076;
     pub const ID_CONFLICT_HANDLER: u16 = 0x007C;
     pub const INCOMING_MANY_TO_ONE_ROUTE_REQUEST_HANDLER: u16 = 0x007D;
@@ -51,6 +57,8 @@ pub mod frame {
     pub const ZIGBEE_KEY_ESTABLISHMENT_HANDLER: u16 = 0x009B;
     pub const GET_VALUE: u16 = 0x00AA;
     pub const SET_VALUE: u16 = 0x00AB;
+    /// Before protocol 13 only.
+    pub const ADD_TRANSIENT_LINK_KEY: u16 = 0x00AF;
     pub const CLEAR_KEY_TABLE: u16 = 0x00B1;
     pub const INCOMING_NETWORK_STATUS_HANDLER: u16 = 0x00C4;
     pub const IMPORT_LINK_KEY: u16 = 0x010E;
@@ -247,6 +255,25 @@ pub mod key_type {
     pub const NETWORK: u8 = 1;
     pub const TC_LINK: u8 = 2;
     pub const APP_LINK: u8 = 4;
+}
+
+/// `EmberKeyType`, for `getKey` (protocol versions before 13).
+pub mod ember_key_type {
+    #![allow(missing_docs)]
+    pub const TRUST_CENTER_LINK: u8 = 1;
+    pub const CURRENT_NETWORK: u8 = 3;
+    pub const NEXT_NETWORK: u8 = 4;
+    pub const APPLICATION_LINK: u8 = 5;
+}
+
+/// `EmberKeyStructBitmask`: which fields of a [`crate::types::KeyStruct`]
+/// are valid.
+pub mod key_struct {
+    #![allow(missing_docs)]
+    pub const HAS_SEQUENCE_NUMBER: u16 = 0x0001;
+    pub const HAS_OUTGOING_FRAME_COUNTER: u16 = 0x0002;
+    pub const HAS_INCOMING_FRAME_COUNTER: u16 = 0x0004;
+    pub const HAS_PARTNER_EUI64: u16 = 0x0008;
 }
 
 /// `EmberNetworkInitBitmask`.

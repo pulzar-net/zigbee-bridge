@@ -23,7 +23,8 @@ ASHv2, the Asynchronous Serial Host protocol that carries EZSP over a UART
 ## zigbee-ezsp
 
 EZSP, the EmberZNet Serial Protocol (Silicon Labs UG100), for protocol
-versions 13 to 19 (EmberZNet 7.4 to 8.x).
+versions 13 to 19 (EmberZNet 7.4 to 8.x) and 8 (EmberZNet 6.7 to 6.10, the
+EM35x's last firmware).
 
 - `frame`: the legacy and extended frame headers.
 - `command`: typed commands and responses, in both directions, with the

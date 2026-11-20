@@ -6,6 +6,13 @@
 //! which the NCP derives from a random root key and the device's IEEE
 //! address. The root key is in every backup, so the derived keys survive a
 //! restore without a key table entry per device.
+//!
+//! EmberZNet 6.7 to 6.10 (protocol 8, the last firmware for the EM35x)
+//! predates the security manager: the same keys go through `getKey`, the
+//! key table commands and `addTransientLinkKey` instead. Those key table
+//! entries carry no frame counters, so a restore onto protocol 8 starts its
+//! link keys' counters at zero; with hashed link keys the table is usually
+//! empty anyway.
 
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::{Arc, Mutex};
@@ -15,9 +22,10 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::{mpsc, watch};
 use zigbee_ezsp::client::{ClientConfig, Ezsp, EzspEvent, NcpInfo};
 use zigbee_ezsp::ids::{
-    self, aps_option, config, decision, ext_security, policy, security, tc_decision, value,
+    self, aps_option, config, decision, ember_key_type, ext_security, policy, security,
+    tc_decision, value,
 };
-use zigbee_ezsp::types::{InitialSecurityState, NetworkParameters, SecManContext};
+use zigbee_ezsp::types::{InitialSecurityState, KeyStruct, NetworkParameters, SecManContext};
 use zigbee_ezsp::{ApsFrame, Callback, Command, Response, Status};
 use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId};
 
@@ -397,7 +405,17 @@ impl EzspAdapter {
         }
     }
 
+    /// The network key ([`ids::key_type::NETWORK`]) or the trust center
+    /// root key ([`ids::key_type::TC_LINK`]).
     async fn export_key(&self, key_type: u8) -> Result<Key, HostError> {
+        if !self.ezsp.version().sec_man() {
+            let legacy = if key_type == ids::key_type::NETWORK {
+                ember_key_type::CURRENT_NETWORK
+            } else {
+                ember_key_type::TRUST_CENTER_LINK
+            };
+            return Ok(self.get_key(legacy).await?.key);
+        }
         match self
             .ezsp
             .call(Command::ExportKey {
@@ -407,6 +425,102 @@ impl EzspAdapter {
         {
             Response::ExportKey { status, key, .. } if status.is_ok() => Ok(key),
             other => Err(HostError::Ncp(format!("exportKey({key_type}): {other:?}"))),
+        }
+    }
+
+    /// `getKey`, before protocol 13.
+    async fn get_key(&self, key_type: u8) -> Result<KeyStruct, HostError> {
+        match self.ezsp.call(Command::GetKey { key_type }).await? {
+            Response::GetKey { status, key } if status.is_ok() => Ok(key),
+            other => Err(HostError::Ncp(format!("getKey({key_type}): {other:?}"))),
+        }
+    }
+
+    /// The network key's sequence number and outgoing frame counter.
+    async fn network_key_counters(&self) -> Result<(u8, u32), HostError> {
+        if !self.ezsp.version().sec_man() {
+            let key = self.get_key(ember_key_type::CURRENT_NETWORK).await?;
+            return Ok((key.sequence_number, key.outgoing_frame_counter));
+        }
+        match self.ezsp.call(Command::GetNetworkKeyInfo).await? {
+            Response::GetNetworkKeyInfo { status, info } if status.is_ok() => {
+                Ok((info.network_key_sequence, info.network_key_frame_counter))
+            }
+            other => Err(HostError::Ncp(format!("getNetworkKeyInfo: {other:?}"))),
+        }
+    }
+
+    /// The device link key in key table entry `index`, if there is one.
+    async fn link_key_at(&self, index: u8) -> Option<(Ieee, LinkKey)> {
+        let (status, ieee, key, tx_counter, rx_counter) = if self.ezsp.version().sec_man() {
+            match self
+                .ezsp
+                .call(Command::ExportLinkKeyByIndex { index })
+                .await
+            {
+                Ok(Response::ExportLinkKeyByIndex {
+                    status,
+                    context,
+                    key,
+                    metadata,
+                }) => (
+                    status,
+                    context.ieee,
+                    key,
+                    metadata.outgoing_frame_counter,
+                    metadata.incoming_frame_counter,
+                ),
+                _ => return None,
+            }
+        } else {
+            match self.ezsp.call(Command::GetKeyTableEntry { index }).await {
+                Ok(Response::GetKeyTableEntry { status, key }) => (
+                    status,
+                    key.partner,
+                    key.key,
+                    key.outgoing_frame_counter,
+                    key.incoming_frame_counter,
+                ),
+                _ => return None,
+            }
+        };
+        (status.is_ok() && ieee != Ieee::ZERO && ieee != Ieee::UNSET).then_some((
+            ieee,
+            LinkKey {
+                key,
+                tx_counter,
+                rx_counter,
+            },
+        ))
+    }
+
+    /// Write a device link key into key table entry `index`.
+    async fn import_link_key(&self, index: u8, ieee: Ieee, key: Key) -> Result<(), HostError> {
+        if self.ezsp.version().sec_man() {
+            self.ok(Command::ImportLinkKey { index, ieee, key }).await
+        } else {
+            self.ok(Command::SetKeyTableEntry {
+                index,
+                ieee,
+                link_key: true,
+                key,
+            })
+            .await
+        }
+    }
+
+    /// A transient key for a joining device; [`Ieee::ZERO`] means any device.
+    async fn add_transient_key(&self, ieee: Ieee, key: Key) -> Result<(), HostError> {
+        if self.ezsp.version().sec_man() {
+            self.ok(Command::ImportTransientKey { ieee, key }).await
+        } else {
+            // EmberZNet 6.x spells "any device" as all ones.
+            let ieee = if ieee == Ieee::ZERO {
+                Ieee::UNSET
+            } else {
+                ieee
+            };
+            self.ok(Command::AddTransientLinkKey { ieee, key }).await
         }
     }
 
@@ -533,14 +647,7 @@ impl EzspAdapter {
         }
         for index in 0..key_table {
             let result = match keys.get(usize::from(index)) {
-                Some((ieee, link)) => {
-                    self.ok(Command::ImportLinkKey {
-                        index: index as u8,
-                        ieee: *ieee,
-                        key: link.key,
-                    })
-                    .await
-                }
+                Some((ieee, link)) => self.import_link_key(index as u8, *ieee, link.key).await,
                 None => {
                     self.ok(Command::EraseKeyTableEntry { index: index as u8 })
                         .await
@@ -713,11 +820,8 @@ impl Adapter for EzspAdapter {
         if seconds > 0 {
             if !join.install_code_only {
                 // The well-known key for any device, while open.
-                self.ok(Command::ImportTransientKey {
-                    ieee: Ieee::ZERO,
-                    key: Key::ZIGBEE_ALLIANCE_09,
-                })
-                .await?;
+                self.add_transient_key(Ieee::ZERO, Key::ZIGBEE_ALLIANCE_09)
+                    .await?;
             }
             let mut decision_bits = tc_decision::ALLOW_JOINS | tc_decision::ALLOW_UNSECURED_REJOINS;
             if join.install_code_only {
@@ -740,7 +844,7 @@ impl Adapter for EzspAdapter {
     }
 
     async fn add_join_key(&self, ieee: Ieee, key: Key) -> Result<(), HostError> {
-        self.ok(Command::ImportTransientKey { ieee, key }).await
+        self.add_transient_key(ieee, key).await
     }
 
     async fn send_unicast(
@@ -817,13 +921,7 @@ impl Adapter for EzspAdapter {
         let (_, p) = self.network_parameters().await?;
         let network_key = self.export_key(ids::key_type::NETWORK).await?;
         let tc_root = self.export_key(ids::key_type::TC_LINK).await?;
-        let (sequence_number, frame_counter) =
-            match self.ezsp.call(Command::GetNetworkKeyInfo).await? {
-                Response::GetNetworkKeyInfo { status, info } if status.is_ok() => {
-                    (info.network_key_sequence, info.network_key_frame_counter)
-                }
-                other => return Err(HostError::Ncp(format!("getNetworkKeyInfo: {other:?}"))),
-            };
+        let (sequence_number, frame_counter) = self.network_key_counters().await?;
         let key_table = self
             .ezsp
             .get_config(config::KEY_TABLE_SIZE)
@@ -831,28 +929,13 @@ impl Adapter for EzspAdapter {
             .unwrap_or(0);
         let mut devices = Vec::new();
         for index in 0..key_table.min(255) {
-            if let Ok(Response::ExportLinkKeyByIndex {
-                status,
-                context,
-                key,
-                metadata,
-            }) = self
-                .ezsp
-                .call(Command::ExportLinkKeyByIndex { index: index as u8 })
-                .await
-            {
-                if status.is_ok() && context.ieee != Ieee::ZERO && context.ieee != Ieee::UNSET {
-                    devices.push(BackupDevice {
-                        nwk_address: None,
-                        ieee_address: context.ieee,
-                        is_child: false,
-                        link_key: Some(LinkKey {
-                            key,
-                            tx_counter: metadata.outgoing_frame_counter,
-                            rx_counter: metadata.incoming_frame_counter,
-                        }),
-                    });
-                }
+            if let Some((ieee, link_key)) = self.link_key_at(index as u8).await {
+                devices.push(BackupDevice {
+                    nwk_address: None,
+                    ieee_address: ieee,
+                    is_child: false,
+                    link_key: Some(link_key),
+                });
             }
         }
         let firmware = self.info().firmware;

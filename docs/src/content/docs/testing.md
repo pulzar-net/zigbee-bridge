@@ -34,7 +34,7 @@ formation, joins, the trust center key exchange, interviews, reporting,
 commands, backups, restores and topology.
 
 - `crates/zigbee-host/tests/sim.rs` runs the host against every coordinator
-  family and protocol version the simulator plays (EZSP 13 and 16, Z-Stack
+  family and protocol version the simulator plays (EZSP 8, 13 and 16, Z-Stack
   3.x.0 and 3.0.x).
 - `crates/zigbee-bridge/tests/e2e.rs` runs the bridge end to end: simulator,
   bridge and an MQTT broker, checking topics, requests and Home Assistant

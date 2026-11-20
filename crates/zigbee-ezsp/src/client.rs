@@ -15,6 +15,7 @@ use crate::frame::{self, Format, HeaderError};
 use crate::ids;
 use crate::types::{
     ProtocolVersion, StackVersion, Status, MAX_PROTOCOL_VERSION, MIN_PROTOCOL_VERSION,
+    SEC_MAN_PROTOCOL_VERSION,
 };
 
 /// What the NCP said about itself during start-up.
@@ -84,7 +85,7 @@ pub enum EzspError {
     Unexpected(Box<Response>),
     /// The NCP's protocol version is outside what this crate speaks.
     #[error(
-        "EZSP protocol {protocol} (EmberZNet {}.{}.{}) is not supported: need {MIN_PROTOCOL_VERSION} to {MAX_PROTOCOL_VERSION} (EmberZNet 7.4 or newer)",
+        "EZSP protocol {protocol} (EmberZNet {}.{}.{}) is not supported: need {MIN_PROTOCOL_VERSION} (EmberZNet 6.7 to 6.10) or {SEC_MAN_PROTOCOL_VERSION} to {MAX_PROTOCOL_VERSION} (EmberZNet 7.4 or newer)",
         unpack_stack_version(*stack_version).0, unpack_stack_version(*stack_version).1, unpack_stack_version(*stack_version).2
     )]
     Unsupported {

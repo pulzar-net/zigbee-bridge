@@ -17,15 +17,16 @@ firmware decides whether it works, more than the hardware does.
 | Coordinator | Chip | Connection | Firmware | State |
 |---|---|---|---|---|
 | Home Assistant Connect ZBT-1 (SkyConnect) | EFR32MG21 | USB | EmberZNet 7.4 or newer, Zigbee NCP | expected |
-| Sonoff ZBDongle-E | EFR32MG21 | USB | EmberZNet 7.4 or newer (ships with 6.10: update it) | expected |
+| Sonoff ZBDongle-E | EFR32MG21 | USB | EmberZNet 6.10 as shipped, or 7.4 or newer | expected |
 | SMLIGHT SLZB-07 | EFR32MG21 | USB | EmberZNet 7.4 or newer | expected |
 | SMLIGHT SLZB-06M | EFR32MG21 | Ethernet, `tcp://` | EmberZNet 7.4 or newer | expected |
-| Other EFR32MG21, MG24 coordinators | EFR32MG2x | USB, UART, TCP | EmberZNet 7.4 to 8.x | expected |
+| Other EFR32MG21, MG24 coordinators | EFR32MG2x | USB, UART, TCP | EmberZNet 6.7 to 6.10, or 7.4 to 8.x | expected |
+| EM357, EM3581 (Control4 controllers and others) | EM35x | UART | EmberZNet 6.7 to 6.10 | working: an EM357 on 6.7.10 (Control4 CA-1) |
 | Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | USB, TCP | Z-Stack 3.x.0 | expected |
 | Other CC2652, CC1352 coordinators | CC26x2, CC13x2 | USB, UART, TCP | Z-Stack 3.x.0 | expected |
 | CC2531 | CC2531 | USB | Z-Stack 3.0.x | expected, not recommended |
 | ConBee II, ConBee III, RaspBee II | deCONZ | USB, GPIO UART | deCONZ firmware 0x26580700 or newer | expected |
-| EFR32 with EmberZNet 7.3 or older | EFR32 | | EZSP 12 or older | unsupported: refused, update the firmware |
+| EmberZNet 7.0 to 7.3, or 6.6 and older | EFR32, EM35x | | EZSP 9 to 12, or 7 and older | unsupported: refused, update the firmware |
 | CC2530, CC2531 with Z-Stack Home 1.2 | CC253x | | Z-Stack 1.2 | unsupported: refused, though `probe` identifies it |
 | XBee, ZiGate, Telink, NXP | | | | unsupported, not planned |
 
@@ -36,8 +37,16 @@ stick will not work.
 ### Silicon Labs EmberZNet
 
 The stack speaks EZSP protocol versions 13 to 19, which EmberZNet 7.4.0 to
-8.x firmware uses. Older firmware (EZSP 12 and older) is detected and refused
-with a message to update it; `zigbee-bridge probe` still identifies it.
+8.x firmware uses, and protocol 8, which EmberZNet 6.7.0 to 6.10.x uses. 6.7
+is the last firmware for the EM35x, so protocol 8 is how those chips run;
+on an EFR32, prefer 7.4 or newer. Other versions (EZSP 9 to 12, and 7 and
+older) are detected and refused with a message to update the firmware;
+`zigbee-bridge probe` still identifies them.
+
+On protocol 8 the keys go through `getKey` and the key table instead of the
+security manager. A restore onto protocol 8 brings back every key, but a
+device link key in the key table starts its frame counters at zero (with
+the hashed link keys the bridge uses, the table is usually empty).
 
 Firmware builds are named for their flow control: `ncp-uart-hw` builds use
 RTS/CTS (`flow_control = "hardware"`), `ncp-uart-sw` builds use XON/XOFF

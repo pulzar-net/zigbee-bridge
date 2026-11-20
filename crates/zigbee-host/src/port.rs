@@ -48,15 +48,32 @@ pub async fn open(name: &str, baud: u32, flow: FlowControl) -> std::io::Result<P
         FlowControl::Hardware => tokio_serial::FlowControl::Hardware,
         FlowControl::Software => tokio_serial::FlowControl::Software,
     };
-    let stream = tokio_serial::new(name, baud)
+    let builder = tokio_serial::new(name, baud)
         .data_bits(tokio_serial::DataBits::Eight)
         .parity(tokio_serial::Parity::None)
         .stop_bits(tokio_serial::StopBits::One)
-        .flow_control(flow)
-        .open_native_async()
-        .map_err(std::io::Error::from)?;
-    Ok(Port::Serial(stream))
+        .flow_control(flow);
+    // A port its last user just closed stays locked until the kernel has
+    // finished closing it (the tty's close delay, half a second by default),
+    // so reopening at once (the next family in a probe, a restart) finds it
+    // busy. `NoDevice` is that busy lock; a missing device is `NotFound`.
+    let deadline = tokio::time::Instant::now() + BUSY_WAIT;
+    loop {
+        match builder.clone().open_native_async() {
+            Ok(stream) => return Ok(Port::Serial(stream)),
+            Err(e)
+                if e.kind == tokio_serial::ErrorKind::NoDevice
+                    && tokio::time::Instant::now() < deadline =>
+            {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
 }
+
+/// How long [`open`] waits for a busy serial port to be released.
+const BUSY_WAIT: std::time::Duration = std::time::Duration::from_secs(3);
 
 impl AsyncRead for Port {
     fn poll_read(
