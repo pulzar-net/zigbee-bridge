@@ -116,7 +116,9 @@ jobs:
   crates:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # A first publish of several new crates waits out crates.io's rate limit
+    # on new crates.
+    timeout-minutes: 180
     permissions:
       contents: read
       id-token: write

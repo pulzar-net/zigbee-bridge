@@ -46,5 +46,16 @@ for crate in ${order}; do
   fi
   echo "publishing ${crate} ${version}"
   # cargo waits until the index serves it before the next crate needs it.
-  cargo publish --locked -p "${crate}"
+  # crates.io limits how many new crates an account publishes in a while and
+  # answers 429 with the time to try again; wait until then.
+  for attempt in $(seq 1 12); do
+    if cargo publish --locked -p "${crate}" 2>&1 | tee "${RUNNER_TEMP:-/tmp}/publish.log"; then
+      break
+    fi
+    when="$(grep -o 'try again after [A-Z][a-z][a-z], [0-9]* [A-Z][a-z]* [0-9]* [0-9:]* GMT' "${RUNNER_TEMP:-/tmp}/publish.log" | head -1 | sed 's/^try again after //')"
+    [ -n "${when}" ] && [ "${attempt}" -lt 12 ] || exit 1
+    wait=$(( $(date -d "${when}" +%s) - $(date +%s) + 15 ))
+    echo "crates.io asks to wait until ${when}; waiting ${wait}s"
+    [ "${wait}" -gt 0 ] && sleep "${wait}"
+  done
 done
