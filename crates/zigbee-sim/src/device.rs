@@ -423,6 +423,27 @@ impl SimDevice {
                     lqi: self.lqi,
                 }],
             },
+            // A router's routing table: the coordinator, one hop away.
+            Body::MgmtRtgReq { start_index } if self.router => Body::MgmtRtgRsp {
+                status: 0,
+                total: 1,
+                start_index,
+                routes: if start_index == 0 {
+                    vec![zigbee_zdo::Route {
+                        destination: 0x0000,
+                        flags: 0,
+                        next_hop: 0x0000,
+                    }]
+                } else {
+                    Vec::new()
+                },
+            },
+            Body::MgmtRtgReq { start_index } => Body::MgmtRtgRsp {
+                status: zigbee_zdo::status::NOT_SUPPORTED,
+                total: 0,
+                start_index,
+                routes: Vec::new(),
+            },
             Body::MgmtPermitJoiningReq { .. } => Body::MgmtPermitJoiningRsp { status: 0 },
             Body::IeeeAddrReq { .. } => Body::IeeeAddrRsp {
                 status: 0,
