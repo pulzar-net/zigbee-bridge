@@ -750,3 +750,74 @@ async fn upgrades_device_firmware_over_the_air() {
         ));
     }
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn restores_a_backup_onto_another_coordinator_family() {
+    let moves = [
+        (SimNcp::Ezsp { protocol: 13 }, SimNcp::Znp { product: 1 }),
+        (SimNcp::Znp { product: 1 }, SimNcp::Deconz),
+        (SimNcp::Deconz, SimNcp::Ezsp { protocol: 16 }),
+        (SimNcp::Znp { product: 2 }, SimNcp::Ezsp { protocol: 13 }),
+        (SimNcp::Ezsp { protocol: 16 }, SimNcp::Deconz),
+    ];
+    for (from, to) in moves {
+        let dir = tempfile::tempdir().unwrap();
+        let old = sim(from, vec![SimDevice::temperature_humidity_sensor(TH)]);
+        let settings = random_network(25).unwrap();
+        let (host, mut rx) = start(
+            &old,
+            from,
+            StartMode::Normal {
+                settings: settings.clone(),
+                replace_other: false,
+            },
+            config(dir.path()),
+        )
+        .await
+        .unwrap();
+        host.permit_join(30, None).await.unwrap();
+        wait_for(&mut rx, |e| {
+            matches!(e, HostEvent::InterviewDone { .. }).then_some(())
+        })
+        .await;
+        let backup = host.backup().await.unwrap();
+        host.shutdown().await.unwrap();
+        drop(host);
+        // Through the file format, as a person moving dongles would.
+        let backup = Backup::from_json(&backup.to_json()).unwrap();
+
+        let new = Simulator::new(SimConfig {
+            ncp: to,
+            ieee: Ieee(0x000D6FFFFE999999),
+            ..SimConfig::default()
+        });
+        let mode = || StartMode::Restore(Box::new(backup.clone()));
+        let started = match start(&new, to, mode(), config(dir.path())).await {
+            Err(HostError::RestartRequired) => start(&new, to, mode(), config(dir.path())).await,
+            other => other,
+        };
+        let (host, mut rx) = started.unwrap_or_else(|e| panic!("{from:?} to {to:?}: {e}"));
+        let outcome = wait_for(&mut rx, |e| match e {
+            HostEvent::Started { outcome, .. } => Some(*outcome),
+            _ => None,
+        })
+        .await;
+        assert_eq!(outcome, StartOutcome::Restored);
+        let snap = new.snapshot();
+        let network = snap.network.unwrap();
+        assert_eq!(snap.ieee, backup.coordinator_ieee, "{from:?} to {to:?}");
+        assert_eq!(network.network_key, settings.network_key);
+        assert_eq!(
+            (network.pan_id, network.extended_pan_id, network.channel),
+            (settings.pan_id, settings.extended_pan_id, 25)
+        );
+        assert!(
+            network.frame_counter
+                >= backup.network_key.frame_counter
+                    + zigbee_host::backup::RESTORE_FRAME_COUNTER_MARGIN,
+            "{from:?} to {to:?}"
+        );
+        // The device record survived in the store.
+        assert!(host.device(TH).is_some());
+    }
+}

@@ -283,4 +283,50 @@ mod tests {
         let bad = json.replace("\"channel\": 15", "\"channel\": 30");
         assert_eq!(Backup::from_json(&bad), Err(BackupError::Channel(30)));
     }
+
+    #[test]
+    fn reads_backups_from_other_hosts() {
+        // The shape other open-coordinator-backup producers write: a Z-Stack
+        // seed, unknown internal fields, devices with and without keys.
+        let text = r#"{
+          "metadata": {"format": "zigpy/open-coordinator-backup", "version": 1,
+                       "source": "another-host@1.2.3",
+                       "internal": {"date": "2026-01-02T03:04:05Z", "znpVersion": 1}},
+          "stack_specific": {"zstack": {"tclk_seed": "0102030405060708090a0b0c0d0e0f10"}},
+          "coordinator_ieee": "00124b0012345678",
+          "pan_id": "1a62",
+          "extended_pan_id": "dddddddddddddddd",
+          "nwk_update_id": 3,
+          "security_level": 5,
+          "channel": 15,
+          "channel_mask": [15],
+          "network_key": {"key": "01030507090b0d0f00020406080a0c0d",
+                          "sequence_number": 1, "frame_counter": 123456},
+          "devices": [
+            {"nwk_address": "ddb4", "ieee_address": "00158d0001020304", "is_child": true,
+             "link_key": {"key": "f1f2f3f4f5f6f7f8f9fafbfcfdfeff00", "rx_counter": 7, "tx_counter": 9}},
+            {"nwk_address": null, "ieee_address": "00158d0001020305", "is_child": false}
+          ]
+        }"#;
+        let b = Backup::from_json(text).unwrap();
+        assert_eq!(b.coordinator_ieee, Ieee(0x00124B0012345678));
+        assert_eq!((b.pan_id, b.channel, b.nwk_update_id), (0x1A62, 15, 3));
+        assert_eq!(b.network_key.frame_counter, 123_456);
+        let seed = b
+            .stack_specific
+            .as_ref()
+            .and_then(|s| s.zstack.as_ref())
+            .unwrap();
+        assert_eq!(seed.tclk_seed.0[0], 0x01);
+        assert_eq!(b.devices.len(), 2);
+        assert_eq!(b.devices[0].nwk_address, Some(0xDDB4));
+        assert_eq!(
+            b.devices[0].link_key.as_ref().map(|k| k.tx_counter),
+            Some(9)
+        );
+        assert_eq!(b.devices[1].nwk_address, None);
+        // And it writes back in the same shape.
+        let again = Backup::from_json(&b.to_json()).unwrap();
+        assert_eq!(again, b);
+    }
 }

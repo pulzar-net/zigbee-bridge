@@ -519,16 +519,18 @@ impl EzspAdapter {
                 tracing::warn!(index, error = %e, "restoring key table entry");
             }
         }
-        let tc_root = backup
-            .stack_specific
-            .as_ref()
-            .and_then(|s| s.ezsp.as_ref())
-            .map(|e| e.hashed_tclk)
-            .ok_or_else(|| {
-                HostError::RestoreRefused(
-                    "the backup has no EmberZNet trust center root key (hashed_tclk)".into(),
-                )
-            })?;
+        // A backup from another family has no root key: a new one, with the
+        // devices' own link keys (if the backup has them) in the key table.
+        let tc_root = match backup.stack_specific.as_ref().and_then(|s| s.ezsp.as_ref()) {
+            Some(e) => e.hashed_tclk,
+            None => {
+                tracing::info!(
+                    keys = keys.len(),
+                    "restoring a backup from another coordinator family"
+                );
+                random_key()?
+            }
+        };
         let settings = NetworkSettings {
             channel: backup.channel,
             pan_id: backup.pan_id,

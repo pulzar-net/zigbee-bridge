@@ -48,6 +48,11 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   device responds), `ota_available`, `ota_progress` and `ota_finished`
   events, and `[ota] dir` (default `<data.dir>/ota`).
 - `zigbee-sim`: an OTA client on the simulated plug (`SimFirmware`).
+- `zigbee-host`: a backup restores onto a coordinator of any family: the
+  IEEE address, PAN ids, channel, network key and frame counter (advanced)
+  always; Z-Stack's link key seed or EmberZNet's root key when restoring
+  onto the same family, and the backup's per-device link keys otherwise.
+  Backups written by other open-coordinator-backup hosts read as well.
 
 ### Changed
 
