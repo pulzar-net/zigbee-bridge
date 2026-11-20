@@ -145,6 +145,7 @@ pub async fn run(
             install_code_only: config.join.install_code_only,
             allow_legacy: config.join.allow_legacy,
         },
+        ota_dir: Some(config.ota.dir.clone().unwrap_or_else(|| dir.join("ota"))),
         ..HostConfig::default()
     };
     let (host, host_events) = match Host::start(adapter, adapter_events, mode, host_config).await {

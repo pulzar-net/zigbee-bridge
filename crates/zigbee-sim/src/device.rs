@@ -46,7 +46,33 @@ pub struct SimDevice {
     pub rssi: i8,
     /// Join when the network opens (a powered-on device in pairing mode).
     pub pairing: bool,
+    /// Its firmware, for devices that take OTA upgrades (an OTA Upgrade
+    /// client cluster).
+    pub firmware: Option<SimFirmware>,
 }
+
+/// A simulated device's firmware.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SimFirmware {
+    /// OTA image type.
+    pub image_type: u16,
+    /// Running file version.
+    pub file_version: u32,
+    /// The last image installed over the air, byte for byte.
+    pub image: Vec<u8>,
+}
+
+/// An OTA download in progress.
+#[derive(Debug, Clone, Default)]
+pub struct OtaDownload {
+    manufacturer: u16,
+    image_type: u16,
+    file_version: u32,
+    size: u32,
+    data: Vec<u8>,
+}
+
+const OTA_BLOCK: u8 = 48;
 
 fn basic(manufacturer: &str, model: &str, power_source: u8) -> BTreeMap<u16, Value> {
     BTreeMap::from([
@@ -126,6 +152,7 @@ impl SimDevice {
             lqi: 180,
             rssi: -58,
             pairing: true,
+            firmware: None,
         }
     }
 
@@ -184,6 +211,11 @@ impl SimDevice {
             lqi: 230,
             rssi: -40,
             pairing: true,
+            firmware: Some(SimFirmware {
+                image_type: 0x0001,
+                file_version: 0x0100_0000,
+                image: Vec::new(),
+            }),
         }
     }
 
@@ -229,6 +261,7 @@ impl SimDevice {
             lqi: 150,
             rssi: -70,
             pairing: true,
+            firmware: None,
         }
     }
 
@@ -279,6 +312,8 @@ pub struct DeviceState {
     pub seq: u8,
     /// Enrolled in an IAS zone.
     pub ias_enrolled: bool,
+    /// An OTA download in progress.
+    pub ota: Option<OtaDownload>,
 }
 
 /// A frame a device sends to the coordinator.
@@ -418,6 +453,87 @@ impl SimDevice {
         reaction
     }
 
+    /// The OTA client: answer the server's command with the next request,
+    /// as (command, payload).
+    fn handle_ota(
+        &mut self,
+        state: &mut DeviceState,
+        command: u8,
+        payload: &[u8],
+    ) -> Option<(u8, Vec<u8>)> {
+        let manufacturer = self.manufacturer_code;
+        let firmware = self.firmware.as_mut()?;
+        let mut r = zigbee_types::wire::Reader::new(payload);
+        let block_request = |d: &OtaDownload| {
+            let mut p = vec![0u8];
+            p.extend_from_slice(&d.manufacturer.to_le_bytes());
+            p.extend_from_slice(&d.image_type.to_le_bytes());
+            p.extend_from_slice(&d.file_version.to_le_bytes());
+            p.extend_from_slice(&(d.data.len() as u32).to_le_bytes());
+            p.push(OTA_BLOCK);
+            (0x03, p)
+        };
+        match command {
+            // Image notify: ask what there is.
+            0x00 => {
+                let mut p = vec![0u8];
+                p.extend_from_slice(&manufacturer.to_le_bytes());
+                p.extend_from_slice(&firmware.image_type.to_le_bytes());
+                p.extend_from_slice(&firmware.file_version.to_le_bytes());
+                Some((0x01, p))
+            }
+            // Query next image response.
+            0x02 => {
+                if r.u8().ok()? != 0 {
+                    return None;
+                }
+                let d = OtaDownload {
+                    manufacturer: r.u16().ok()?,
+                    image_type: r.u16().ok()?,
+                    file_version: r.u32().ok()?,
+                    size: r.u32().ok()?,
+                    data: Vec::new(),
+                };
+                let next = block_request(&d);
+                state.ota = Some(d);
+                Some(next)
+            }
+            // Image block response.
+            0x05 => {
+                if r.u8().ok()? != 0 {
+                    state.ota = None;
+                    return None;
+                }
+                let d = state.ota.as_mut()?;
+                let _ = (r.u16().ok()?, r.u16().ok()?, r.u32().ok()?);
+                let offset = r.u32().ok()?;
+                let n = usize::from(r.u8().ok()?);
+                let data = r.bytes(n).ok()?;
+                if offset as usize != d.data.len() || n == 0 {
+                    return Some(block_request(d));
+                }
+                d.data.extend_from_slice(data);
+                if d.data.len() as u32 >= d.size {
+                    let mut p = vec![0u8];
+                    p.extend_from_slice(&d.manufacturer.to_le_bytes());
+                    p.extend_from_slice(&d.image_type.to_le_bytes());
+                    p.extend_from_slice(&d.file_version.to_le_bytes());
+                    Some((0x06, p))
+                } else {
+                    Some(block_request(d))
+                }
+            }
+            // Upgrade end response: install.
+            0x07 => {
+                let d = state.ota.take()?;
+                firmware.file_version = d.file_version;
+                firmware.image = d.data;
+                None
+            }
+            _ => None,
+        }
+    }
+
     fn endpoint_mut(&mut self, endpoint: u8) -> Option<&mut SimEndpoint> {
         self.endpoints.iter_mut().find(|e| e.endpoint == endpoint)
     }
@@ -458,6 +574,18 @@ impl SimDevice {
             f.header.disable_default_response = true;
             f
         };
+        if cluster == cluster_id::OTA_UPGRADE
+            && h.frame_type == FrameType::Cluster
+            && h.direction == Direction::ServerToClient
+        {
+            if let Some(payload) = self.handle_ota(state, h.command, &frame.payload) {
+                state.seq = state.seq.wrapping_add(1);
+                let request =
+                    Frame::cluster(Direction::ClientToServer, state.seq, payload.0, payload.1);
+                reaction.replies.push(reply_to(request));
+            }
+            return reaction;
+        }
         let Some(ep) = self.endpoint_mut(endpoint) else {
             return reaction;
         };

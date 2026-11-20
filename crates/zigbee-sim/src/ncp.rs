@@ -87,6 +87,8 @@ pub struct SimSnapshot {
     pub key_table: Vec<(Ieee, Key)>,
     /// IAS-enrolled devices.
     pub ias_enrolled: Vec<Ieee>,
+    /// Firmware of the devices that take OTA upgrades.
+    pub firmware: Vec<(Ieee, crate::device::SimFirmware)>,
 }
 
 pub(crate) enum Front {
@@ -212,6 +214,12 @@ impl Simulator {
                 .iter()
                 .filter(|(_, j)| j.state.ias_enrolled)
                 .map(|(i, _)| *i)
+                .collect(),
+            firmware: s
+                .mesh
+                .devices
+                .iter()
+                .filter_map(|(i, d)| d.firmware.clone().map(|f| (*i, f)))
                 .collect(),
         }
     }

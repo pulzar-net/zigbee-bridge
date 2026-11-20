@@ -22,6 +22,9 @@ use crate::install_code;
 use crate::store::{self, Dirty};
 use crate::topology::{Link, Topology};
 
+mod ota_server;
+pub use ota_server::OtaOffer;
+
 /// The host's endpoint, which devices bind to.
 pub const HOST_ENDPOINT: u8 = 1;
 
@@ -47,6 +50,10 @@ pub struct HostConfig {
     pub legacy_grace: Duration,
     /// Requests in flight at once, so the NCP's buffers are never exhausted.
     pub max_in_flight: usize,
+    /// A directory of OTA upgrade images; `None` serves none.
+    pub ota_dir: Option<PathBuf>,
+    /// How long to wait for a device's OTA query after notifying it.
+    pub ota_query_timeout: Duration,
 }
 
 impl Default for HostConfig {
@@ -61,6 +68,8 @@ impl Default for HostConfig {
             backup_interval: Duration::from_secs(3600),
             legacy_grace: Duration::from_secs(30),
             max_in_flight: 8,
+            ota_dir: None,
+            ota_query_timeout: Duration::from_secs(60),
         }
     }
 }
@@ -99,6 +108,36 @@ pub enum HostEvent {
         ieee: Ieee,
         /// Its network address.
         nwk: NodeId,
+    },
+    /// A device asked for an OTA image (on its own, or after
+    /// [`Host::ota_check`] or [`Host::ota_update`]).
+    OtaQuery {
+        /// The device.
+        ieee: Ieee,
+        /// The file version it runs.
+        current_version: u32,
+        /// The newest newer version in the image directory.
+        available: Option<u32>,
+    },
+    /// An OTA download advanced (every 10%).
+    OtaProgress {
+        /// The device.
+        ieee: Ieee,
+        /// Percent downloaded.
+        percent: u8,
+    },
+    /// An OTA upgrade ended.
+    OtaFinished {
+        /// The device.
+        ieee: Ieee,
+        /// The version it ran.
+        from: u32,
+        /// The version it downloaded.
+        to: u32,
+        /// The device applied it.
+        success: bool,
+        /// The device's upgrade end status.
+        status: u8,
     },
     /// The network moved to another channel.
     ChannelChanged {
@@ -293,6 +332,7 @@ struct State {
     last_interview: HashMap<Ieee, Instant>,
     last_scan: HashMap<Ieee, Instant>,
     removing: HashSet<Ieee>,
+    ota: HashMap<Ieee, ota_server::OtaSession>,
     backup_wanted: bool,
     last_backup: Option<Instant>,
 }
@@ -1749,6 +1789,14 @@ impl<A: Adapter> Host<A> {
                 Ok(_) => {}
                 Err(e) => tracing::debug!(%ieee, error = %e, "malformed global command"),
             },
+            FrameType::Cluster
+                if aps.cluster == crate::ota::CLUSTER
+                    && h.direction == Direction::ClientToServer
+                    && h.manufacturer.is_none() =>
+            {
+                self.on_ota(ieee, source, aps, h.seq, h.command, &frame.payload);
+                return;
+            }
             FrameType::Cluster => {
                 let from_server = h.direction == Direction::ServerToClient;
                 let def = if h.manufacturer.is_none() {

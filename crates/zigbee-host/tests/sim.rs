@@ -665,3 +665,88 @@ async fn moves_the_network_to_another_channel() {
             .unwrap();
     }
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn upgrades_device_firmware_over_the_air() {
+    for ncp in NCPS {
+        let dir = tempfile::tempdir().unwrap();
+        let images = dir.path().join("ota");
+        std::fs::create_dir(&images).unwrap();
+        let body: Vec<u8> = (0..1500u32).map(|i| (i * 7 % 251) as u8).collect();
+        let image = zigbee_host::ota::build(0x1234, 0x0001, 0x0200_0000, &body);
+        // A vendor prefix before the header, as some vendors ship.
+        let mut file = b"VENDOR".to_vec();
+        file.extend_from_slice(&image);
+        std::fs::write(images.join("plug.ota"), &file).unwrap();
+        std::fs::write(images.join("notes.txt"), b"not an image").unwrap();
+
+        let sim = sim(ncp, vec![SimDevice::plug(PLUG)]);
+        let mut cfg = config(dir.path());
+        cfg.ota_dir = Some(images);
+        let (host, mut rx) = start(
+            &sim,
+            ncp,
+            StartMode::Normal {
+                settings: random_network(15).unwrap(),
+                replace_other: false,
+            },
+            cfg,
+        )
+        .await
+        .unwrap();
+        host.permit_join(30, None).await.unwrap();
+        wait_for(&mut rx, |e| {
+            matches!(e, HostEvent::InterviewDone { .. }).then_some(())
+        })
+        .await;
+
+        // A check offers nothing to the device, it only reports.
+        let offer = host.ota_check(PLUG).await.unwrap();
+        assert_eq!(offer.current_version, 0x0100_0000);
+        assert_eq!(offer.available, Some(0x0200_0000));
+        assert_eq!(offer.size, Some(image.len() as u32));
+        assert_eq!(sim.snapshot().firmware[0].1.file_version, 0x0100_0000);
+
+        host.ota_update(PLUG).await.unwrap();
+        let mut progress = Vec::new();
+        let finished = wait_for(&mut rx, |e| match e {
+            HostEvent::OtaProgress { percent, .. } => {
+                progress.push(*percent);
+                None
+            }
+            HostEvent::OtaFinished {
+                ieee,
+                from,
+                to,
+                success,
+                ..
+            } => Some((*ieee, *from, *to, *success)),
+            _ => None,
+        })
+        .await;
+        assert_eq!(finished, (PLUG, 0x0100_0000, 0x0200_0000, true));
+        assert!(progress.contains(&100), "{progress:?}");
+        // The device installs once the end response reaches it.
+        let mut firmware = sim.snapshot().firmware[0].1.clone();
+        for _ in 0..50 {
+            if firmware.file_version == 0x0200_0000 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            firmware = sim.snapshot().firmware[0].1.clone();
+        }
+        assert_eq!(firmware.file_version, 0x0200_0000);
+        assert_eq!(
+            firmware.image, image,
+            "the device received the image byte for byte"
+        );
+
+        // Nothing newer now.
+        let offer = host.ota_check(PLUG).await.unwrap();
+        assert_eq!(offer.available, None);
+        assert!(matches!(
+            host.ota_update(PLUG).await,
+            Err(HostError::Invalid(_))
+        ));
+    }
+}

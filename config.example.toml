@@ -42,3 +42,8 @@ allow_legacy = true
 
 [data]
 dir = "/var/lib/zigbee-bridge"
+
+[ota]
+# A directory of device firmware images (OTA files); <data.dir>/ota when
+# unset. An image goes to a device only after an ota_update request for it.
+# dir = "/var/lib/zigbee-bridge/ota"

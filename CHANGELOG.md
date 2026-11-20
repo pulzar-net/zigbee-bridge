@@ -38,6 +38,16 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `zigbee-bridge`: the `change_channel` request (`{"channel": 20}`), the
   `channel_changed` event, `network.update_id` in `bridge/info`; the new
   channel is saved to `network.json`.
+- `zigbee-host`: an OTA Upgrade server: `ota` reads OTA files (vendor
+  prefixes included) from a directory and serves blocks from disk;
+  `Host::ota_check` and `Host::ota_update` notify a device and answer its
+  query, image block and page requests and upgrade end;
+  `HostEvent::OtaQuery`, `OtaProgress`, `OtaFinished`. Nothing is offered
+  without `ota_update`.
+- `zigbee-bridge`: `ota_check` and `ota_update` requests (answered when the
+  device responds), `ota_available`, `ota_progress` and `ota_finished`
+  events, and `[ota] dir` (default `<data.dir>/ota`).
+- `zigbee-sim`: an OTA client on the simulated plug (`SimFirmware`).
 
 ### Changed
 

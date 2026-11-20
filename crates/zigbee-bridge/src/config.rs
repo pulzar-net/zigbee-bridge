@@ -25,6 +25,18 @@ pub struct Config {
     /// Where state lives.
     #[serde(default)]
     pub data: DataConfig,
+    /// Device firmware upgrades.
+    #[serde(default)]
+    pub ota: OtaConfig,
+}
+
+/// Device firmware upgrades.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OtaConfig {
+    /// A directory of OTA image files; `<data.dir>/ota` when unset. Images
+    /// are offered only when an `ota_update` request asks for one.
+    pub dir: Option<PathBuf>,
 }
 
 /// The coordinator's port.

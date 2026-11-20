@@ -308,6 +308,43 @@ async fn end_to_end(sim_ncp: SimNcp, kind: &str, firmware: &str) {
         .await;
     assert_eq!(porch["temperature"], json!(21.5));
 
+    // A firmware upgrade from the data directory's ota folder, on request.
+    let ota_dir = data.path().join("ota");
+    std::fs::create_dir_all(&ota_dir).unwrap();
+    let image = zigbee_host::ota::build(0x1234, 0x0001, 0x0200_0000, &[0x5A; 700]);
+    std::fs::write(ota_dir.join("plug.ota"), &image).unwrap();
+    let check = mqtt
+        .request(
+            "ota_check",
+            json!({"device": plug_name, "transaction": "o1"}),
+        )
+        .await;
+    assert_eq!(check["data"]["latest_version"], 0x0200_0000, "{check}");
+    let update = mqtt
+        .request(
+            "ota_update",
+            json!({"device": plug_name, "transaction": "o2"}),
+        )
+        .await;
+    assert_eq!(update["status"], "ok", "{update}");
+    let finished = mqtt
+        .wait("zigbee/bridge/event", |v| v["type"] == "ota_finished")
+        .await;
+    assert_eq!(finished["data"]["success"], true, "{finished}");
+    assert_eq!(finished["data"]["to_version"], 0x0200_0000);
+
+    // Another channel, on request.
+    let moved = mqtt
+        .request(
+            "change_channel",
+            json!({"channel": 21, "transaction": "c1"}),
+        )
+        .await;
+    assert_eq!(moved["data"]["channel"], 21, "{moved}");
+    mqtt.wait("zigbee/bridge/info", |v| v["network"]["channel"] == 21)
+        .await;
+    assert_eq!(sim.snapshot().network.unwrap().channel, 21);
+
     // Backups go to disk, and keys never go to MQTT.
     let backup = mqtt.request("backup", json!({"transaction": 3})).await;
     assert_eq!(backup["status"], "ok", "{backup}");

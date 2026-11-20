@@ -8,7 +8,7 @@
 //! | `bridge/info` | yes | version, coordinator, network, join state |
 //! | `bridge/devices` | yes | every device and its interview |
 //! | `bridge/event` | no | joins, announces, leaves, removals, interviews |
-//! | `bridge/request/<name>` | no | requests: `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan` |
+//! | `bridge/request/<name>` | no | requests: `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan`, `change_channel`, `ota_check`, `ota_update` |
 //! | `bridge/response/<name>` | no | `{"status":"ok","data":...}` or `{"status":"error","error":...}`, echoing `transaction` |
 //! | `<device>` | configurable | the device's state: standard readings and `linkquality` |
 //! | `<device>/set` | no | `{"state":"ON"}`, `{"brightness":128}`, `{"color_temp":300}` |
@@ -85,6 +85,13 @@ impl Bridge {
             .name
             .clone()
             .unwrap_or_else(|| device.ieee.to_prefixed_hex())
+    }
+
+    fn name_of(&self, ieee: Ieee) -> String {
+        self.host
+            .device(ieee)
+            .map(|d| Self::friendly(&d))
+            .unwrap_or_else(|| ieee.to_prefixed_hex())
     }
 
     fn resolve(&self, name: &str) -> Option<Device> {
@@ -257,6 +264,30 @@ impl Bridge {
                     json!({"ieee_address": ieee.to_prefixed_hex(), "network_address": nwk}),
                 )
                 .await;
+            }
+            HostEvent::OtaQuery {
+                ieee,
+                current_version,
+                available,
+            } => {
+                if available.is_some() {
+                    let name = self.name_of(ieee);
+                    self.event("ota_available", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "installed_version": current_version, "latest_version": available})).await;
+                }
+            }
+            HostEvent::OtaProgress { ieee, percent } => {
+                let name = self.name_of(ieee);
+                self.event("ota_progress", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "progress": percent})).await;
+            }
+            HostEvent::OtaFinished {
+                ieee,
+                from,
+                to,
+                success,
+                status,
+            } => {
+                let name = self.name_of(ieee);
+                self.event("ota_finished", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "from_version": from, "to_version": to, "success": success, "status": status})).await;
             }
             HostEvent::ChannelChanged { network } => {
                 // A re-formation after a coordinator reset uses the new
@@ -464,6 +495,10 @@ impl Bridge {
         if let Some(name) = rest.strip_prefix("bridge/request/") {
             let transaction = body.get("transaction").cloned();
             let mut response = self.request(name, &body).await;
+            if response.is_null() {
+                // Answered by a task of its own (a long OTA request).
+                return;
+            }
             if let (Some(t), Some(o)) = (transaction, response.as_object_mut()) {
                 o.insert("transaction".into(), t);
             }
@@ -618,6 +653,41 @@ impl Bridge {
                     Ok(neighbors) => ok(json!({"neighbors": neighbors})),
                     Err(e) => error(e),
                 }
+            }
+            "ota_check" | "ota_update" => {
+                let Some(d) = device("device").and_then(|n| self.resolve(&n)) else {
+                    return error("unknown device");
+                };
+                // A sleepy device answers when it next wakes: answer from a
+                // task so the bridge keeps working meanwhile.
+                let host = self.host.clone();
+                let mqtt = self.mqtt.clone();
+                let topic = format!("{}/bridge/response/{name}", self.base());
+                let transaction = body.get("transaction").cloned();
+                let update = name == "ota_update";
+                let friendly = Self::friendly(&d);
+                tokio::spawn(async move {
+                    let result = if update {
+                        host.ota_update(d.ieee).await
+                    } else {
+                        host.ota_check(d.ieee).await
+                    };
+                    let mut response = match result {
+                        Ok(o) => ok(json!({
+                            "device": friendly,
+                            "installed_version": o.current_version,
+                            "latest_version": o.available,
+                            "size": o.size,
+                            "updating": update,
+                        })),
+                        Err(e) => error(e),
+                    };
+                    if let (Some(t), Some(o)) = (transaction, response.as_object_mut()) {
+                        o.insert("transaction".into(), t);
+                    }
+                    mqtt.publish_json(topic, &response, false).await;
+                });
+                Json::Null
             }
             "change_channel" => {
                 let Some(channel) = body.get("channel").and_then(Json::as_u64) else {

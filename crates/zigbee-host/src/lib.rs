@@ -51,6 +51,8 @@ mod host;
 pub mod install_code;
 #[cfg(feature = "host")]
 pub mod interview;
+#[cfg(feature = "host")]
+pub mod ota;
 #[cfg(feature = "serial")]
 pub mod port;
 pub mod probe;
@@ -79,7 +81,7 @@ pub use error::HostError;
 #[cfg(feature = "host")]
 pub use ezsp_adapter::{random_network, EzspAdapter};
 #[cfg(feature = "host")]
-pub use host::{FrameLink, Host, HostConfig, HostEvent, RawZcl, HOST_ENDPOINT};
+pub use host::{FrameLink, Host, HostConfig, HostEvent, OtaOffer, RawZcl, HOST_ENDPOINT};
 pub use probe::{NcpIdentity, NcpKind, ProbeError};
 #[cfg(feature = "host")]
 pub use znp_adapter::ZnpAdapter;
