@@ -18,10 +18,10 @@ firmware decides whether it works, more than the hardware does.
 | SMLIGHT SLZB-07 | EFR32MG21 | USB | EmberZNet 7.4 or newer | expected |
 | SMLIGHT SLZB-06M | EFR32MG21 | Ethernet, `tcp://` | EmberZNet 7.4 or newer | expected |
 | Other EFR32MG21, MG24 coordinators | EFR32MG2x | USB, UART, TCP | EmberZNet 7.4 to 8.x | expected |
-| Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | USB, TCP | Z-Stack 3.x.0 | next release (on `main`) |
-| Other CC2652, CC1352 coordinators | CC26x2, CC13x2 | USB, UART, TCP | Z-Stack 3.x.0 | next release (on `main`) |
-| CC2531 | CC2531 | USB | Z-Stack 3.0.x | next release (on `main`), not recommended |
-| ConBee II, ConBee III, RaspBee II | deCONZ | USB, GPIO UART | deCONZ firmware 0x26580700 or newer | next release (on `main`) |
+| Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | USB, TCP | Z-Stack 3.x.0 | expected |
+| Other CC2652, CC1352 coordinators | CC26x2, CC13x2 | USB, UART, TCP | Z-Stack 3.x.0 | expected |
+| CC2531 | CC2531 | USB | Z-Stack 3.0.x | expected, not recommended |
+| ConBee II, ConBee III, RaspBee II | deCONZ | USB, GPIO UART | deCONZ firmware 0x26580700 or newer | expected |
 | EFR32 with EmberZNet 7.3 or older | EFR32 | | EZSP 12 or older | unsupported: refused, update the firmware |
 | CC2530, CC2531 with Z-Stack Home 1.2 | CC253x | | Z-Stack 1.2 | unsupported: refused, though `probe` identifies it |
 | XBee, ZiGate, Telink, NXP | | | | unsupported, not planned |
@@ -43,7 +43,7 @@ RTS/CTS (`flow_control = "hardware"`), `ncp-uart-sw` builds use XON/XOFF
 
 ### dresden elektronik deCONZ
 
-On `main`, not in 0.1.0. ConBee II, ConBee III and RaspBee II with
+Since 0.2.0. ConBee II, ConBee III and RaspBee II with
 dresden elektronik's deCONZ firmware 0x26580700 or newer, over its serial
 protocol.
 
@@ -54,7 +54,7 @@ with a ConBee or RaspBee, `join.install_code_only` is refused, and
 
 ### Texas Instruments Z-Stack
 
-On `main`, not in 0.1.0. Z-Stack 3.x.0 (CC2652, CC1352, CC26x2) and Z-Stack
+Since 0.2.0. Z-Stack 3.x.0 (CC2652, CC1352, CC26x2) and Z-Stack
 3.0.x (CC2530, CC2531) coordinator firmware, over ZNP. A CC2531 works but is
 slow and has very little memory; it is fine for a test, not for a house.
 
@@ -66,7 +66,7 @@ identifies it.
 
 ### Choosing the family
 
-`serial.adapter` (not in 0.1.0) is `auto` by default: the bridge probes the
+`serial.adapter` (since 0.2.0) is `auto` by default: the bridge probes the
 port for EZSP, then ZNP, then deCONZ. Set `ezsp`, `znp` or `deconz` to skip
 the probe. `zigbee-bridge probe PORT` runs the same probe and prints the
 `kind` and `product` it found.

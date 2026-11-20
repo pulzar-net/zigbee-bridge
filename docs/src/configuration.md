@@ -25,13 +25,13 @@ complete and check the file. Point it at the schema with a first line of:
 
 | Table | What it sets |
 |---|---|
-| `[serial]` | the coordinator's port: a serial device or `tcp://host:port`, baud rate, flow control, and (not in 0.1.0) the coordinator family: `auto`, `ezsp`, `znp` or `deconz` |
+| `[serial]` | the coordinator's port: a serial device or `tcp://host:port`, baud rate, flow control, and (since 0.2.0) the coordinator family: `auto`, `ezsp`, `znp` or `deconz` |
 | `[mqtt]` | broker host and port, user name, a password file, client id, base topic, keep-alive, whether device state is retained |
 | `[homeassistant]` | discovery on or off, the discovery prefix, Home Assistant's status topic |
 | `[network]` | channel and transmit power of a new network, and whether a different network on the coordinator may be replaced |
 | `[join]` | whether only devices with an install code may join, and whether pre-Zigbee 3.0 devices may stay |
 | `[data]` | the data directory |
-| `[ota]` | where device firmware images are kept (not in 0.1.0) |
+| `[ota]` | where device firmware images are kept (since 0.2.0) |
 
 ## A complete example
 

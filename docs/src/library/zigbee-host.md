@@ -67,5 +67,5 @@ the hook for a device library with manufacturer-specific behavior.
 | `probe` | no | only the probe; with `default-features = false`, a small build for detection tools |
 
 ```toml
-zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0", default-features = false, features = ["probe", "serial"] }
+zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0", default-features = false, features = ["probe", "serial"] }
 ```

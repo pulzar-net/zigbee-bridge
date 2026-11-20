@@ -38,7 +38,7 @@ stop. Home Assistant uses this topic for availability.
 
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "coordinator": {
     "ieee_address": "0x000d6ffffe000001",
     "type": "ezsp",
@@ -113,10 +113,10 @@ Published on connect, after every interview, leave and removal, and on the
 | `device_interview` | `ieee_address`, `status`: `started`, `successful` (with `manufacturer`, `model` and `definition`, the device as in `bridge/devices`), or `failed` (with `stage` and `error`) |
 | `device_leave` | `ieee_address` |
 | `device_removed` | `ieee_address`, `reason` |
-| `channel_changed` | `channel`, `update_id` (not in 0.1.0) |
-| `ota_available` | `device`, `ieee_address`, `installed_version`, `latest_version`: a device asked for an update and a newer image is in the OTA directory (not in 0.1.0) |
-| `ota_progress` | `device`, `ieee_address`, `progress` (percent) (not in 0.1.0) |
-| `ota_finished` | `device`, `ieee_address`, `from_version`, `to_version`, `success`, `status` (not in 0.1.0) |
+| `channel_changed` | `channel`, `update_id` (since 0.2.0) |
+| `ota_available` | `device`, `ieee_address`, `installed_version`, `latest_version`: a device asked for an update and a newer image is in the OTA directory (since 0.2.0) |
+| `ota_progress` | `device`, `ieee_address`, `progress` (percent) (since 0.2.0) |
+| `ota_finished` | `device`, `ieee_address`, `from_version`, `to_version`, `success`, `status` (since 0.2.0) |
 
 ## Requests and responses
 
@@ -247,7 +247,7 @@ receiver and relationship byte of the ZDO neighbor table entry. The results also
 
 ### `change_channel`
 
-Not in 0.1.0. Move the whole network to another channel, without pairing
+Since 0.2.0. Move the whole network to another channel, without pairing
 again: the coordinator broadcasts a network update with the next update id,
 then moves itself.
 
@@ -262,7 +262,7 @@ while; some need a power cycle.
 
 ### `ota_check` and `ota_update`
 
-Not in 0.1.0. Device firmware updates from image files you provide. Put Zigbee
+Since 0.2.0. Device firmware updates from image files you provide. Put Zigbee
 OTA image files in the OTA directory, `<data.dir>/ota` unless `ota.dir` says
 otherwise. Any file name works: the bridge reads every file's OTA header,
 including files where a vendor put its own header (up to 4 KB) in front.

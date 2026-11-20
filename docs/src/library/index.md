@@ -25,7 +25,7 @@ The crates are not published on crates.io yet. Depend on a release tag:
 
 ```toml
 [dependencies]
-zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0" }
+zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
 ```
 
 Every crate shares the workspace version and is released together. While

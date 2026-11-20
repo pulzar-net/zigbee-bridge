@@ -8,7 +8,7 @@ hosts without hardware. [API docs](https://pulzar-net.github.io/zigbee-bridge/ap
 - Silicon Labs EmberZNet: ASH and EZSP, protocol 13 (as EmberZNet 7.4 does)
   or 14 and later;
 - Texas Instruments Z-Stack 3 over ZNP, and dresden elektronik deCONZ
-  (both on `main`).
+  (both since 0.2.0).
 
 It keeps a network the way an NCP keeps its non-volatile memory (keys, PAN
 ids, frame counter, link keys, a written IEEE address), so restarts,

@@ -27,7 +27,7 @@ Rust.
 
 ## Status
 
-zigbee-bridge is **0.x and young**. Version 0.1.0 is the first release. The
+zigbee-bridge is **0.x and young**. Version 0.2.0 is the second release. The
 whole stack is tested in CI against a coordinator simulator, but **it has not
 yet been tested on real hardware**. Expect rough edges and breaking changes
 between 0.x releases, and keep a backup of your network
@@ -45,11 +45,11 @@ between 0.x releases, and keep a backup of your network
 | Backup and restore in the open coordinator backup format, dongle migration | done in 0.1.0 |
 | Network topology, neighbor scans, energy scan | done in 0.1.0 |
 | Read-only coordinator probe (`zigbee-bridge probe`) | done in 0.1.0 |
-| Texas Instruments Z-Stack 3 coordinators (ZNP) | on `main`, next release |
-| dresden elektronik ConBee and RaspBee (deCONZ) | on `main`, next release |
-| Channel change without re-pairing | in progress on `main` |
-| Device firmware updates (OTA) from image files you provide | in progress on `main` |
-| Restore a backup onto a coordinator of another family | in progress on `main` |
+| Texas Instruments Z-Stack 3 coordinators (ZNP) | done in 0.2.0 |
+| dresden elektronik ConBee and RaspBee (deCONZ) | done in 0.2.0 |
+| Channel change without re-pairing | done in 0.2.0 |
+| Device firmware updates (OTA) from image files you provide | done in 0.2.0 |
+| Restore a backup onto a coordinator of another family | done in 0.2.0 |
 | Testing on real coordinators and devices | in progress |
 | Manufacturer-specific clusters and per-device quirks | planned |
 | Groups, scenes and binding requests over MQTT | planned |
@@ -68,8 +68,8 @@ one, please [tell us how it went](https://github.com/pulzar-net/zigbee-bridge/is
 | Sonoff ZBDongle-E | EFR32MG21 | EmberZNet 7.4 or newer, NCP (ships with 6.x: update it first) | expected |
 | SMLIGHT SLZB-06M, SLZB-07 | EFR32MG21 | EmberZNet 7.4 or newer, NCP (SLZB-06M over `tcp://`) | expected |
 | Any EFR32MG21 or MG24 coordinator | EFR32MG2x | EmberZNet 7.4 to 8.x, NCP | expected |
-| Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | Z-Stack 3.x.0 | next release |
-| ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware 0x26580700 or newer | next release |
+| Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | Z-Stack 3.x.0 | expected |
+| ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware 0x26580700 or newer | expected |
 | EmberZNet 7.3 and older | EFR32 | EZSP 12 and older | unsupported: refused with "update the firmware" |
 | CC2531, CC2530 | CC253x | Z-Stack Home 1.2 | unsupported: refused (`probe` still identifies it) |
 | XBee, ZiGate, Telink, NXP | | | unsupported, not planned |
@@ -82,14 +82,14 @@ lists what is exposed and how to flash recommended firmware.
 ## Quick start
 
 From nothing to a sensor in Home Assistant, on 64-bit Linux (x86_64 or
-aarch64) with a Silicon Labs coordinator. You need an MQTT broker (for
+aarch64) with a supported coordinator. You need an MQTT broker (for
 example Mosquitto) that Home Assistant's MQTT integration already uses.
 
 **1. Download the release and check its checksum.**
 
 <!-- quickstart:download -->
 ```sh
-VERSION=0.1.0
+VERSION=0.2.0
 ARCH=$(uname -m)   # x86_64 or aarch64
 BASE=https://github.com/pulzar-net/zigbee-bridge/releases/download/v$VERSION
 curl -fsSLO "$BASE/zigbee-bridge-v$VERSION-$ARCH-unknown-linux-musl"
@@ -178,7 +178,7 @@ The bridge reads one TOML file, `/etc/zigbee-bridge/config.toml` by default
 | `[network]` | channel and transmit power for a new network; whether to replace a foreign one |
 | `[join]` | install-code-only joining, whether pre-Zigbee 3.0 devices may stay |
 | `[data]` | the data directory: network keys, device store, backup |
-| `[ota]` | where device firmware images are kept (not in 0.1.0) |
+| `[ota]` | where device firmware images are kept |
 
 Unknown keys are an error, so a typo stops the bridge at startup. Every key,
 its type and default are in the
@@ -196,7 +196,7 @@ Everything lives under a base topic, `zigbee` by default. Payloads are JSON.
 | `zigbee/bridge/info` | out, retained | version, coordinator, channel and PAN ids, join state |
 | `zigbee/bridge/devices` | out, retained | every device with its interview, endpoints and clusters |
 | `zigbee/bridge/event` | out | joins, announces, interviews, leaves, removals, join window, channel and firmware update progress |
-| `zigbee/bridge/request/<name>` | in | `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan`, `devices`; on `main`: `change_channel`, `ota_check`, `ota_update` |
+| `zigbee/bridge/request/<name>` | in | `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan`, `devices`, `change_channel`, `ota_check`, `ota_update` |
 | `zigbee/bridge/response/<name>` | out | `{"status":"ok","data":{...}}` or `{"status":"error","error":"..."}` |
 | `zigbee/<device>` | out, retained | the device's state, for example `{"temperature":21.5,"humidity":45.2,"linkquality":160}` |
 | `zigbee/<device>/set` | in | `{"state":"ON"}`, `{"brightness":128,"transition":1}`, `{"color_temp":300}` |
@@ -229,8 +229,8 @@ The crates are not on crates.io yet; depend on them from git:
 
 ```toml
 [dependencies]
-zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0" }
-zigbee-zcl = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0" }
+zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
+zigbee-zcl = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -320,7 +320,7 @@ panics on radio input, bounded memory).
 |---|---|---|---|
 | Language and runtime | Rust, one static binary | Node.js | Python, inside Home Assistant |
 | Device support | standard clusters only, so far | over 4,000 devices with per-device converters | thousands, with quirks |
-| Coordinators | EmberZNet; Z-Stack and deCONZ in the next release | EmberZNet, Z-Stack, deCONZ, ZiGate, others | EmberZNet, Z-Stack, deCONZ, ZiGate, XBee |
+| Coordinators | EmberZNet, Z-Stack, deCONZ | EmberZNet, Z-Stack, deCONZ, ZiGate, others | EmberZNet, Z-Stack, deCONZ, ZiGate, XBee |
 | Interface | MQTT and Home Assistant discovery | MQTT, discovery, web frontend | Home Assistant UI |
 | Small hardware | runs on 128 MB MIPS routers | needs a Node.js capable host | needs Home Assistant |
 | Embeddable library | yes, Rust crates | zigbee-herdsman (TypeScript) | zigpy (Python) |
@@ -337,10 +337,7 @@ change for the other, but the two are not interchangeable.
 
 ## Roadmap
 
-- **Next release:** Texas Instruments Z-Stack and ConBee/RaspBee
-  coordinators (done on `main`); channel change, device firmware updates,
-  and restoring a backup across coordinator families (in progress on
-  `main`); and the first reports from real hardware.
+- **Next:** the first reports from real hardware.
 - **After that:** manufacturer-specific clusters and device quirks, groups and
   scenes, binding over MQTT.
 

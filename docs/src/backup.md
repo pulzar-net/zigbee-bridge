@@ -23,7 +23,7 @@ zigpy (ZHA) and Zigbee2MQTT also write:
   "metadata": {
     "format": "zigpy/open-coordinator-backup",
     "version": 1,
-    "source": "zigbee-bridge@0.1.0",
+    "source": "zigbee-bridge@0.2.0",
     "internal": { "created_unix": 1795136470, "ezspVersion": 13, "firmware": "7.4.4.0" }
   },
   "stack_specific": { "ezsp": { "hashed_tclk": "<32 hex digits>" } },
@@ -82,8 +82,8 @@ Limits:
 - **On EmberZNet, the IEEE address can be written once.** It is stored in a
   one-time token. A coordinator whose address was already written (by an
   earlier restore or by another tool) is refused, with the reason.
-- **Coordinator family.** In 0.1.0 a backup restores onto EmberZNet. On
-  `main`, it restores onto any supported family: the IEEE address, PAN ids,
+- **Coordinator family.** Since 0.2.0 a backup restores onto any supported
+  family (0.1.0 restored onto EmberZNet only): the IEEE address, PAN ids,
   channel, network key and frame counter always; the trust center's root key
   (EmberZNet) or link key seed (Z-Stack) when restoring onto the same family,
   and the backup's per-device link keys otherwise. Backups written by other

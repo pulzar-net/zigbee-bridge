@@ -106,7 +106,7 @@ named the same way), so most tools need little change. It is not
 identical: payloads differ in places, and there are no per-device
 converters.
 
-**Does it support OTA firmware updates?** On `main`, for the next release:
+**Does it support OTA firmware updates?** Since 0.2.0:
 from image files you put in the OTA directory, one device at a time, on
 request. See [`ota_update`](mqtt.md#ota_check-and-ota_update). There is no
 automatic download of images.

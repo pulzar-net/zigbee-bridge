@@ -28,14 +28,14 @@ cover every type and function.
 
 ## Status
 
-zigbee-bridge is at 0.x. Version 0.1.0 supports Silicon Labs EmberZNet
-coordinators; Texas Instruments Z-Stack and ConBee/RaspBee support, channel
-change and device firmware updates are on `main` for the next release. Everything is tested in CI against a coordinator
-simulator, but **no release has been tested on real hardware yet**. Pages
-that describe something only real hardware can confirm say so.
+zigbee-bridge is at 0.x. Version 0.2.0 supports Silicon Labs EmberZNet,
+Texas Instruments Z-Stack and dresden elektronik ConBee/RaspBee
+coordinators. Everything is tested in CI against a coordinator simulator,
+but **no release has been tested on real hardware yet**. Pages that
+describe something only real hardware can confirm say so.
 
-Some features documented here are on `main` and not yet in a release; they
-are marked "not in 0.1.0". The [changelog](changelog.md) lists what each
+Features added after the first release are marked with the version that
+brought them ("since 0.2.0"). The [changelog](changelog.md) lists what each
 release contains.
 
 ## Terms used in these docs
