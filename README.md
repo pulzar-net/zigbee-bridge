@@ -46,6 +46,10 @@ is only the probe, for detection tools with a small flash budget.
 
 ## Running the bridge
 
+Each [release](https://github.com/pulzar-net/zigbee-bridge/releases) has
+static Linux binaries for `aarch64`, `mipsel` and `x86_64`, with SHA-256
+sums. Or build it with `cargo build --release -p zigbee-bridge`.
+
 ```sh
 cp config.example.toml /etc/zigbee-bridge/config.toml   # set serial.port
 zigbee-bridge --config /etc/zigbee-bridge/config.toml
