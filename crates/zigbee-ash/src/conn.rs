@@ -713,7 +713,7 @@ mod tests {
                 state ^= state << 13;
                 state ^= state >> 17;
                 state ^= state << 5;
-                state % 4 == 0
+                state.is_multiple_of(4)
             })
         }
         p.drop_to_ncp = lossy(0x1234_5678);

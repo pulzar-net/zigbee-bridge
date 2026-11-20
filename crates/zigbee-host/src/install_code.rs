@@ -29,7 +29,7 @@ pub fn parse_hex(text: &str) -> Result<Vec<u8>, InstallCodeError> {
         .chars()
         .filter(|c| !c.is_whitespace() && *c != '-' && *c != ':')
         .collect();
-    if digits.len() % 2 != 0 {
+    if !digits.len().is_multiple_of(2) {
         return Err(InstallCodeError::Hex);
     }
     (0..digits.len())
@@ -72,10 +72,9 @@ pub fn aes_mmo_hash(message: &[u8]) -> [u8; 16] {
     padded.extend_from_slice(&bit_len.to_be_bytes());
 
     let mut hash = [0u8; 16];
-    for chunk in padded.chunks_exact(16) {
+    for chunk in padded.as_chunks::<16>().0 {
         let cipher = Aes128::new(&Array::from(hash));
-        let mut block = [0u8; 16];
-        block.copy_from_slice(chunk);
+        let block = *chunk;
         let mut out = Array::from(block);
         cipher.encrypt_block(&mut out);
         for (h, (o, m)) in hash.iter_mut().zip(out.iter().zip(block.iter())) {

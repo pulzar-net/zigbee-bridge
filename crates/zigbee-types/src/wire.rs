@@ -137,11 +137,10 @@ impl<'a> Reader<'a> {
         // Check the length first so a large count cannot allocate.
         let raw = self.bytes(count.saturating_mul(2))?;
         Ok(raw
-            .chunks_exact(2)
-            .map(|c| match c {
-                [lo, hi] => u16::from_le_bytes([*lo, *hi]),
-                _ => 0,
-            })
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| u16::from_le_bytes(*c))
             .collect())
     }
 }
