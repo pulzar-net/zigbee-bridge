@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "description": "The whole configuration.",
+  "type": "object",
+  "properties": {
+    "serial": {
+      "description": "The coordinator's port.",
+      "$ref": "#/$defs/SerialConfig"
+    },
+    "mqtt": {
+      "description": "The MQTT broker.",
+      "$ref": "#/$defs/MqttConfig",
+      "default": {
+        "host": "localhost",
+        "port": 1883,
+        "username": null,
+        "password_file": null,
+        "client_id": "zigbee-bridge",
+        "base_topic": "zigbee",
+        "keepalive": 30,
+        "retain_state": true
+      }
+    },
+    "homeassistant": {
+      "description": "Home Assistant discovery.",
+      "$ref": "#/$defs/HomeAssistantConfig",
+      "default": {
+        "enabled": true,
+        "discovery_prefix": "homeassistant",
+        "status_topic": "homeassistant/status"
+      }
+    },
+    "network": {
+      "description": "The network to form on first start.",
+      "$ref": "#/$defs/NetworkConfig",
+      "default": {
+        "channel": 15,
+        "tx_power": null,
+        "replace_other": false
+      }
+    },
+    "join": {
+      "description": "Trust center join policy.",
+      "$ref": "#/$defs/JoinConfig",
+      "default": {
+        "install_code_only": false,
+        "allow_legacy": true
+      }
+    },
+    "data": {
+      "description": "Where state lives.",
+      "$ref": "#/$defs/DataConfig",
+      "default": {
+        "dir": "/var/lib/zigbee-bridge"
+      }
+    },
+    "ota": {
+      "description": "Device firmware upgrades.",
+      "$ref": "#/$defs/OtaConfig",
+      "default": {
+        "dir": null
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "serial"
+  ],
+  "$defs": {
+    "SerialConfig": {
+      "description": "The coordinator's port.",
+      "type": "object",
+      "properties": {
+        "port": {
+          "description": "A serial device (`/dev/ttyUSB0`) or `tcp://host:port`.",
+          "type": "string"
+        },
+        "baud": {
+          "description": "Baud rate.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0,
+          "default": 115200
+        },
+        "flow_control": {
+          "description": "`none`, `hardware` (RTS/CTS) or `software`.",
+          "$ref": "#/$defs/FlowControl",
+          "default": "none"
+        },
+        "adapter": {
+          "description": "The coordinator family: `auto` (probe for it), `ezsp`, `znp` or\n`deconz`.",
+          "$ref": "#/$defs/AdapterChoice",
+          "default": "auto"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "port"
+      ]
+    },
+    "FlowControl": {
+      "description": "Serial flow control.",
+      "oneOf": [
+        {
+          "description": "None.",
+          "type": "string",
+          "const": "none"
+        },
+        {
+          "description": "RTS/CTS.",
+          "type": "string",
+          "const": "hardware"
+        },
+        {
+          "description": "XON/XOFF.",
+          "type": "string",
+          "const": "software"
+        }
+      ]
+    },
+    "AdapterChoice": {
+      "description": "Which coordinator family to speak.",
+      "oneOf": [
+        {
+          "description": "Probe the port for each family.",
+          "type": "string",
+          "const": "auto"
+        },
+        {
+          "description": "Silicon Labs EmberZNet.",
+          "type": "string",
+          "const": "ezsp"
+        },
+        {
+          "description": "Texas Instruments Z-Stack.",
+          "type": "string",
+          "const": "znp"
+        },
+        {
+          "description": "dresden elektronik deCONZ (ConBee, RaspBee).",
+          "type": "string",
+          "const": "deconz"
+        }
+      ]
+    },
+    "MqttConfig": {
+      "description": "The MQTT broker.",
+      "type": "object",
+      "properties": {
+        "host": {
+          "description": "Broker host.",
+          "type": "string",
+          "default": "localhost"
+        },
+        "port": {
+          "description": "Broker port.",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0,
+          "maximum": 65535,
+          "default": 1883
+        },
+        "username": {
+          "description": "User name, if the broker wants one.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "password_file": {
+          "description": "A file holding the password (so it is not in the configuration).",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "client_id": {
+          "description": "Client id.",
+          "type": "string",
+          "default": "zigbee-bridge"
+        },
+        "base_topic": {
+          "description": "Prefix of every topic the bridge uses.",
+          "type": "string",
+          "default": "zigbee"
+        },
+        "keepalive": {
+          "description": "Keep-alive, seconds.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0,
+          "default": 30
+        },
+        "retain_state": {
+          "description": "Publish device state retained, so a subscriber sees it at once.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "HomeAssistantConfig": {
+      "description": "Home Assistant discovery.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Publish discovery messages.",
+          "type": "boolean",
+          "default": true
+        },
+        "discovery_prefix": {
+          "description": "Home Assistant's discovery prefix.",
+          "type": "string",
+          "default": "homeassistant"
+        },
+        "status_topic": {
+          "description": "Home Assistant's birth topic; discovery is re-sent when it says \"online\".",
+          "type": "string",
+          "default": "homeassistant/status"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NetworkConfig": {
+      "description": "The network formed on first start. After that the network file in the\ndata directory is the source of truth.",
+      "type": "object",
+      "properties": {
+        "channel": {
+          "description": "Channel, 11 to 26.",
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 15
+        },
+        "tx_power": {
+          "description": "Transmit power in dBm, if not the firmware's default.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int8",
+          "minimum": -128,
+          "maximum": 127,
+          "default": null
+        },
+        "replace_other": {
+          "description": "Leave a different network found on the coordinator and form this\none. Off by default: a coordinator with another network is never\nwiped without being told to.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "JoinConfig": {
+      "description": "Trust center join policy.",
+      "type": "object",
+      "properties": {
+        "install_code_only": {
+          "description": "Only devices with an install code may join.",
+          "type": "boolean",
+          "default": false
+        },
+        "allow_legacy": {
+          "description": "Accept pre-Zigbee 3.0 devices (they keep the well-known link key).",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "DataConfig": {
+      "description": "Where state lives.",
+      "type": "object",
+      "properties": {
+        "dir": {
+          "description": "The data directory: network keys, device store, backup.",
+          "type": "string",
+          "default": "/var/lib/zigbee-bridge"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OtaConfig": {
+      "description": "Device firmware upgrades.",
+      "type": "object",
+      "properties": {
+        "dir": {
+          "description": "A directory of OTA image files; `<data.dir>/ota` when unset. Images\nare offered only when an `ota_update` request asks for one.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -14,12 +14,18 @@ categories = ["command-line-utilities", "network-programming"]
 name = "zigbee-bridge"
 path = "src/main.rs"
 
+[features]
+## Derive a JSON Schema for the configuration, from which the docs' configuration
+## reference is generated (tests/config_reference.rs).
+schema = ["dep:schemars"]
+
 [dependencies]
 zigbee-types.workspace = true
 zigbee-zcl.workspace = true
 zigbee-zdo.workspace = true
 zigbee-host = { workspace = true, features = ["host", "serial"] }
 lexopt = "0.3"
+schemars = { version = "1", optional = true, features = ["preserve_order"] }
 rumqttc = { version = "0.25", default-features = false }
 serde.workspace = true
 serde_json.workspace = true
@@ -33,6 +39,10 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["f
 zigbee-sim.workspace = true
 rumqttd = { version = "0.20", default-features = false }
 tempfile = "3"
+
+[[test]]
+name = "config_reference"
+required-features = ["schema"]
 
 [lints]
 workspace = true

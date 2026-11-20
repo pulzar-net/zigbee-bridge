@@ -1,10 +1,5 @@
-//! Address, key and wire-format types shared by the zigbee-bridge crates.
-//!
-//! Everything a Zigbee frame parser needs in common lives here: the 64-bit
-//! IEEE address ([`Ieee`]), the extended PAN id ([`ExtPanId`]), 128-bit keys
-//! ([`Key`], whose `Debug` never prints the key), and a bounds-checked byte
-//! reader ([`wire::Reader`]) that every parser in the workspace uses instead
-//! of slicing, so that a malformed frame is an error and never a panic.
+#![doc = include_str!("../README.md")]
+
 #![cfg_attr(
     not(test),
     deny(

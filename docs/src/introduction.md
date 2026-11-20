@@ -1,0 +1,57 @@
+# zigbee-bridge
+
+zigbee-bridge is a Zigbee coordinator stack and a Zigbee to MQTT bridge,
+written in Rust. It runs a Zigbee network through a USB or network
+coordinator, interviews the devices that join, and publishes their readings
+to MQTT, with Home Assistant discovery. It is a single static binary with no
+runtime, small enough for routers and gateways, and a set of library crates
+for anyone building Zigbee software in Rust.
+
+This site is the user guide and the reference. The
+[README](https://github.com/pulzar-net/zigbee-bridge#readme) is the
+two-minute overview; the [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html)
+cover every type and function.
+
+## Where to start
+
+| You want to | Read |
+|---|---|
+| try it without hardware | [Getting started](getting-started.md) |
+| run it with a coordinator | [Installation](installation.md), then [Hardware and firmware](hardware.md) |
+| connect it to Home Assistant | [Home Assistant](home-assistant.md) |
+| script it or build on its topics | [MQTT API](mqtt.md) |
+| change a setting | [Configuration](configuration.md) and the [reference](config-reference.md) |
+| move to a new coordinator | [Backup and restore](backup.md) |
+| embed the stack in Rust | [Library overview](library/index.md) |
+| understand how it works | [Architecture](architecture.md) |
+| fix a problem | [Troubleshooting and FAQ](troubleshooting.md) |
+
+## Status
+
+zigbee-bridge is at 0.x. Version 0.1.0 supports Silicon Labs EmberZNet
+coordinators; Texas Instruments Z-Stack and ConBee/RaspBee support, channel
+change and device firmware updates are on `main` for the next release. Everything is tested in CI against a coordinator
+simulator, but **no release has been tested on real hardware yet**. Pages
+that describe something only real hardware can confirm say so.
+
+Some features documented here are on `main` and not yet in a release; they
+are marked "not in 0.1.0". The [changelog](changelog.md) lists what each
+release contains.
+
+## Terms used in these docs
+
+- **Coordinator**: the USB stick or network device with the Zigbee radio. Its
+  firmware is the **network co-processor (NCP)**: it runs the radio, the MAC
+  and network layers, and routing.
+- **Host**: the software that drives the NCP over a serial link. That is
+  zigbee-bridge: the trust center, device interviews and the application
+  layer run here.
+- **Device**: anything that joined the network: a router (mains powered,
+  relays traffic) or an end device (often a battery sensor).
+- **IEEE address**: a device's permanent 64-bit address, written
+  `0x00124b0001020304`. The **network address** is the 16-bit address it gets
+  when it joins, and can change.
+- **Interview**: what the bridge does after a device joins: it reads what the
+  device is and what clusters it has, then sets up reporting.
+- **Cluster**: a group of attributes and commands in the Zigbee Cluster
+  Library (ZCL), such as On/Off or Temperature Measurement.

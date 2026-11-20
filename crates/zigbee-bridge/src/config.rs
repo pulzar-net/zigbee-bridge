@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 /// The whole configuration.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     /// The coordinator's port.
@@ -32,6 +33,7 @@ pub struct Config {
 
 /// Device firmware upgrades.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct OtaConfig {
     /// A directory of OTA image files; `<data.dir>/ota` when unset. Images
@@ -41,6 +43,7 @@ pub struct OtaConfig {
 
 /// The coordinator's port.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct SerialConfig {
     /// A serial device (`/dev/ttyUSB0`) or `tcp://host:port`.
@@ -59,6 +62,7 @@ pub struct SerialConfig {
 
 /// Which coordinator family to speak.
 #[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum AdapterChoice {
     /// Probe the port for each family.
@@ -74,6 +78,7 @@ pub enum AdapterChoice {
 
 /// Serial flow control.
 #[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum FlowControl {
     /// None.
@@ -91,6 +96,7 @@ fn default_baud() -> u32 {
 
 /// The MQTT broker.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields, default)]
 pub struct MqttConfig {
     /// Broker host.
@@ -128,6 +134,7 @@ impl Default for MqttConfig {
 
 /// Home Assistant discovery.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields, default)]
 pub struct HomeAssistantConfig {
     /// Publish discovery messages.
@@ -151,6 +158,7 @@ impl Default for HomeAssistantConfig {
 /// The network formed on first start. After that the network file in the
 /// data directory is the source of truth.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields, default)]
 pub struct NetworkConfig {
     /// Channel, 11 to 26.
@@ -175,6 +183,7 @@ impl Default for NetworkConfig {
 
 /// Trust center join policy.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields, default)]
 pub struct JoinConfig {
     /// Only devices with an install code may join.
@@ -194,6 +203,7 @@ impl Default for JoinConfig {
 
 /// Where state lives.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "schema", derive(serde::Serialize, schemars::JsonSchema))]
 #[serde(deny_unknown_fields, default)]
 pub struct DataConfig {
     /// The data directory: network keys, device store, backup.

@@ -1,175 +1,376 @@
 # zigbee-bridge
 
-A Zigbee host stack and MQTT bridge in Rust, maintained by
-[Pulzar](https://pulzr.net). MIT licensed.
+[![CI](https://github.com/pulzar-net/zigbee-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/pulzar-net/zigbee-bridge/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/pulzar-net/zigbee-bridge)](https://github.com/pulzar-net/zigbee-bridge/releases/latest)
+[![Docs](https://img.shields.io/badge/docs-pulzar--net.github.io-blue)](https://pulzar-net.github.io/zigbee-bridge/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue)](Cargo.toml)
 
-The coordinator dongle (the network co-processor, NCP) runs the mesh: radio,
-MAC, network layer and routing. This project runs everything above it:
-forming the network, the trust center, interviewing devices, the Zigbee
-Cluster Library, reporting, backups and topology. It is a set of library
-crates you can embed, and a standalone bridge that speaks MQTT with Home
-Assistant discovery and a plain JSON topic scheme.
+A Zigbee coordinator stack and Zigbee to MQTT bridge, written in Rust. It
+runs a Zigbee network through a USB or network coordinator, interviews the
+devices that join, and publishes their readings to MQTT with Home Assistant
+discovery. It is one static binary with no runtime: CI holds it under 4 MB,
+and the stack under 16 MB of memory with 200 devices, so it fits on routers
+and small gateways as well as on a Raspberry Pi or a server. The same stack is a set of library crates for
+anyone building their own Zigbee software in Rust.
 
-**Status: not yet tested on hardware.** Silicon Labs EmberZNet and Texas
-Instruments Z-Stack coordinators. Everything is exercised in CI against the
-NCP simulator in this repository; bench testing on real dongles is next.
+It exists because the established Zigbee stacks need a Node.js or Python
+runtime, and there was no complete, embeddable Zigbee coordinator stack in
+Rust.
 
-## Coordinators
+**[Documentation](https://pulzar-net.github.io/zigbee-bridge/)** |
+**[Quick start](#quick-start)** |
+**[Hardware](#supported-hardware)** |
+**[MQTT API](https://pulzar-net.github.io/zigbee-bridge/mqtt.html)** |
+**[Library](#use-it-as-a-library)** |
+**[Changelog](CHANGELOG.md)**
 
-| Family | Protocol | State |
-|---|---|---|
-| Silicon Labs EmberZNet 7.4 and 8.x | EZSP 13 to 19 over ASHv2 | supported (simulator-tested) |
-| Silicon Labs EmberZNet 7.3 and older | EZSP 12 and older | refused with a "please update the firmware" message; `probe` still identifies it |
-| Texas Instruments Z-Stack 3.x.0 (CC2652, CC1352) and 3.0.x (CC2530, CC2531) | MT/ZNP | supported (simulator-tested) |
-| Texas Instruments Z-Stack Home 1.2 | MT/ZNP | refused (not Zigbee 3.0); `probe` identifies it |
-| dresden elektronik ConBee II/III | deCONZ serial | next milestone |
+## Status
 
-Any EFR32MG21 or MG24 USB or network coordinator with EmberZNet 7.4 or newer
-NCP firmware should work, for example the Home Assistant Connect ZBT-1, the
-Sonoff ZBDongle-E (after a firmware update), or an SMLIGHT SLZB-06M
-(over `tcp://`). For Z-Stack, any CC2652 or CC1352 stick with Z-Stack 3.x.0
-coordinator firmware, such as the Sonoff ZBDongle-P or an SMLIGHT SLZB-06.
+zigbee-bridge is **0.x and young**. Version 0.1.0 is the first release. The
+whole stack is tested in CI against a coordinator simulator, but **it has not
+yet been tested on real hardware**. Expect rough edges and breaking changes
+between 0.x releases, and keep a backup of your network
+([backup and restore](https://pulzar-net.github.io/zigbee-bridge/backup.html)).
 
-The bridge detects the family on its port (`serial.adapter = "auto"`), or
-takes `ezsp` or `znp`.
-
-Z-Stack does not report signal strength, which devices finished their link
-key exchange, or delivery of ZDO frames, so on Z-Stack those readings are
-absent rather than guessed, and Z-Stack itself turns away devices that skip
-the key exchange when `join.allow_legacy = false`.
-
-## Crates
-
-| Crate | What it does |
+| Feature | State |
 |---|---|
-| `zigbee-types` | IEEE addresses, PAN ids, keys (never printed by `Debug`), a bounds-checked wire reader |
-| `zigbee-ash` | ASHv2: CRC, byte stuffing, randomization, and the link as a sans-IO state machine (window, ACK/NAK, retransmission, adaptive ACK timer) with a tokio driver |
-| `zigbee-ezsp` | EZSP frames for protocol 13 to 19, typed commands, responses and callbacks in both directions, and an async client that negotiates the version |
-| `zigbee-znp` | TI Z-Stack MT frames, typed requests and indications in both directions, and an async client |
-| `zigbee-zcl` | ZCL data types, values, frames, global commands, and clusters generated at build time from [`data/clusters.toml`](crates/zigbee-zcl/data/clusters.toml) |
-| `zigbee-zdo` | ZDO discovery, binding and management frames |
-| `zigbee-host` | the coordinator host: formation, trust center, interview, reporting, device store, backup and restore, topology, `probe` |
-| `zigbee-sim` | an NCP simulator (EZSP or ZNP) with simulated devices, and `zigbee-ncp-sim` to serve it over TCP |
-| `zigbee-bridge` | the standalone MQTT bridge |
+| Silicon Labs EmberZNet 7.4 and 8.x coordinators (EZSP 13 to 19) | done in 0.1.0 |
+| Network formation, resume, and refusal to wipe an unknown network | done in 0.1.0 |
+| Zigbee 3.0 trust center: unique link keys, install codes, join policy | done in 0.1.0 |
+| Device interview, binding and reporting configuration, IAS zone enrollment | done in 0.1.0 |
+| Readings from the standard ZCL clusters (no per-device converters needed) | done in 0.1.0 |
+| On/off, brightness and color temperature control | done in 0.1.0 |
+| Home Assistant MQTT discovery | done in 0.1.0 |
+| Backup and restore in the open coordinator backup format, dongle migration | done in 0.1.0 |
+| Network topology, neighbor scans, energy scan | done in 0.1.0 |
+| Read-only coordinator probe (`zigbee-bridge probe`) | done in 0.1.0 |
+| Texas Instruments Z-Stack 3 coordinators (ZNP) | on `main`, next release |
+| dresden elektronik ConBee and RaspBee (deCONZ) | on `main`, next release |
+| Channel change without re-pairing | on `main`, next release |
+| Device firmware updates (OTA) from image files you provide | on `main`, next release |
+| Restore a backup onto a coordinator of another family | on `main`, next release |
+| Testing on real coordinators and devices | in progress |
+| Manufacturer-specific clusters and per-device quirks | planned |
+| Groups, scenes and binding requests over MQTT | planned |
+| A web frontend | not planned; the bridge is headless by design |
 
-`zigbee-host` with `default-features = false, features = ["probe", "serial"]`
-is only the probe, for detection tools with a small flash budget.
+## Supported hardware
 
-## Running the bridge
+The coordinator is a radio module with network co-processor (NCP) firmware.
+**Expected** means the hardware runs firmware the stack implements and is
+covered by the simulator, but nobody has reported it working yet. If you try
+one, please [tell us how it went](https://github.com/pulzar-net/zigbee-bridge/issues/new?template=device.yml).
 
-Each [release](https://github.com/pulzar-net/zigbee-bridge/releases) has
-static Linux binaries for `aarch64`, `mipsel` and `x86_64`, with SHA-256
-sums. Or build it with `cargo build --release -p zigbee-bridge`.
+| Coordinator | Chip | Firmware | State |
+|---|---|---|---|
+| Home Assistant Connect ZBT-1 (SkyConnect) | EFR32MG21 | EmberZNet 7.4 or newer, NCP | expected |
+| Sonoff ZBDongle-E | EFR32MG21 | EmberZNet 7.4 or newer, NCP (ships with 6.x: update it first) | expected |
+| SMLIGHT SLZB-06M, SLZB-07 | EFR32MG21 | EmberZNet 7.4 or newer, NCP (SLZB-06M over `tcp://`) | expected |
+| Any EFR32MG21 or MG24 coordinator | EFR32MG2x | EmberZNet 7.4 to 8.x, NCP | expected |
+| Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | Z-Stack 3.x.0 | next release |
+| ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware | next release |
+| EmberZNet 7.3 and older | EFR32 | EZSP 12 and older | unsupported: refused with "update the firmware" |
+| CC2531, CC2530 | CC253x | Z-Stack Home 1.2 | unsupported |
+| XBee, ZiGate, Telink, NXP | | | unsupported, not planned |
 
+Devices: any Zigbee 3.0 or Zigbee HA 1.2 device that uses the standard
+clusters reports its readings without device-specific code. The
+[hardware page](https://pulzar-net.github.io/zigbee-bridge/hardware.html)
+lists what is exposed and how to flash recommended firmware.
+
+## Quick start
+
+From nothing to a sensor in Home Assistant, on 64-bit Linux (x86_64 or
+aarch64) with a Silicon Labs coordinator. You need an MQTT broker (for
+example Mosquitto) that Home Assistant's MQTT integration already uses.
+
+**1. Download the release and check its checksum.**
+
+<!-- quickstart:download -->
 ```sh
-cp config.example.toml /etc/zigbee-bridge/config.toml   # set serial.port
-zigbee-bridge --config /etc/zigbee-bridge/config.toml
+VERSION=0.1.0
+ARCH=$(uname -m)   # x86_64 or aarch64
+BASE=https://github.com/pulzar-net/zigbee-bridge/releases/download/v$VERSION
+curl -fsSLO "$BASE/zigbee-bridge-v$VERSION-$ARCH-unknown-linux-musl"
+curl -fsSLO "$BASE/SHA256SUMS"
+sha256sum --check --ignore-missing SHA256SUMS
+sudo install -m 0755 "zigbee-bridge-v$VERSION-$ARCH-unknown-linux-musl" /usr/local/bin/zigbee-bridge
+zigbee-bridge --version
 ```
 
-On first start the bridge writes `network.json` (random PAN ids and network
-key, mode 0600) to the data directory and forms that network. A platform that
-manages keys itself writes `network.json` before the first start. If the
-coordinator already runs a different network, the bridge refuses to start
-rather than wipe it (set `network.replace_other` to replace it).
-
-Open the network for joining:
+**2. Check that the coordinator answers.** Use the stable name under
+`/dev/serial/by-id/` rather than `/dev/ttyUSB0`, which can change between
+boots.
 
 ```sh
-mosquitto_pub -t zigbee/bridge/request/permit_join -m '{"time": 180}'
+ls /dev/serial/by-id/
+sudo zigbee-bridge probe /dev/serial/by-id/usb-...
 ```
 
-### Topics
+It prints the firmware it found, for example `{"kind":"ezsp","firmware":"7.4.4.0",...}`.
+If it says the firmware is too old, [update it](https://pulzar-net.github.io/zigbee-bridge/hardware.html#flashing-firmware).
 
-Under the base topic (`zigbee` by default):
+**3. Write a minimal configuration** to `/etc/zigbee-bridge/config.toml`.
+Only `serial.port` is required; everything else has a default.
 
-| Topic | Retained | What |
+<!-- quickstart:config -->
+```toml
+[serial]
+port = "/dev/serial/by-id/usb-..."   # the path from step 2
+
+[mqtt]
+host = "localhost"                   # your broker
+```
+
+**4. Run it.** On first start it forms a new network with a random network
+key, which it keeps in `/var/lib/zigbee-bridge`.
+
+<!-- quickstart:run -->
+```sh
+sudo zigbee-bridge --config /etc/zigbee-bridge/config.toml
+```
+
+**5. Pair a device.** Open the network for two minutes, then reset the
+device or hold its pairing button.
+
+<!-- quickstart:pair -->
+```sh
+mosquitto_pub -h localhost -t zigbee/bridge/request/permit_join -m '{"time": 120}'
+```
+
+Within a minute the device appears in Home Assistant under
+**Settings > Devices & services > MQTT**. To watch everything the bridge
+publishes:
+
+```sh
+mosquitto_sub -h localhost -t 'zigbee/#' -v
+```
+
+No coordinator yet? The [getting started guide](https://pulzar-net.github.io/zigbee-bridge/getting-started.html)
+runs the same steps against the simulator. To run the bridge as a service,
+see [installation](#installation).
+
+## Installation
+
+- **Release binaries.** Each [release](https://github.com/pulzar-net/zigbee-bridge/releases)
+  has static Linux binaries for `x86_64`, `aarch64` (Raspberry Pi 3 and newer
+  with a 64-bit OS) and `mipsel` (MT7621 and MT7628 routers), with a
+  `SHA256SUMS` file. They have no runtime dependencies.
+- **From source**, with Rust 1.85 or newer:
+  `cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge`
+- **systemd**: a hardened unit is in [`dist/systemd/`](dist/systemd/zigbee-bridge.service).
+- **OpenWrt**: a procd init script is in [`dist/openwrt/`](dist/openwrt/zigbee-bridge.init).
+
+The [installation guide](https://pulzar-net.github.io/zigbee-bridge/installation.html)
+covers each one step by step.
+
+## Configuration
+
+The bridge reads one TOML file, `/etc/zigbee-bridge/config.toml` by default
+(`--config FILE` to change it). It has these tables:
+
+| Table | What it sets |
+|---|---|
+| `[serial]` | the coordinator's port (serial device or `tcp://host:port`), baud rate, flow control, family |
+| `[mqtt]` | broker, credentials (password from a file), client id, base topic |
+| `[homeassistant]` | discovery on or off, discovery prefix, Home Assistant's status topic |
+| `[network]` | channel and transmit power for a new network; whether to replace a foreign one |
+| `[join]` | install-code-only joining, whether pre-Zigbee 3.0 devices may stay |
+| `[data]` | the data directory: network keys, device store, backup |
+| `[ota]` | where device firmware images are kept (not in 0.1.0) |
+
+Unknown keys are an error, so a typo stops the bridge at startup. Every key,
+its type and default are in the
+[configuration reference](https://pulzar-net.github.io/zigbee-bridge/config-reference.html),
+which is generated from the code. [`config.example.toml`](config.example.toml)
+shows them all. Log verbosity comes from `RUST_LOG` (default `info`).
+
+## MQTT API
+
+Everything lives under a base topic, `zigbee` by default. Payloads are JSON.
+
+| Topic | Direction | What |
 |---|---|---|
-| `bridge/state` | yes | `{"state":"online"}` or `"offline"` (the last will) |
-| `bridge/info` | yes | version, coordinator, network, join state |
-| `bridge/devices` | yes | every device and its interview |
-| `bridge/event` | no | `device_joined`, `device_announce`, `device_interview`, `device_leave`, `device_removed`, `permit_join` |
-| `bridge/request/<name>` | no | `permit_join` `{time, device?}`, `remove` `{device, force?}`, `rename` `{from, to}`, `install_code` `{ieee_address, code}`, `interview` `{device}`, `backup`, `topology`, `scan_neighbors` `{device?}`, `energy_scan`, `devices` |
-| `bridge/response/<name>` | no | `{"status":"ok","data":...}` or `{"status":"error","error":...}`, with the request's `transaction` echoed |
-| `<device>` | configurable | standard readings (`temperature`, `humidity`, `battery`, `state`, `contact`, ...) and `linkquality` |
-| `<device>/set` | no | `{"state":"ON"}`, `{"brightness":128,"transition":1}`, `{"color_temp":300}` |
-| `<device>/report` | no | every attribute report, by cluster and attribute name, for devices the bridge has no field for |
-| `<device>/action` | no | cluster commands the device sends (buttons, alarms) |
+| `zigbee/bridge/state` | out, retained | `{"state":"online"}` or `{"state":"offline"}` (also the last will) |
+| `zigbee/bridge/info` | out, retained | version, coordinator, channel and PAN ids, join state |
+| `zigbee/bridge/devices` | out, retained | every device with its interview, endpoints and clusters |
+| `zigbee/bridge/event` | out | joins, announces, interviews, leaves, removals, join window, channel and firmware update progress |
+| `zigbee/bridge/request/<name>` | in | `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan`, `devices`; on `main`: `change_channel`, `ota_check`, `ota_update` |
+| `zigbee/bridge/response/<name>` | out | `{"status":"ok","data":{...}}` or `{"status":"error","error":"..."}` |
+| `zigbee/<device>` | out, retained | the device's state, for example `{"temperature":21.5,"humidity":45.2,"linkquality":160}` |
+| `zigbee/<device>/set` | in | `{"state":"ON"}`, `{"brightness":128,"transition":1}`, `{"color_temp":300}` |
+| `zigbee/<device>/report` | out | every attribute report, by cluster and attribute name |
+| `zigbee/<device>/action` | out | commands the device sends, such as button presses |
 
-`<device>` is the device's name, or its IEEE address as `0x00124b0001020304`.
-Readings come from the ZCL standard clusters, so an unknown device still
-reports what the standard says it has. Network keys never appear on MQTT.
+`<device>` is the name you gave the device with the `rename` request, or its
+IEEE address (`0x00124b0001020304`). Network keys never appear on MQTT. The
+[MQTT reference](https://pulzar-net.github.io/zigbee-bridge/mqtt.html) has
+every payload with examples.
 
-Home Assistant discovers every device under `homeassistant/` once its
-interview finishes, and again when Home Assistant restarts.
+## Use it as a library
 
-### Backup and restore
+The bridge is a thin layer over library crates you can use on their own.
 
-The bridge keeps `backup.json` in the data directory (mode 0600), taken
-hourly and after every join or leave, in the open coordinator backup format:
-the network key and its frame counter, PAN ids, channel, the coordinator's
-IEEE address and the trust center's keys. To replace a dead dongle without
-re-pairing devices:
+| Crate | What it is |
+|---|---|
+| [`zigbee-host`](crates/zigbee-host) | the coordinator host: formation, trust center, interview, reporting, device store, backup and restore, topology, probe |
+| [`zigbee-zcl`](crates/zigbee-zcl) | the Zigbee Cluster Library: data types, frames, global commands, cluster definitions |
+| [`zigbee-zdo`](crates/zigbee-zdo) | Zigbee Device Object frames: discovery, binding, network management |
+| [`zigbee-ezsp`](crates/zigbee-ezsp) | Silicon Labs EZSP frames and an async client |
+| [`zigbee-ash`](crates/zigbee-ash) | the ASHv2 serial link that carries EZSP, as a sans-IO state machine |
+| [`zigbee-znp`](crates/zigbee-znp) | Texas Instruments Z-Stack ZNP frames and an async client |
+| [`zigbee-deconz`](crates/zigbee-deconz) | dresden elektronik deCONZ serial frames and an async client |
+| [`zigbee-types`](crates/zigbee-types) | addresses, keys and a bounds-checked wire reader shared by all crates |
+| [`zigbee-sim`](crates/zigbee-sim) | a coordinator simulator with simulated devices, for tests without hardware |
+| [`zigbee-bridge`](crates/zigbee-bridge) | the MQTT bridge, as a binary and a library |
 
-```sh
-zigbee-bridge restore /var/lib/zigbee-bridge/backup.json
-zigbee-bridge
+The crates are not on crates.io yet; depend on them from git:
+
+```toml
+[dependencies]
+zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0" }
+zigbee-zcl = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.1.0" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
-The restore writes the old coordinator's IEEE address to the new dongle
-(EmberZNet allows this once), exits with status 75 so a supervisor starts it
-again, and on the next start restores the network with the frame counter
-advanced past anything the old coordinator sent. A dongle whose IEEE address
-was already written is refused, with the reason.
+This example starts a network, lets a device join, and reads its
+temperature. It runs here against the simulator; on hardware, open the port
+with `zigbee_host::port::open("/dev/ttyUSB0", 115_200, FlowControl::None)`
+instead.
 
-### Probing a port
+```rust
+use zigbee_host::probe::NcpKind;
+use zigbee_host::{random_network, AnyAdapter, Host, HostConfig, HostEvent, StartMode};
+use zigbee_zcl::{attr, cluster_id};
+# use zigbee_sim::{SimConfig, SimDevice, Simulator};
+# use zigbee_types::Ieee;
 
-```sh
-zigbee-bridge probe /dev/ttyUSB0
-{"kind":"ezsp","firmware":"7.4.4.0","protocol":13,"supported":true,"ieee_address":"0x...","manufacturer":"...","board":"..."}
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+#   let sim = Simulator::new(SimConfig {
+#       devices: vec![SimDevice::temperature_humidity_sensor(Ieee(0x00124b0000000001))],
+#       ..SimConfig::default()
+#   });
+#   let (port, ncp) = tokio::io::duplex(4096);
+#   tokio::spawn(async move { sim.serve(ncp).await });
+    let (adapter, adapter_events) = AnyAdapter::connect(port, NcpKind::Ezsp).await?;
+    let mode = StartMode::Normal { settings: random_network(15)?, replace_other: false };
+    let (host, mut events) = Host::start(adapter, adapter_events, mode, HostConfig::default()).await?;
+
+    // Open the network and wait for a device to join and finish its interview.
+    host.permit_join(60, None).await?;
+    let device = loop {
+        match events.recv().await {
+            Some(HostEvent::InterviewDone { device }) => break device,
+            Some(_) => continue,
+            None => return Err("the host stopped".into()),
+        }
+    };
+    println!("{} joined: {:?} {:?}", device.ieee, device.manufacturer, device.model);
+
+    // Read its temperature, if it has a thermometer.
+    let cluster = cluster_id::TEMPERATURE_MEASUREMENT;
+    if let Some(endpoint) = device.endpoint_with(cluster) {
+        let value = attr::temperature_measurement::MEASURED_VALUE;
+        let records = host.read_attributes(device.ieee, endpoint.endpoint, cluster, &[value]).await?;
+        println!("{records:?}");
+    }
+    host.shutdown().await?;
+    Ok(())
+}
 ```
 
-It tries EZSP (one ASH reset and read-only queries), then ZNP (a ping and
-version queries); it never writes and finishes within three seconds per
-family.
+The [library guide](https://pulzar-net.github.io/zigbee-bridge/library/index.html)
+covers each crate, and the [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html)
+cover every item.
 
-## Trying it without hardware
+## Architecture
 
-```sh
-cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --ncp znp --devices th,plug,door --report-every 10
-# in zigbee-bridge's config: [serial] port = "tcp://127.0.0.1:9999"
+```text
+ Home Assistant, Node-RED, scripts
+                │  MQTT (JSON, Home Assistant discovery)
+┌───────────────┴───────────────────────────────────────┐
+│ zigbee-bridge   topics, requests, discovery, state     │
+├────────────────────────────────────────────────────────┤
+│ zigbee-host     formation, trust center, interview,    │
+│                 reporting, device store, backup,       │
+│                 topology, probe                        │
+├──────────────┬──────────────┬──────────────────────────┤
+│ zigbee-zcl   │ zigbee-zdo   │ zigbee-types             │
+├──────────────┴─┬────────────┴─┬────────────────────────┤
+│ zigbee-ezsp     │ zigbee-znp   │ zigbee-deconz          │
+│ zigbee-ash      │              │                        │
+└────────┬────────┴──────┬───────┴────────┬───────────────┘
+         │        serial or TCP           │
+  Silicon Labs NCP   TI Z-Stack NCP   ConBee, RaspBee   (or zigbee-sim)
+         │               │                │
+            Zigbee mesh: routers, end devices
 ```
+
+The coordinator's firmware runs the radio, MAC, network layer and routing.
+Everything above it, including the trust center, runs in the host. The
+[architecture page](https://pulzar-net.github.io/zigbee-bridge/architecture.html)
+explains the layers, the event flow and the design rules (no `unsafe`, no
+panics on radio input, bounded memory).
+
+## Compared with other projects
+
+| | zigbee-bridge | [Zigbee2MQTT](https://www.zigbee2mqtt.io) | [ZHA](https://www.home-assistant.io/integrations/zha/) |
+|---|---|---|---|
+| Language and runtime | Rust, one static binary | Node.js | Python, inside Home Assistant |
+| Device support | standard clusters only, so far | over 4,000 devices with per-device converters | thousands, with quirks |
+| Coordinators | EmberZNet; Z-Stack and deCONZ in the next release | EmberZNet, Z-Stack, deCONZ, ZiGate, others | EmberZNet, Z-Stack, deCONZ, ZiGate, XBee |
+| Interface | MQTT and Home Assistant discovery | MQTT, discovery, web frontend | Home Assistant UI |
+| Small hardware | runs on 128 MB MIPS routers | needs a Node.js capable host | needs Home Assistant |
+| Embeddable library | yes, Rust crates | zigbee-herdsman (TypeScript) | zigpy (Python) |
+| Maturity | 0.x, not yet hardware-tested | mature, very widely used | mature, very widely used |
+
+**Pick Zigbee2MQTT or ZHA** if you want a large and varied device collection
+to work today, a web frontend, or automatic device firmware updates: they are mature and their
+device libraries are the work of thousands of contributors. **Pick
+zigbee-bridge** if you need Zigbee on hardware too small for Node.js or
+Python, a single static binary with no runtime, or a Zigbee stack to embed
+in Rust software, and your devices use the standard clusters. The topic
+scheme is modeled on Zigbee2MQTT's, so tools written for one need little
+change for the other, but the two are not interchangeable.
+
+## Roadmap
+
+- **Next release:** Texas Instruments Z-Stack, ConBee and RaspBee
+  coordinators, channel change, device firmware updates, and restoring a
+  backup across coordinator families, all done on `main`; and the first
+  reports from real hardware.
+- **After that:** manufacturer-specific clusters and device quirks, groups and
+  scenes, binding over MQTT.
+
+Ideas and requests go in [issues](https://github.com/pulzar-net/zigbee-bridge/issues).
+
+## Contributing
+
+Contributions are welcome, from hardware reports to code. The whole stack
+can be developed and tested without hardware, using the simulator. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test, fuzz and send a
+change, and [the code of conduct](CODE_OF_CONDUCT.md).
 
 ## Security
 
-- Zigbee 3.0 trust center: devices join with the well-known key (or their
-  install code key), then receive a unique link key the coordinator derives
-  from a random root key that is part of every backup.
-- `join.install_code_only` admits only devices whose install code was given
-  with the `install_code` request; install codes are held in memory only.
-- `join.allow_legacy = false` removes devices that never request a unique
-  link key (pre-Zigbee 3.0 devices).
-- `network.json`, `backup.json` and `devices.json` are written atomically and
-  readable by their owner only. Keys are redacted from `Debug` output.
-
-## Development
-
-```sh
-cargo test --workspace            # includes the simulator-driven end-to-end tests
-cargo clippy --workspace --all-targets -- -D warnings
-cargo +nightly fuzz run ezsp_frames   # see fuzz/ for every target
-```
-
-CI runs formatting, lints, every test, a memory budget check with 200
-simulated devices (under 16 MB resident), a fuzz run of every frame parser,
-and static musl builds for `aarch64` and `mipsel` (under 4 MB) with the test
-suite run under qemu. No `unsafe` code anywhere; parsers are bounds-checked
-and their allocations are bounded by their input.
-
-The references studied were zigbee-herdsman (MIT), Silicon Labs' public
-EZSP and ASH documentation (UG100, UG101) and Texas Instruments' public
-Z-Stack Monitor and Test API documentation; no code was copied from any
-project.
+Please report vulnerabilities privately through
+[GitHub private vulnerability reporting](https://github.com/pulzar-net/zigbee-bridge/security/advisories/new),
+never in a public issue. See [SECURITY.md](SECURITY.md) for what to include
+and how fast we respond, and the
+[security model](https://pulzar-net.github.io/zigbee-bridge/security.html)
+for what the bridge protects.
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The implementation follows the Zigbee specification and Silicon Labs' and
+Texas Instruments' public protocol documentation. zigbee-herdsman (MIT) was
+studied as a reference; no code was copied from any project.
+
+## Maintained by Pulzar
+
+zigbee-bridge is maintained by [Pulzar](https://pulzr.net), which uses it in
+its own gateways. It is developed in the open, for anyone to use.

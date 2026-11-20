@@ -1,9 +1,5 @@
-//! Zigbee Device Object (ZDO) frames, Zigbee specification section 2.4.
-//!
-//! [`Message`] is one ZDO frame: a transaction sequence number and a typed
-//! [`Body`]. Requests and responses both parse and encode, so a host and a
-//! simulated device share one definition. Clusters this crate does not
-//! decode pass through as [`Body::Other`].
+#![doc = include_str!("../README.md")]
+
 #![cfg_attr(
     not(test),
     deny(

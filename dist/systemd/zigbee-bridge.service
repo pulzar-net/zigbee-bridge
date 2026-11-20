@@ -1,0 +1,57 @@
+# zigbee-bridge as a systemd service.
+#
+#   sudo install -m 0644 zigbee-bridge.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now zigbee-bridge
+#
+# The bridge runs as an unprivileged dynamic user in the dialout group, which
+# can open USB serial devices on most distributions. Its data directory is
+# /var/lib/zigbee-bridge (StateDirectory), its configuration
+# /etc/zigbee-bridge/config.toml.
+
+[Unit]
+Description=Zigbee to MQTT bridge
+Documentation=https://pulzar-net.github.io/zigbee-bridge/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/zigbee-bridge --config /etc/zigbee-bridge/config.toml
+# Exit status 75 means "start me again" (after a restore); any failure restarts.
+Restart=on-failure
+RestartSec=5
+Environment=RUST_LOG=info
+
+DynamicUser=yes
+SupplementaryGroups=dialout
+StateDirectory=zigbee-bridge
+StateDirectoryMode=0700
+# The MQTT password, if the broker needs one: keep the file readable by root
+# only and point mqtt.password_file at
+# /run/credentials/zigbee-bridge.service/mqtt-password.
+#LoadCredential=mqtt-password:/etc/zigbee-bridge/mqtt-password
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

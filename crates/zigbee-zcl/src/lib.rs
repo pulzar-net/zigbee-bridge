@@ -1,17 +1,5 @@
-//! The Zigbee Cluster Library.
-//!
-//! - [`types`]: the ZCL data types.
-//! - [`value`]: self-describing attribute values, with bounded decoding.
-//! - [`frame`]: the ZCL frame header.
-//! - [`foundation`]: global commands (read, write, configure reporting,
-//!   reports, default response, discovery).
-//! - [`defs`]: clusters, attributes and cluster-specific commands, generated
-//!   at build time from `data/clusters.toml` (the ZCL specification as
-//!   data), and a table-driven codec for every cluster command.
-//! - [`status`]: status codes.
-//!
-//! Nothing here is written per cluster: adding a cluster or an attribute is
-//! an edit to the data file.
+#![doc = include_str!("../README.md")]
+
 #![cfg_attr(
     not(test),
     deny(

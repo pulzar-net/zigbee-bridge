@@ -1,9 +1,4 @@
-//! A standalone Zigbee to MQTT bridge on the zigbee-host stack.
-//!
-//! [`run`] opens the coordinator, starts (or resumes, or restores) the
-//! network, connects to the MQTT broker and bridges until told to stop.
-//! The topic scheme is in [`bridge`]; Home Assistant discovery is in
-//! [`exposes`].
+#![doc = include_str!("../README.md")]
 
 pub mod bridge;
 pub mod config;
