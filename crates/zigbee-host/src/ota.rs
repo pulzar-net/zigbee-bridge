@@ -12,8 +12,8 @@
 
 use std::path::{Path, PathBuf};
 
-use zigbee_types::wire::{Reader, Truncated};
-use zigbee_types::Ieee;
+use zigbee_primitives::wire::{Reader, Truncated};
+use zigbee_primitives::Ieee;
 
 /// The OTA file identifier.
 pub const MAGIC: u32 = 0x0BEE_F11E;

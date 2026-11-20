@@ -84,7 +84,7 @@ A new parser needs a new fuzz target.
 
 - No `unsafe` code; the workspace lints forbid it.
 - No panics on input from a radio, a serial port or MQTT: parse with
-  `zigbee_types::wire::Reader`, return errors, and never `unwrap` a value
+  `zigbee_primitives::wire::Reader`, return errors, and never `unwrap` a value
   that came from outside.
 - Allocate in proportion to the input, never to a length the input claims.
 - Every public item has a doc comment (`missing_docs` is on).

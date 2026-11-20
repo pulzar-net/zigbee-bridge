@@ -1,6 +1,6 @@
 //! The ZCL frame: header and payload.
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
 
 /// Global (profile-wide) or cluster-specific command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -4,8 +4,8 @@
 //! simulator share one definition of every frame. Layouts that changed
 //! between protocol version 13 and 14 take the version.
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{Ieee, Key, NodeId};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{Ieee, Key, NodeId};
 
 use crate::ids::frame as id;
 use crate::types::{

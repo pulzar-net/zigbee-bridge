@@ -2,8 +2,8 @@
 
 use std::fmt;
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId, PanId};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId, PanId};
 
 /// The oldest EZSP protocol version this crate speaks (EmberZNet 7.4).
 pub const MIN_PROTOCOL_VERSION: u8 = 13;

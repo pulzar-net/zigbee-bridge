@@ -37,7 +37,7 @@ Texas Instruments Z-Stack.
                                        the NCP (or zigbee-sim)
 
  zigbee-zcl, zigbee-zdo: frame codecs used by the host, the bridge and the simulator
- zigbee-types: addresses, keys and the wire reader used by everything
+ zigbee-primitives: addresses, keys and the wire reader used by everything
 ```
 
 Each layer has one job and talks to its neighbors through a small interface:

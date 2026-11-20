@@ -8,7 +8,7 @@
 
 use std::future::Future;
 
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId, PanId};
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId, PanId};
 
 use crate::backup::Backup;
 use crate::error::HostError;

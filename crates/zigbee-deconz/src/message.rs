@@ -1,8 +1,8 @@
 //! Typed requests and responses, both directions, so the client, the
 //! simulator and the fuzz targets share one definition of each layout.
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{Ieee, NodeId};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{Ieee, NodeId};
 
 use crate::frame::Frame;
 use crate::ids::command as cmd;

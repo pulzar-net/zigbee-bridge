@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-zigbee-types = { path = "../crates/zigbee-types" }
+zigbee-primitives = { path = "../crates/zigbee-primitives" }
 zigbee-ash = { path = "../crates/zigbee-ash", default-features = false }
 zigbee-ezsp = { path = "../crates/zigbee-ezsp", default-features = false }
 zigbee-znp = { path = "../crates/zigbee-znp", default-features = false }

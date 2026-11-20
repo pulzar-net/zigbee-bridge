@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::time::{Duration, Instant};
 
 use tokio::sync::mpsc;
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId, PanId};
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId, PanId};
 
 use crate::device::{DeviceState, Outgoing, SimDevice};
 

@@ -9,8 +9,8 @@
 
 use std::time::Duration;
 
+use zigbee_primitives::Ieee;
 use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
-use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 fn usage() -> ! {

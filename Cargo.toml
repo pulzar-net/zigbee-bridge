@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/zigbee-types",
+    "crates/zigbee-primitives",
     "crates/zigbee-ash",
     "crates/zigbee-ezsp",
     "crates/zigbee-znp",
@@ -20,14 +20,15 @@ edition = "2021"
 rust-version = "1.89"
 license = "MIT"
 repository = "https://github.com/pulzar-net/zigbee-bridge"
+homepage = "https://pulzar-net.github.io/zigbee-bridge/"
 authors = ["Pulzar LLC"]
 
 [workspace.dependencies]
-zigbee-types = { path = "crates/zigbee-types", version = "0.2.0" }
+zigbee-primitives = { path = "crates/zigbee-primitives", version = "0.2.0" }
 zigbee-ash = { path = "crates/zigbee-ash", version = "0.2.0" }
-zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.2.0" }
-zigbee-znp = { path = "crates/zigbee-znp", version = "0.2.0" }
-zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.2.0" }
+zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.2.0", default-features = false }
+zigbee-znp = { path = "crates/zigbee-znp", version = "0.2.0", default-features = false }
+zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.2.0", default-features = false }
 zigbee-zcl = { path = "crates/zigbee-zcl", version = "0.2.0" }
 zigbee-zdo = { path = "crates/zigbee-zdo", version = "0.2.0" }
 zigbee-host = { path = "crates/zigbee-host", version = "0.2.0" }

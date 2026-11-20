@@ -1,5 +1,5 @@
 [package]
-name = "zigbee-types"
+name = "zigbee-primitives"
 description = "Zigbee address, key and wire-format types shared by the zigbee-bridge crates"
 version.workspace = true
 edition.workspace = true
@@ -7,7 +7,11 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "iot"]
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-primitives"
+readme = "README.md"
+include = ["src/**", "README.md", "LICENSE"]
+keywords = ["zigbee", "iot", "ieee802154", "eui64"]
 categories = ["embedded", "network-programming"]
 
 [dependencies]

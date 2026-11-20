@@ -9,8 +9,8 @@
     )
 )]
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{ExtPanId, Ieee, NodeId};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{ExtPanId, Ieee, NodeId};
 
 /// ZDO cluster ids. A response's id is its request's with bit 15 set.
 pub mod cluster {

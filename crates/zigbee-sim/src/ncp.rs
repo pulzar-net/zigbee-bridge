@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
 use tokio::io::{AsyncRead, AsyncWrite};
-use zigbee_types::{Ieee, Key, NodeId};
+use zigbee_primitives::{Ieee, Key, NodeId};
 use zigbee_zcl::Value;
 
 use crate::deconz::DeconzFront;
@@ -65,7 +65,7 @@ pub struct SimNeighbor {
     /// PAN id.
     pub pan_id: u16,
     /// Extended PAN id.
-    pub extended_pan_id: zigbee_types::ExtPanId,
+    pub extended_pan_id: zigbee_primitives::ExtPanId,
     /// Accepting joins.
     pub permit_joining: bool,
 }

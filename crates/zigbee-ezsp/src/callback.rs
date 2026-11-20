@@ -1,7 +1,7 @@
 //! Typed EZSP callbacks (NCP to host, unsolicited).
 
-use zigbee_types::wire::{Reader, Writer};
-use zigbee_types::{ExtPanId, Ieee, NodeId};
+use zigbee_primitives::wire::{Reader, Writer};
+use zigbee_primitives::{ExtPanId, Ieee, NodeId};
 
 use crate::command::DecodeError;
 use crate::ids::frame as id;

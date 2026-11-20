@@ -7,18 +7,22 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-zdo"
+readme = "README.md"
+include = ["src/**", "README.md", "LICENSE"]
 keywords = ["zigbee", "zdo", "iot"]
 categories = ["embedded", "network-programming", "parser-implementations"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 
 [features]
 default = ["serde"]
 ## `Serialize` for descriptors and table entries.
-serde = ["dep:serde", "zigbee-types/serde"]
+serde = ["dep:serde", "zigbee-primitives/serde"]
 
 [lints]
 workspace = true

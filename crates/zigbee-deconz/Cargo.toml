@@ -7,11 +7,15 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "deconz", "conbee", "raspbee"]
-categories = ["embedded", "network-programming"]
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-deconz"
+readme = "README.md"
+include = ["src/**", "README.md", "LICENSE"]
+keywords = ["zigbee", "deconz", "conbee", "raspbee", "iot"]
+categories = ["embedded", "hardware-support", "network-programming"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, optional = true, features = ["sync", "time", "rt", "macros", "io-util"] }
 tracing.workspace = true

@@ -4,8 +4,8 @@
 //! them in reports and read responses), so one [`Value`] type and one
 //! decoder cover every cluster.
 
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{Ieee, Key};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{Ieee, Key};
 
 use crate::types::{Class, DataType};
 

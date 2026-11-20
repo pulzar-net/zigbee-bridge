@@ -10,8 +10,8 @@ use std::time::Duration;
 
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::mpsc;
-use zigbee_types::wire::Writer;
-use zigbee_types::{ExtPanId, Ieee, Key};
+use zigbee_primitives::wire::Writer;
+use zigbee_primitives::{ExtPanId, Ieee, Key};
 use zigbee_znp::ids::{self, nv, nv_ex, product, startup_option, state, status};
 use zigbee_znp::{Decoded, Decoder, Frame, IncomingMsg, Indication, Kind, Request};
 

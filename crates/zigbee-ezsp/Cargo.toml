@@ -7,11 +7,15 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "ezsp", "emberznet", "silabs"]
-categories = ["embedded", "network-programming"]
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-ezsp"
+readme = "README.md"
+include = ["src/**", "README.md", "LICENSE"]
+keywords = ["zigbee", "ezsp", "emberznet", "silabs", "iot"]
+categories = ["embedded", "hardware-support", "network-programming"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 zigbee-ash = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio = { workspace = true, optional = true, features = ["sync", "time", "rt", "macros"] }

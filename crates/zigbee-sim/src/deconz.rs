@@ -12,7 +12,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::mpsc;
 use zigbee_deconz::ids::{device_state, net_state, param, status};
 use zigbee_deconz::{Address, ApsConfirm, ApsIndication, Decoder, Request, Response};
-use zigbee_types::{ExtPanId, Ieee, Key};
+use zigbee_primitives::{ExtPanId, Ieee, Key};
 
 use crate::device::Outgoing;
 use crate::mesh::{Mesh, MeshEvent, Scheduled, SimNetwork};

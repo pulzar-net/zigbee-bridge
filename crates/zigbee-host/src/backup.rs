@@ -5,7 +5,7 @@
 //! center's link keys.
 
 use serde::{Deserialize, Serialize};
-use zigbee_types::{ExtPanId, Ieee, Key, PanId};
+use zigbee_primitives::{ExtPanId, Ieee, Key, PanId};
 
 /// The format name in `metadata.format`.
 pub const FORMAT: &str = "zigpy/open-coordinator-backup";

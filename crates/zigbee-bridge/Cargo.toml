@@ -7,7 +7,11 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "mqtt", "home-assistant", "ezsp"]
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-bridge"
+readme = "README.md"
+include = ["src/**", "tests/e2e.rs", "README.md", "LICENSE"]
+keywords = ["zigbee", "mqtt", "home-assistant", "iot", "coordinator"]
 categories = ["command-line-utilities", "network-programming"]
 
 [[bin]]
@@ -20,7 +24,7 @@ path = "src/main.rs"
 schema = ["dep:schemars"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 zigbee-zcl.workspace = true
 zigbee-zdo.workspace = true
 zigbee-host = { workspace = true, features = ["host", "serial"] }

@@ -77,8 +77,8 @@ export default [
 				"slug": "library/zigbee-deconz"
 			},
 			{
-				"label": "zigbee-types",
-				"slug": "library/zigbee-types"
+				"label": "zigbee-primitives",
+				"slug": "library/zigbee-primitives"
 			},
 			{
 				"label": "zigbee-sim",

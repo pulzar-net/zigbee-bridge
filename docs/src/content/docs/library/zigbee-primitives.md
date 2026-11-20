@@ -1,9 +1,9 @@
 ---
-title: "zigbee-types"
+title: "zigbee-primitives"
 description: "The types every other crate shares."
 ---
 
-The types every other crate shares. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_types/index.html).
+The types every other crate shares. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_primitives/index.html).
 
 | Type | What it is |
 |---|---|

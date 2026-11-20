@@ -13,7 +13,7 @@ use zigbee_ezsp::types::{
     StackVersion,
 };
 use zigbee_ezsp::{ApsFrame, Callback, Command, ProtocolVersion, Response, RxPacketInfo, Status};
-use zigbee_types::{Ieee, Key};
+use zigbee_primitives::{Ieee, Key};
 
 use crate::device::Outgoing;
 use crate::mesh::{Mesh, MeshEvent, Scheduled, SimNetwork};

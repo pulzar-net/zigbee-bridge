@@ -20,8 +20,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::{mpsc, oneshot, watch};
-use zigbee_types::wire::{Reader, Writer};
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId};
+use zigbee_primitives::wire::{Reader, Writer};
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId};
 use zigbee_znp::client::{ClientConfig, Znp, ZnpError, ZnpEvent};
 use zigbee_znp::ids::{
     addr_mode, af_option, commissioning, nv, nv_ex, product, startup_option, state, status,
@@ -263,7 +263,7 @@ fn translate(ind: Indication, shared: &Shared) -> Option<AdapterEvent> {
 
 fn parse_scan_notify(data: &[u8]) -> ScanResult {
     let mut r = Reader::new(data);
-    let parse = |r: &mut Reader<'_>| -> Result<Vec<(u8, i8)>, zigbee_types::wire::Truncated> {
+    let parse = |r: &mut Reader<'_>| -> Result<Vec<(u8, i8)>, zigbee_primitives::wire::Truncated> {
         let status = r.u8()?;
         if status != 0 {
             return Ok(Vec::new());
@@ -390,7 +390,7 @@ impl ZnpAdapter {
     async fn nwk_info(&self) -> Result<(NodeId, u16, ExtPanId, u8), HostError> {
         let data = self.znp.request(Request::ZdoExtNwkInfo).await?;
         let mut r = Reader::new(&data);
-        let parse = |r: &mut Reader<'_>| -> Result<_, zigbee_types::wire::Truncated> {
+        let parse = |r: &mut Reader<'_>| -> Result<_, zigbee_primitives::wire::Truncated> {
             let nwk = r.u16()?;
             let _state = r.u8()?;
             let pan = r.u16()?;

@@ -18,7 +18,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use zigbee_ash::Config as AshConfig;
 use zigbee_ezsp::client::{unpack_stack_version, ClientConfig, Ezsp, EzspError};
 use zigbee_ezsp::{ids, Command, Response};
-use zigbee_types::Ieee;
+use zigbee_primitives::Ieee;
 
 /// The NCP families a port can be probed for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -203,7 +203,7 @@ where
     let v = znp.version();
     let ieee = if v.is_supported() {
         match znp.request_ok(zigbee_znp::Request::UtilGetDeviceInfo).await {
-            Ok(data) => zigbee_types::wire::Reader::new(data.get(1..).unwrap_or(&[]))
+            Ok(data) => zigbee_primitives::wire::Reader::new(data.get(1..).unwrap_or(&[]))
                 .ieee()
                 .ok(),
             Err(_) => None,

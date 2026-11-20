@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/pulzar-net/zigbee-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/pulzar-net/zigbee-bridge/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/pulzar-net/zigbee-bridge)](https://github.com/pulzar-net/zigbee-bridge/releases/latest)
+[![crates.io](https://img.shields.io/crates/v/zigbee-host)](https://crates.io/crates/zigbee-host)
+[![docs.rs](https://img.shields.io/docsrs/zigbee-host)](https://docs.rs/zigbee-host)
 [![Docs](https://img.shields.io/badge/docs-pulzar--net.github.io-blue)](https://pulzar-net.github.io/zigbee-bridge/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![MSRV](https://img.shields.io/badge/MSRV-1.89-blue)](Cargo.toml)
@@ -157,8 +159,8 @@ see [installation](#installation).
   has static Linux binaries for `x86_64`, `aarch64` (Raspberry Pi 3 and newer
   with a 64-bit OS) and `mipsel` (MT7621 and MT7628 routers), with a
   `SHA256SUMS` file. They have no runtime dependencies.
-- **From source**, with Rust 1.89 or newer:
-  `cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge`
+- **From crates.io**, with Rust 1.89 or newer:
+  `cargo install --locked zigbee-bridge`
 - **systemd**: a hardened unit is in [`contrib/systemd/`](contrib/systemd/zigbee-bridge.service).
 - **OpenWrt**: a procd init script is in [`contrib/openwrt/`](contrib/openwrt/zigbee-bridge.init).
 
@@ -221,17 +223,16 @@ The bridge is a thin layer over library crates you can use on their own.
 | [`zigbee-ash`](crates/zigbee-ash) | the ASHv2 serial link that carries EZSP, as a sans-IO state machine |
 | [`zigbee-znp`](crates/zigbee-znp) | Texas Instruments Z-Stack ZNP frames and an async client |
 | [`zigbee-deconz`](crates/zigbee-deconz) | dresden elektronik deCONZ serial frames and an async client |
-| [`zigbee-types`](crates/zigbee-types) | addresses, keys and a bounds-checked wire reader shared by all crates |
+| [`zigbee-primitives`](crates/zigbee-primitives) | addresses, keys and a bounds-checked wire reader shared by all crates |
 | [`zigbee-sim`](crates/zigbee-sim) | a coordinator simulator with simulated devices, for tests without hardware |
 | [`zigbee-bridge`](crates/zigbee-bridge) | the MQTT bridge, as a binary and a library |
 
-The crates are not on crates.io yet; depend on them from git:
+Each is on [crates.io](https://crates.io/search?q=zigbee-host) with its API
+on [docs.rs](https://docs.rs/zigbee-host). For the example below:
 
-```toml
-[dependencies]
-zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
-zigbee-zcl = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```sh
+cargo add zigbee-host zigbee-zcl
+cargo add tokio --features macros,rt-multi-thread
 ```
 
 This example starts a network, lets a device join, and reads its
@@ -244,7 +245,7 @@ use zigbee_host::probe::NcpKind;
 use zigbee_host::{random_network, AnyAdapter, Host, HostConfig, HostEvent, StartMode};
 use zigbee_zcl::{attr, cluster_id};
 # use zigbee_sim::{SimConfig, SimDevice, Simulator};
-# use zigbee_types::Ieee;
+# use zigbee_primitives::Ieee;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -297,7 +298,7 @@ cover every item.
 │                 reporting, device store, backup,       │
 │                 topology, probe                        │
 ├──────────────┬──────────────┬──────────────────────────┤
-│ zigbee-zcl   │ zigbee-zdo   │ zigbee-types             │
+│ zigbee-zcl   │ zigbee-zdo   │ zigbee-primitives        │
 ├──────────────┴─┬────────────┴─┬────────────────────────┤
 │ zigbee-ezsp     │ zigbee-znp   │ zigbee-deconz          │
 │ zigbee-ash      │              │                        │

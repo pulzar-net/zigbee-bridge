@@ -3,7 +3,7 @@
 
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc;
-use zigbee_types::{Ieee, Key, NodeId};
+use zigbee_primitives::{Ieee, Key, NodeId};
 
 use crate::adapter::{
     Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, StartMode,

@@ -9,6 +9,6 @@ fuzz_target!(|data: &[u8]| {
     if let Ok((offset, h)) = OtaHeader::find(data) {
         assert!(offset <= zigbee_host::ota::MAX_PREFIX);
         assert!(h.total_size >= u32::from(h.header_length));
-        let _ = h.fits(h.manufacturer, h.image_type, None, zigbee_types::Ieee(0));
+        let _ = h.fits(h.manufacturer, h.image_type, None, zigbee_primitives::Ieee(0));
     }
 });

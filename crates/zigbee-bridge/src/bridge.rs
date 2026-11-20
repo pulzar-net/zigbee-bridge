@@ -24,7 +24,7 @@ use std::time::Duration;
 use serde_json::{json, Map, Value as Json};
 use tokio::sync::mpsc;
 use zigbee_host::{AnyAdapter, Device, Host, HostEvent, InterviewStage};
-use zigbee_types::Ieee;
+use zigbee_primitives::Ieee;
 use zigbee_zcl::{cluster_id, Value};
 
 use crate::config::Config;

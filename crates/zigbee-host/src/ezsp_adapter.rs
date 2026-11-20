@@ -19,7 +19,7 @@ use zigbee_ezsp::ids::{
 };
 use zigbee_ezsp::types::{InitialSecurityState, NetworkParameters, SecManContext};
 use zigbee_ezsp::{ApsFrame, Callback, Command, Response, Status};
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId};
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId};
 
 use crate::adapter::{
     Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,

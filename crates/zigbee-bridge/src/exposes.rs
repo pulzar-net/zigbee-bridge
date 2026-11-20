@@ -7,7 +7,7 @@
 
 use serde_json::{json, Map, Value as Json};
 use zigbee_host::Device;
-use zigbee_types::Ieee;
+use zigbee_primitives::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 /// How a raw attribute becomes a JSON value.

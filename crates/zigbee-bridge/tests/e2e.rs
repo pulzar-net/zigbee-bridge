@@ -10,8 +10,8 @@ use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde_json::{json, Value as Json};
 use tokio::sync::{mpsc, oneshot};
 use zigbee_bridge::Config;
+use zigbee_primitives::Ieee;
 use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
-use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 const TH: Ieee = Ieee(0x00124B0000000001);

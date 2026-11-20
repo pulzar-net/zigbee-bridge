@@ -10,8 +10,8 @@ use zigbee_host::{
     random_network, AnyAdapter, Backup, Host, HostConfig, HostError, HostEvent, InterviewStage,
     JoinPolicy, NetworkSettings, StartMode, StartOutcome,
 };
+use zigbee_primitives::Ieee;
 use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
-use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 const TH: Ieee = Ieee(0x00124B0000000001);
@@ -832,7 +832,7 @@ async fn hears_other_networks_and_leaves_its_own() {
             neighbors: vec![zigbee_sim::SimNeighbor {
                 channel: 20,
                 pan_id: 0x4242,
-                extended_pan_id: zigbee_types::ExtPanId(0x0102_0304_0506_0708),
+                extended_pan_id: zigbee_primitives::ExtPanId(0x0102_0304_0506_0708),
                 permit_joining: false,
             }],
             ..SimConfig::default()

@@ -15,7 +15,7 @@ a different bridge, a gateway, a test tool or a protocol analyzer.
 | [zigbee-ezsp and zigbee-ash](/zigbee-bridge/library/zigbee-ezsp.html) | Silicon Labs serial protocols | talk to an EmberZNet NCP directly |
 | [zigbee-znp](/zigbee-bridge/library/zigbee-znp.html) | Texas Instruments serial protocol | talk to a Z-Stack NCP directly |
 | [zigbee-deconz](/zigbee-bridge/library/zigbee-deconz.html) | dresden elektronik serial protocol | talk to a ConBee or RaspBee directly |
-| [zigbee-types](/zigbee-bridge/library/zigbee-types.html) | shared types | addresses, keys, a safe wire reader |
+| [zigbee-primitives](/zigbee-bridge/library/zigbee-primitives.html) | shared types | addresses, keys, a safe wire reader |
 | [zigbee-sim](/zigbee-bridge/library/zigbee-sim.html) | test support | test Zigbee software without hardware |
 | [zigbee-bridge](/zigbee-bridge/library/zigbee-bridge.html) | MQTT bridge | run or embed the bridge itself |
 
@@ -24,11 +24,11 @@ This guide explains what each crate is for and how the pieces fit.
 
 ## Depending on the crates
 
-The crates are not published on crates.io yet. Depend on a release tag:
+Every crate is on [crates.io](https://crates.io/search?q=zigbee-host), with
+its API also on [docs.rs](https://docs.rs/zigbee-host):
 
-```toml
-[dependencies]
-zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2.0" }
+```sh
+cargo add zigbee-host
 ```
 
 Every crate shares the workspace version and is released together. While
@@ -39,7 +39,7 @@ the project is at 0.x, minor versions may break the API; the
 
 - **No `unsafe`.** The workspace lints forbid `unsafe` code in every crate.
 - **No panics on input.** Everything that parses bytes from a radio or a
-  serial port goes through the bounds-checked reader in zigbee-types, and
+  serial port goes through the bounds-checked reader in zigbee-primitives, and
   is fuzzed. A malformed frame is an error value, never a panic.
 - **Bounded allocation.** Parsers allocate in proportion to their input,
   never to a length field the input claims.

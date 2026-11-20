@@ -6,7 +6,7 @@
 //! two-byte frame control (whose high byte carries the format version, 1)
 //! and a two-byte frame id.
 
-use zigbee_types::wire::{Reader, Truncated};
+use zigbee_primitives::wire::{Reader, Truncated};
 
 /// Which header layout a frame uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

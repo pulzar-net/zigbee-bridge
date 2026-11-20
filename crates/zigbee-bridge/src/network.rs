@@ -6,7 +6,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use zigbee_host::{Backup, NetworkSettings};
-use zigbee_types::{ExtPanId, Key};
+use zigbee_primitives::{ExtPanId, Key};
 
 /// The file's name in the data directory.
 pub const FILE: &str = "network.json";

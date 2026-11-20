@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use zigbee_types::NodeId;
+use zigbee_primitives::NodeId;
 
 /// Where a link was learned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]

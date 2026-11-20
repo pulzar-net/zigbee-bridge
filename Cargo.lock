@@ -2279,8 +2279,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "zigbee-host",
+ "zigbee-primitives",
  "zigbee-sim",
- "zigbee-types",
  "zigbee-zcl",
  "zigbee-zdo",
 ]
@@ -2292,7 +2292,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tracing",
- "zigbee-types",
+ "zigbee-primitives",
 ]
 
 [[package]]
@@ -2303,7 +2303,7 @@ dependencies = [
  "tokio",
  "tracing",
  "zigbee-ash",
- "zigbee-types",
+ "zigbee-primitives",
 ]
 
 [[package]]
@@ -2323,11 +2323,19 @@ dependencies = [
  "zigbee-ash",
  "zigbee-deconz",
  "zigbee-ezsp",
+ "zigbee-primitives",
  "zigbee-sim",
- "zigbee-types",
  "zigbee-zcl",
  "zigbee-zdo",
  "zigbee-znp",
+]
+
+[[package]]
+name = "zigbee-primitives"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2341,18 +2349,10 @@ dependencies = [
  "zigbee-ash",
  "zigbee-deconz",
  "zigbee-ezsp",
- "zigbee-types",
+ "zigbee-primitives",
  "zigbee-zcl",
  "zigbee-zdo",
  "zigbee-znp",
-]
-
-[[package]]
-name = "zigbee-types"
-version = "0.2.0"
-dependencies = [
- "serde",
- "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2364,7 +2364,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "toml",
- "zigbee-types",
+ "zigbee-primitives",
 ]
 
 [[package]]
@@ -2373,7 +2373,7 @@ version = "0.2.0"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
- "zigbee-types",
+ "zigbee-primitives",
 ]
 
 [[package]]
@@ -2383,7 +2383,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tracing",
- "zigbee-types",
+ "zigbee-primitives",
 ]
 
 [[package]]

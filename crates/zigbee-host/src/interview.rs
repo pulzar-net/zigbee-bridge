@@ -4,7 +4,7 @@
 //! sleepy device interrupts resumes at the step that failed the next time
 //! the device talks, instead of starting over.
 
-use zigbee_types::Ieee;
+use zigbee_primitives::Ieee;
 use zigbee_zcl::foundation::ReportingConfig;
 use zigbee_zcl::{attr, cluster_id, DataType, Value};
 use zigbee_zdo::{Body, SimpleDescriptor};

@@ -1,6 +1,6 @@
 //! Global (foundation) commands, common to every cluster (ZCL chapter 2.5).
 
-use zigbee_types::wire::{Reader, Writer};
+use zigbee_primitives::wire::{Reader, Writer};
 
 use crate::types::DataType;
 use crate::value::{Value, ValueError};
@@ -375,7 +375,7 @@ mod tests {
                     value: None,
                 },
             ]),
-            Global::WriteAttributes(vec![(0x0010, Value::Ieee(zigbee_types::Ieee(5)))]),
+            Global::WriteAttributes(vec![(0x0010, Value::Ieee(zigbee_primitives::Ieee(5)))]),
             Global::WriteAttributesResponse(vec![(0, None)]),
             Global::ConfigureReporting(vec![
                 ReportingConfig {

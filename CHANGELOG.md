@@ -6,6 +6,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `zigbee-types` is renamed `zigbee-primitives` (crate `zigbee_primitives`),
+  since crates.io already has a `zigbee-types`. Replace the dependency and
+  the `use` paths; nothing else changes.
+
+### Added
+
+- The crates are ready for crates.io: descriptions, docs.rs links, each
+  crate's README as its crates.io page, and packages that carry only the
+  sources, README, license and the tests that run from the package. CI dry
+  runs `cargo publish --workspace` on every push, and a version tag
+  publishes the crates in dependency order.
+
 ## [0.2.0] - 2026-11-20
 
 Texas Instruments Z-Stack and dresden elektronik deCONZ coordinators,

@@ -1,6 +1,6 @@
 //! Host errors.
 
-use zigbee_types::{Ieee, NodeId};
+use zigbee_primitives::{Ieee, NodeId};
 
 /// A host operation failed.
 #[derive(Debug, Clone, thiserror::Error)]

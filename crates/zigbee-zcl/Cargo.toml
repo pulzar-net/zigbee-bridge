@@ -7,13 +7,16 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "zcl", "iot"]
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-zcl"
+readme = "README.md"
+include = ["src/**", "data/**", "build.rs", "README.md", "LICENSE"]
+keywords = ["zigbee", "zcl", "iot", "cluster-library"]
 categories = ["embedded", "network-programming", "parser-implementations"]
 build = "build.rs"
-include = ["src/**", "data/**", "build.rs", "Cargo.toml"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 half = { version = "2", default-features = false }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true

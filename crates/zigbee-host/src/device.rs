@@ -1,7 +1,7 @@
 //! What the host knows about each device.
 
 use serde::{Deserialize, Serialize};
-use zigbee_types::{Ieee, NodeId};
+use zigbee_primitives::{Ieee, NodeId};
 use zigbee_zdo::{NodeDescriptor, SimpleDescriptor};
 
 /// The interview's steps, in order.

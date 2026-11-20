@@ -7,8 +7,12 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-host"
+readme = "README.md"
+include = ["src/**", "tests/sim.rs", "README.md", "LICENSE"]
 keywords = ["zigbee", "coordinator", "ezsp", "znp", "deconz"]
-categories = ["embedded", "network-programming"]
+categories = ["embedded", "hardware-support", "network-programming"]
 
 [features]
 default = ["host", "serial"]
@@ -22,7 +26,7 @@ host = [
     "dep:getrandom",
     "dep:aes",
     "dep:crc",
-    "zigbee-types/serde",
+    "zigbee-primitives/serde",
     "tokio/fs",
 ]
 ## Identify the NCP on a port (one ASH reset and read-only queries).
@@ -31,11 +35,11 @@ probe = []
 serial = ["dep:tokio-serial", "tokio/net"]
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 zigbee-ash.workspace = true
-zigbee-ezsp.workspace = true
-zigbee-znp.workspace = true
-zigbee-deconz.workspace = true
+zigbee-ezsp = { workspace = true, features = ["client"] }
+zigbee-znp = { workspace = true, features = ["client"] }
+zigbee-deconz = { workspace = true, features = ["client"] }
 zigbee-zcl = { workspace = true, optional = true }
 zigbee-zdo = { workspace = true, optional = true }
 aes = { workspace = true, optional = true }

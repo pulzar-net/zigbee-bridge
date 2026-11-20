@@ -3,7 +3,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use zigbee_types::wire::Reader;
+use zigbee_primitives::wire::Reader;
 use zigbee_zcl::{Direction, Frame, FrameType, Global, Value, CLUSTERS};
 
 fuzz_target!(|data: &[u8]| {

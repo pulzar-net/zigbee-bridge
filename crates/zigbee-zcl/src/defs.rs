@@ -4,7 +4,7 @@
 //! [`attr`], [`command`], [`response`]) are generated at build time from
 //! `data/clusters.toml`.
 
-use zigbee_types::wire::{Reader, Writer};
+use zigbee_primitives::wire::{Reader, Writer};
 
 use crate::frame::Direction;
 use crate::types::DataType;

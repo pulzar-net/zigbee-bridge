@@ -2,7 +2,7 @@
 //! id, sequence number, status, total length, payload, and a 16-bit
 //! checksum (the two's complement of the byte sum).
 
-use zigbee_types::wire::{Reader, Truncated};
+use zigbee_primitives::wire::{Reader, Truncated};
 
 const END: u8 = 0xC0;
 const ESC: u8 = 0xDB;

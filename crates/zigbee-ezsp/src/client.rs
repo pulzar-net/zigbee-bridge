@@ -7,7 +7,7 @@ use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::{mpsc, oneshot};
 use zigbee_ash::{Config as AshConfig, Event as AshEvent, Link, LinkError, LinkEvent, Role};
-use zigbee_types::wire::Reader;
+use zigbee_primitives::wire::Reader;
 
 use crate::callback::Callback;
 use crate::command::{Command, DecodeError, Response};
@@ -464,7 +464,7 @@ async fn reader(
         }
         let result = if header.truncated() {
             Err(EzspError::Decode(DecodeError::Truncated(
-                zigbee_types::wire::Truncated {
+                zigbee_primitives::wire::Truncated {
                     offset: 0,
                     needed: 0,
                 },

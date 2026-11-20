@@ -5,8 +5,8 @@
 //! layout.
 
 use thiserror::Error;
-use zigbee_types::wire::{Reader, Truncated, Writer};
-use zigbee_types::{Ieee, Key, NodeId};
+use zigbee_primitives::wire::{Reader, Truncated, Writer};
+use zigbee_primitives::{Ieee, Key, NodeId};
 
 use crate::frame::{Frame, Kind};
 use crate::ids::{af, app_cnf, subsystem as sub, sys, util, zdo};
@@ -754,7 +754,7 @@ pub struct Beacon {
     /// Network update id.
     pub update_id: u8,
     /// Extended PAN id.
-    pub extended_pan_id: zigbee_types::ExtPanId,
+    pub extended_pan_id: zigbee_primitives::ExtPanId,
 }
 
 /// An asynchronous frame from the NCP.

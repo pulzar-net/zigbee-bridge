@@ -8,8 +8,8 @@ use std::time::Duration;
 
 use zigbee_ezsp::ClientConfig;
 use zigbee_host::{random_network, EzspAdapter, Host, HostConfig, HostEvent, StartMode};
+use zigbee_primitives::Ieee;
 use zigbee_sim::{SimConfig, SimDevice, Simulator};
-use zigbee_types::Ieee;
 
 const DEVICES: u64 = 200;
 const BUDGET_KB: u64 = 16 * 1024;

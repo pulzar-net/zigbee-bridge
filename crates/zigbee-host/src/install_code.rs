@@ -4,7 +4,7 @@
 use aes::cipher::{Array, BlockCipherEncrypt, KeyInit};
 use aes::Aes128;
 use crc::{Crc, CRC_16_IBM_SDLC};
-use zigbee_types::Key;
+use zigbee_primitives::Key;
 
 /// CRC-16/X-25, the install code checksum.
 const CRC: Crc<u16> = Crc::<u16>::new(&CRC_16_IBM_SDLC);

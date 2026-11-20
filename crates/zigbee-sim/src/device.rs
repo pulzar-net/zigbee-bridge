@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use zigbee_types::{Ieee, Key, NodeId};
+use zigbee_primitives::{Ieee, Key, NodeId};
 use zigbee_zcl::foundation::{self, Global, ReadRecord, ReportingConfig, ReportingStatus};
 use zigbee_zcl::{attr, cluster_id, status, DataType, Direction, Frame, FrameType, Value};
 use zigbee_zdo::{Binding, Body, Message, NodeDescriptor, SimpleDescriptor};
@@ -414,7 +414,7 @@ impl SimDevice {
                 total: 1,
                 start_index: 0,
                 neighbors: vec![zigbee_zdo::Neighbor {
-                    extended_pan_id: zigbee_types::ExtPanId(0),
+                    extended_pan_id: zigbee_primitives::ExtPanId(0),
                     ieee: coordinator,
                     nwk: 0,
                     flags: 0x04,
@@ -484,7 +484,7 @@ impl SimDevice {
     ) -> Option<(u8, Vec<u8>)> {
         let manufacturer = self.manufacturer_code;
         let firmware = self.firmware.as_mut()?;
-        let mut r = zigbee_types::wire::Reader::new(payload);
+        let mut r = zigbee_primitives::wire::Reader::new(payload);
         let block_request = |d: &OtaDownload| {
             let mut p = vec![0u8];
             p.extend_from_slice(&d.manufacturer.to_le_bytes());

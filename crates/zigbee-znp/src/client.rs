@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::{mpsc, oneshot};
-use zigbee_types::wire::Reader;
+use zigbee_primitives::wire::Reader;
 
 use crate::frame::{Decoded, Decoder, Frame, FrameError, Kind};
 use crate::ids::{self, subsystem};
@@ -75,8 +75,8 @@ pub enum ZnpError {
     },
 }
 
-impl From<zigbee_types::wire::Truncated> for ZnpError {
-    fn from(e: zigbee_types::wire::Truncated) -> Self {
+impl From<zigbee_primitives::wire::Truncated> for ZnpError {
+    fn from(e: zigbee_primitives::wire::Truncated) -> Self {
         ZnpError::Decode(DecodeError::Truncated(e))
     }
 }

@@ -21,8 +21,8 @@ use tokio::sync::{mpsc, oneshot, watch};
 use zigbee_deconz::client::{ClientConfig, Deconz, DeconzError, DeconzEvent};
 use zigbee_deconz::ids::{device_state, net_state, param, security_mode, status, tx_option};
 use zigbee_deconz::{Address, ApsRequest, Request, Response};
-use zigbee_types::wire::Reader;
-use zigbee_types::{ExtPanId, Ieee, Key, NodeId};
+use zigbee_primitives::wire::Reader;
+use zigbee_primitives::{ExtPanId, Ieee, Key, NodeId};
 
 use crate::adapter::{
     Adapter, AdapterEvent, AdapterInfo, Aps, Beacon, JoinPolicy, NetworkInfo, NetworkSettings,
@@ -85,7 +85,7 @@ fn ed_to_dbm(ed: u8) -> i8 {
 
 fn parse_scan_notify(data: &[u8]) -> ScanResult {
     let mut r = Reader::new(data);
-    let parse = |r: &mut Reader<'_>| -> Result<Vec<(u8, i8)>, zigbee_types::wire::Truncated> {
+    let parse = |r: &mut Reader<'_>| -> Result<Vec<(u8, i8)>, zigbee_primitives::wire::Truncated> {
         let _tsn = r.u8()?;
         if r.u8()? != 0 {
             return Ok(Vec::new());

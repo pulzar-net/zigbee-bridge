@@ -7,6 +7,10 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/zigbee-sim"
+readme = "README.md"
+include = ["src/**", "README.md", "LICENSE"]
 keywords = ["zigbee", "ezsp", "znp", "simulator", "testing"]
 categories = ["development-tools::testing", "simulation"]
 
@@ -15,11 +19,11 @@ name = "zigbee-ncp-sim"
 path = "src/bin/zigbee-ncp-sim.rs"
 
 [dependencies]
-zigbee-types.workspace = true
+zigbee-primitives.workspace = true
 zigbee-ash.workspace = true
-zigbee-ezsp = { workspace = true, default-features = false }
-zigbee-znp = { workspace = true, default-features = false }
-zigbee-deconz = { workspace = true, default-features = false }
+zigbee-ezsp.workspace = true
+zigbee-znp.workspace = true
+zigbee-deconz.workspace = true
 zigbee-zcl.workspace = true
 zigbee-zdo.workspace = true
 thiserror.workspace = true

@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
-use zigbee_types::Ieee;
+use zigbee_primitives::Ieee;
 
 use crate::device::Device;
 

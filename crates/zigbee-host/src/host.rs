@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use tokio::sync::{mpsc, oneshot, Semaphore};
-use zigbee_types::{Ieee, Key, NodeId, BROADCAST_ROUTERS};
+use zigbee_primitives::{Ieee, Key, NodeId, BROADCAST_ROUTERS};
 use zigbee_zcl::foundation::{self, Global, ReadRecord, ReportingConfig};
 use zigbee_zcl::{Direction, Frame, FrameType, Value};
 use zigbee_zdo::{Body, Message, Neighbor};
@@ -1274,7 +1274,7 @@ impl<A: Adapter> Host<A> {
         };
         self.inner
             .adapter
-            .send_broadcast(zigbee_types::BROADCAST_RX_ON_WHEN_IDLE, aps, payload)
+            .send_broadcast(zigbee_primitives::BROADCAST_RX_ON_WHEN_IDLE, aps, payload)
             .await?;
         // Devices switch after the broadcast has spread (nwkNetworkBroadcast
         // DeliveryTime); the coordinator with them.

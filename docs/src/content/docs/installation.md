@@ -34,15 +34,17 @@ zigbee-bridge --version
 There are no builds for macOS or Windows: build from source there. Big-endian
 MIPS routers (such as Atheros ath79) are not supported.
 
-## From source
+## From crates.io
 
 With Rust 1.89 or newer:
 
 ```sh
-cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge
+cargo install --locked zigbee-bridge
 ```
 
-Or from a clone, `cargo build --release -p zigbee-bridge`; the binary is
+## From source
+
+From a clone, `cargo build --release -p zigbee-bridge`; the binary is
 `target/release/zigbee-bridge`. On Linux, opening serial ports needs nothing
 beyond the C library; no system packages are required.
 
