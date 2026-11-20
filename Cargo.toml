@@ -15,7 +15,7 @@ members = [
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.89"
 license = "MIT"
@@ -23,15 +23,15 @@ repository = "https://github.com/pulzar-net/zigbee-bridge"
 authors = ["Pulzar LLC"]
 
 [workspace.dependencies]
-zigbee-types = { path = "crates/zigbee-types", version = "0.1.0" }
-zigbee-ash = { path = "crates/zigbee-ash", version = "0.1.0" }
-zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.1.0" }
-zigbee-znp = { path = "crates/zigbee-znp", version = "0.1.0" }
-zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.1.0" }
-zigbee-zcl = { path = "crates/zigbee-zcl", version = "0.1.0" }
-zigbee-zdo = { path = "crates/zigbee-zdo", version = "0.1.0" }
-zigbee-host = { path = "crates/zigbee-host", version = "0.1.0" }
-zigbee-sim = { path = "crates/zigbee-sim", version = "0.1.0" }
+zigbee-types = { path = "crates/zigbee-types", version = "0.2.0" }
+zigbee-ash = { path = "crates/zigbee-ash", version = "0.2.0" }
+zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.2.0" }
+zigbee-znp = { path = "crates/zigbee-znp", version = "0.2.0" }
+zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.2.0" }
+zigbee-zcl = { path = "crates/zigbee-zcl", version = "0.2.0" }
+zigbee-zdo = { path = "crates/zigbee-zdo", version = "0.2.0" }
+zigbee-host = { path = "crates/zigbee-host", version = "0.2.0" }
+zigbee-sim = { path = "crates/zigbee-sim", version = "0.2.0" }
 
 aes = "0.9"
 crc = "3"

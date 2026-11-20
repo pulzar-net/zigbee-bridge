@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-20
+
+Texas Instruments Z-Stack and dresden elektronik deCONZ coordinators,
+channel change, an OTA upgrade server, and backups that restore onto any
+coordinator family.
+
 ### Added
 
 - `zigbee-znp`: Texas Instruments Z-Stack MT frames, typed requests and
