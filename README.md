@@ -47,9 +47,9 @@ between 0.x releases, and keep a backup of your network
 | Read-only coordinator probe (`zigbee-bridge probe`) | done in 0.1.0 |
 | Texas Instruments Z-Stack 3 coordinators (ZNP) | on `main`, next release |
 | dresden elektronik ConBee and RaspBee (deCONZ) | on `main`, next release |
-| Channel change without re-pairing | on `main`, next release |
-| Device firmware updates (OTA) from image files you provide | on `main`, next release |
-| Restore a backup onto a coordinator of another family | on `main`, next release |
+| Channel change without re-pairing | in progress on `main` |
+| Device firmware updates (OTA) from image files you provide | in progress on `main` |
+| Restore a backup onto a coordinator of another family | in progress on `main` |
 | Testing on real coordinators and devices | in progress |
 | Manufacturer-specific clusters and per-device quirks | planned |
 | Groups, scenes and binding requests over MQTT | planned |
@@ -69,9 +69,9 @@ one, please [tell us how it went](https://github.com/pulzar-net/zigbee-bridge/is
 | SMLIGHT SLZB-06M, SLZB-07 | EFR32MG21 | EmberZNet 7.4 or newer, NCP (SLZB-06M over `tcp://`) | expected |
 | Any EFR32MG21 or MG24 coordinator | EFR32MG2x | EmberZNet 7.4 to 8.x, NCP | expected |
 | Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | Z-Stack 3.x.0 | next release |
-| ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware | next release |
+| ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware 0x26580700 or newer | next release |
 | EmberZNet 7.3 and older | EFR32 | EZSP 12 and older | unsupported: refused with "update the firmware" |
-| CC2531, CC2530 | CC253x | Z-Stack Home 1.2 | unsupported |
+| CC2531, CC2530 | CC253x | Z-Stack Home 1.2 | unsupported: refused (`probe` still identifies it) |
 | XBee, ZiGate, Telink, NXP | | | unsupported, not planned |
 
 Devices: any Zigbee 3.0 or Zigbee HA 1.2 device that uses the standard
@@ -337,14 +337,14 @@ change for the other, but the two are not interchangeable.
 
 ## Roadmap
 
-- **Next release:** Texas Instruments Z-Stack, ConBee and RaspBee
-  coordinators, channel change, device firmware updates, and restoring a
-  backup across coordinator families, all done on `main`; and the first
-  reports from real hardware.
+- **Next release:** Texas Instruments Z-Stack and ConBee/RaspBee
+  coordinators (done on `main`); channel change, device firmware updates,
+  and restoring a backup across coordinator families (in progress on
+  `main`); and the first reports from real hardware.
 - **After that:** manufacturer-specific clusters and device quirks, groups and
   scenes, binding over MQTT.
 
-Ideas and requests go in [issues](https://github.com/pulzar-net/zigbee-bridge/issues).
+Questions go in [Discussions](https://github.com/pulzar-net/zigbee-bridge/discussions); bugs and requests in [issues](https://github.com/pulzar-net/zigbee-bridge/issues).
 
 ## Contributing
 

@@ -21,9 +21,9 @@ firmware decides whether it works, more than the hardware does.
 | Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | USB, TCP | Z-Stack 3.x.0 | next release (on `main`) |
 | Other CC2652, CC1352 coordinators | CC26x2, CC13x2 | USB, UART, TCP | Z-Stack 3.x.0 | next release (on `main`) |
 | CC2531 | CC2531 | USB | Z-Stack 3.0.x | next release (on `main`), not recommended |
-| ConBee II, ConBee III, RaspBee II | deCONZ | USB, GPIO UART | deCONZ firmware | next release (on `main`) |
+| ConBee II, ConBee III, RaspBee II | deCONZ | USB, GPIO UART | deCONZ firmware 0x26580700 or newer | next release (on `main`) |
 | EFR32 with EmberZNet 7.3 or older | EFR32 | | EZSP 12 or older | unsupported: refused, update the firmware |
-| CC2530, CC2531 with Z-Stack Home 1.2 | CC253x | | Z-Stack 1.2 | unsupported |
+| CC2530, CC2531 with Z-Stack Home 1.2 | CC253x | | Z-Stack 1.2 | unsupported: refused, though `probe` identifies it |
 | XBee, ZiGate, Telink, NXP | | | | unsupported, not planned |
 
 The firmware must be the **Zigbee NCP** build (also called "coordinator" or
@@ -43,15 +43,33 @@ RTS/CTS (`flow_control = "hardware"`), `ncp-uart-sw` builds use XON/XOFF
 
 ### dresden elektronik deCONZ
 
-On `main`, not in 0.1.0. ConBee II, ConBee III, RaspBee and RaspBee II with
-dresden elektronik's deCONZ firmware, over its serial protocol. Use the
-firmware version dresden elektronik currently recommends for your stick.
+On `main`, not in 0.1.0. ConBee II, ConBee III and RaspBee II with
+dresden elektronik's deCONZ firmware 0x26580700 or newer, over its serial
+protocol.
+
+The deCONZ firmware does not report joins or leaves (the bridge learns of a
+device from its announce) and keeps one global trust center link key. So
+with a ConBee or RaspBee, `join.install_code_only` is refused, and
+`join.allow_legacy = false` is not enforced.
 
 ### Texas Instruments Z-Stack
 
 On `main`, not in 0.1.0. Z-Stack 3.x.0 (CC2652, CC1352, CC26x2) and Z-Stack
 3.0.x (CC2530, CC2531) coordinator firmware, over ZNP. A CC2531 works but is
 slow and has very little memory; it is fine for a test, not for a house.
+
+Z-Stack does not report signal strength, link key exchanges or ZDO
+delivery, so those readings are left out rather than guessed (`rssi` is
+`null` in topology links), and Z-Stack itself enforces
+`join.allow_legacy = false`. Z-Stack Home 1.2 is refused; `probe` still
+identifies it.
+
+### Choosing the family
+
+`serial.adapter` (not in 0.1.0) is `auto` by default: the bridge probes the
+port for EZSP, then ZNP, then deCONZ. Set `ezsp`, `znp` or `deconz` to skip
+the probe. `zigbee-bridge probe PORT` runs the same probe and prints the
+`kind` and `product` it found.
 
 ## Check a coordinator
 

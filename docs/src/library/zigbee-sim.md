@@ -7,7 +7,8 @@ hosts without hardware. [API docs](https://pulzar-net.github.io/zigbee-bridge/ap
 
 - Silicon Labs EmberZNet: ASH and EZSP, protocol 13 (as EmberZNet 7.4 does)
   or 14 and later;
-- Texas Instruments Z-Stack 3 over ZNP (on `main`).
+- Texas Instruments Z-Stack 3 over ZNP, and dresden elektronik deCONZ
+  (both on `main`).
 
 It keeps a network the way an NCP keeps its non-volatile memory (keys, PAN
 ids, frame counter, link keys, a written IEEE address), so restarts,
@@ -26,7 +27,7 @@ bridge against it, serve it over TCP:
 cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --devices th,plug,door --report-every 10
 ```
 
-`zigbee-ncp-sim` options: `--listen ADDR`, `--ncp ezsp|znp`,
+`zigbee-ncp-sim` options: `--listen ADDR`, `--ncp ezsp|znp|deconz`,
 `--protocol 13..19` (EZSP version), `--devices` (a comma-separated list of
 `th`, `plug`, `door`), and `--report-every SECONDS`.
 

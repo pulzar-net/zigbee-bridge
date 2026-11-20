@@ -11,6 +11,7 @@ a different bridge, a gateway, a test tool or a protocol analyzer.
 | [zigbee-zdo](zigbee-zdo.md) | Zigbee Device Objects | encode and decode ZDO requests and responses |
 | [zigbee-ezsp and zigbee-ash](zigbee-ezsp.md) | Silicon Labs serial protocols | talk to an EmberZNet NCP directly |
 | [zigbee-znp](zigbee-znp.md) | Texas Instruments serial protocol | talk to a Z-Stack NCP directly |
+| [zigbee-deconz](zigbee-deconz.md) | dresden elektronik serial protocol | talk to a ConBee or RaspBee directly |
 | [zigbee-types](zigbee-types.md) | shared types | addresses, keys, a safe wire reader |
 | [zigbee-sim](zigbee-sim.md) | test support | test Zigbee software without hardware |
 | [zigbee-bridge](zigbee-bridge.md) | MQTT bridge | run or embed the bridge itself |

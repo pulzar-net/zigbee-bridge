@@ -22,6 +22,7 @@
   - [zigbee-zdo](library/zigbee-zdo.md)
   - [zigbee-ezsp and zigbee-ash](library/zigbee-ezsp.md)
   - [zigbee-znp](library/zigbee-znp.md)
+  - [zigbee-deconz](library/zigbee-deconz.md)
   - [zigbee-types](library/zigbee-types.md)
   - [zigbee-sim](library/zigbee-sim.md)
   - [zigbee-bridge](library/zigbee-bridge.md)
