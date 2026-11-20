@@ -2215,6 +2215,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zigbee-deconz"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "zigbee-types",
+]
+
+[[package]]
 name = "zigbee-ezsp"
 version = "0.1.0"
 dependencies = [
@@ -2240,6 +2250,7 @@ dependencies = [
  "tokio-serial",
  "tracing",
  "zigbee-ash",
+ "zigbee-deconz",
  "zigbee-ezsp",
  "zigbee-sim",
  "zigbee-types",
@@ -2257,6 +2268,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "zigbee-ash",
+ "zigbee-deconz",
  "zigbee-ezsp",
  "zigbee-types",
  "zigbee-zcl",

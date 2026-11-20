@@ -69,6 +69,7 @@ pub(crate) enum Scheduled {
     Mesh(MeshEvent),
     Ezsp(zigbee_ezsp::Callback),
     Znp(zigbee_znp::Indication),
+    Deconz(crate::deconz::Pending),
 }
 
 pub(crate) struct Joined {
@@ -323,6 +324,34 @@ impl Mesh {
             }
             None => false,
         }
+    }
+
+    /// A Mgmt_NWK_Update_req the coordinator handles itself (`data` is the
+    /// request after its sequence number): a channel change (duration
+    /// 0xFE) moves the network; an energy scan (duration 0 to 5) returns
+    /// the Mgmt_NWK_Update_notify payload, energies in 802.15.4 ED units.
+    pub fn network_update(&mut self, data: &[u8]) -> Option<Vec<u8>> {
+        let mask = u32::from_le_bytes(data.get(..4)?.try_into().ok()?);
+        let duration = *data.get(4)?;
+        if duration == 0xFE {
+            if let Some(channel) = (11..=26u8).find(|c| mask & (1 << c) != 0) {
+                self.change_channel(channel);
+            }
+            return None;
+        }
+        if duration > 5 {
+            return None;
+        }
+        let energies = Mesh::energy(mask);
+        let mut notify = vec![0];
+        notify.extend_from_slice(&100u16.to_le_bytes());
+        notify.extend_from_slice(&0u16.to_le_bytes());
+        notify.extend_from_slice(&mask.to_le_bytes());
+        notify.push(energies.len() as u8);
+        for (_, dbm) in energies {
+            notify.push(((i16::from(dbm) + 100).clamp(0, 40) * 255 / 40) as u8);
+        }
+        Some(notify)
     }
 
     /// Energy per channel in the mask, dBm.

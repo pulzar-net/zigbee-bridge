@@ -13,6 +13,7 @@ zigbee-types = { path = "../crates/zigbee-types" }
 zigbee-ash = { path = "../crates/zigbee-ash", default-features = false }
 zigbee-ezsp = { path = "../crates/zigbee-ezsp", default-features = false }
 zigbee-znp = { path = "../crates/zigbee-znp", default-features = false }
+zigbee-deconz = { path = "../crates/zigbee-deconz", default-features = false }
 zigbee-zcl = { path = "../crates/zigbee-zcl" }
 zigbee-zdo = { path = "../crates/zigbee-zdo" }
 
@@ -57,6 +58,13 @@ debug = 1
 [[bin]]
 name = "znp_frames"
 path = "fuzz_targets/znp_frames.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "deconz_frames"
+path = "fuzz_targets/deconz_frames.rs"
 test = false
 doc = false
 bench = false

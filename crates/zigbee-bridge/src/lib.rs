@@ -75,12 +75,12 @@ async fn detect(port: &str, baud: u32) -> Result<NcpKind, RunError> {
             Ok(id.kind)
         }
         Ok(Some(id)) => Err(RunError::Setup(format!(
-            "{port}: {} coordinator firmware {} is too old; update it (EmberZNet 7.4 or newer, Z-Stack 3)",
+            "{port}: {} coordinator firmware {} is too old; update it (EmberZNet 7.4 or newer, Z-Stack 3, deCONZ 0x26580700 or newer)",
             id.kind.name(),
             id.firmware
         ))),
         Ok(None) => Err(RunError::Setup(format!(
-            "{port}: no EZSP or ZNP coordinator answered at {baud} baud (set serial.adapter to skip detection)"
+            "{port}: no EZSP, ZNP or deCONZ coordinator answered at {baud} baud (set serial.adapter to skip detection)"
         ))),
         Err(e) => Err(RunError::Setup(format!("{port}: {e}"))),
     }
@@ -131,6 +131,7 @@ pub async fn run(
     let kind = match config.serial.adapter {
         config::AdapterChoice::Ezsp => NcpKind::Ezsp,
         config::AdapterChoice::Znp => NcpKind::Znp,
+        config::AdapterChoice::Deconz => NcpKind::Deconz,
         config::AdapterChoice::Auto => detect(&config.serial.port, config.serial.baud).await?,
     };
     let port = zigbee_host::port::open(&config.serial.port, config.serial.baud, flow)

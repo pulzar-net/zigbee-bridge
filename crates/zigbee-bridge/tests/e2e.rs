@@ -173,6 +173,11 @@ async fn znp_device_joins_is_interviewed_and_reports_over_mqtt() {
     end_to_end(SimNcp::Znp { product: 1 }, "znp", "2.7.1.20230507").await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn deconz_device_joins_is_interviewed_and_reports_over_mqtt() {
+    end_to_end(SimNcp::Deconz, "deconz", "0x26780700").await;
+}
+
 /// The bridge detects the coordinator family (the configuration leaves
 /// `serial.adapter` at `auto`), forms, admits and interviews devices, and
 /// carries reports and requests over MQTT.

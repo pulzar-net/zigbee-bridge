@@ -9,6 +9,7 @@ use crate::adapter::{
     Adapter, AdapterEvent, AdapterInfo, Aps, JoinPolicy, NetworkInfo, StartMode, StartOutcome,
 };
 use crate::backup::Backup;
+use crate::deconz_adapter::DeconzAdapter;
 use crate::error::HostError;
 use crate::ezsp_adapter::EzspAdapter;
 use crate::probe::NcpKind;
@@ -22,6 +23,8 @@ pub enum AnyAdapter {
     Ezsp(EzspAdapter),
     /// Texas Instruments Z-Stack.
     Znp(ZnpAdapter),
+    /// dresden elektronik deCONZ.
+    Deconz(DeconzAdapter),
 }
 
 impl AnyAdapter {
@@ -44,6 +47,12 @@ impl AnyAdapter {
                     ZnpAdapter::connect(io, zigbee_znp::client::ClientConfig::default()).await?;
                 Ok((AnyAdapter::Znp(a), rx))
             }
+            NcpKind::Deconz => {
+                let (a, rx) =
+                    DeconzAdapter::connect(io, zigbee_deconz::client::ClientConfig::default())
+                        .await?;
+                Ok((AnyAdapter::Deconz(a), rx))
+            }
         }
     }
 
@@ -52,6 +61,7 @@ impl AnyAdapter {
         match self {
             AnyAdapter::Ezsp(_) => NcpKind::Ezsp,
             AnyAdapter::Znp(_) => NcpKind::Znp,
+            AnyAdapter::Deconz(_) => NcpKind::Deconz,
         }
     }
 }
@@ -61,6 +71,7 @@ macro_rules! each {
         match $self {
             AnyAdapter::Ezsp($a) => $e,
             AnyAdapter::Znp($a) => $e,
+            AnyAdapter::Deconz($a) => $e,
         }
     };
 }

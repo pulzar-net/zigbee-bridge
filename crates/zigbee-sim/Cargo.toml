@@ -1,6 +1,6 @@
 [package]
 name = "zigbee-sim"
-description = "A Zigbee network co-processor simulator (EZSP and ZNP) with simulated devices, for testing Zigbee hosts without hardware"
+description = "A Zigbee network co-processor simulator (EZSP, ZNP, deCONZ) with simulated devices, for testing Zigbee hosts without hardware"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -19,6 +19,7 @@ zigbee-types.workspace = true
 zigbee-ash.workspace = true
 zigbee-ezsp = { workspace = true, default-features = false }
 zigbee-znp = { workspace = true, default-features = false }
+zigbee-deconz = { workspace = true, default-features = false }
 zigbee-zcl.workspace = true
 zigbee-zdo.workspace = true
 thiserror.workspace = true

@@ -25,7 +25,8 @@
 //!
 //! The NCP sits behind the [`Adapter`] trait: [`EzspAdapter`] for Silicon
 //! Labs EmberZNet 7.4 and 8.x, [`ZnpAdapter`] for Texas Instruments
-//! Z-Stack 3, and [`AnyAdapter`] to choose at run time.
+//! Z-Stack 3, [`DeconzAdapter`] for dresden elektronik ConBee and RaspBee,
+//! and [`AnyAdapter`] to choose at run time.
 //!
 //! Features: `host` (everything above), `probe` with `serial` alone for a
 //! small detection tool, `serial` to open ports by name.
@@ -36,6 +37,8 @@ pub mod adapter;
 pub mod any_adapter;
 #[cfg(feature = "host")]
 pub mod backup;
+#[cfg(feature = "host")]
+pub mod deconz_adapter;
 #[cfg(feature = "host")]
 pub mod device;
 #[cfg(feature = "host")]
@@ -68,6 +71,8 @@ pub use any_adapter::AnyAdapter;
 #[cfg(feature = "host")]
 pub use backup::Backup;
 #[cfg(feature = "host")]
+pub use deconz_adapter::DeconzAdapter;
+#[cfg(feature = "host")]
 pub use device::{Device, InterviewStage};
 #[cfg(feature = "host")]
 pub use error::HostError;
@@ -78,3 +83,8 @@ pub use host::{FrameLink, Host, HostConfig, HostEvent, RawZcl, HOST_ENDPOINT};
 pub use probe::{NcpIdentity, NcpKind, ProbeError};
 #[cfg(feature = "host")]
 pub use znp_adapter::ZnpAdapter;
+
+// The repository README's Rust examples run as doctests, so they cannot rot.
+#[cfg(doctest)]
+#[doc = include_str!("../../../README.md")]
+struct ReadmeDoctests;

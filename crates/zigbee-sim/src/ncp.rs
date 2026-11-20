@@ -8,6 +8,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use zigbee_types::{Ieee, Key, NodeId};
 use zigbee_zcl::Value;
 
+use crate::deconz::DeconzFront;
 use crate::device::{DeviceState, Outgoing, SimDevice};
 use crate::ezsp::EzspFront;
 use crate::mesh::{Mesh, SimNetwork};
@@ -27,6 +28,8 @@ pub enum SimNcp {
         /// Product: 1 for Z-Stack 3.x.0 (CC2652), 2 for 3.0.x (CC2531).
         product: u8,
     },
+    /// dresden elektronik deCONZ (a ConBee II).
+    Deconz,
 }
 
 impl Default for SimNcp {
@@ -89,6 +92,7 @@ pub struct SimSnapshot {
 pub(crate) enum Front {
     Ezsp(EzspFront),
     Znp(ZnpFront),
+    Deconz(DeconzFront),
 }
 
 impl Front {
@@ -106,10 +110,18 @@ impl Front {
         }
     }
 
+    pub fn deconz(&mut self) -> Option<&mut DeconzFront> {
+        match self {
+            Front::Deconz(f) => Some(f),
+            _ => None,
+        }
+    }
+
     fn link_keys(&self) -> Vec<(Ieee, Key)> {
         match self {
             Front::Ezsp(f) => f.key_table.values().copied().collect(),
             Front::Znp(f) => f.link_keys.iter().map(|(i, k)| (*i, *k)).collect(),
+            Front::Deconz(f) => f.link_keys.iter().map(|(i, k)| (*i, *k)).collect(),
         }
     }
 }
@@ -159,6 +171,7 @@ impl Simulator {
                 Front::Ezsp(EzspFront::new(protocol, config.key_table_size))
             }
             SimNcp::Znp { product } => Front::Znp(ZnpFront::new(product)),
+            SimNcp::Deconz => Front::Deconz(DeconzFront::new()),
         };
         Simulator {
             state: Arc::new(Mutex::new(SimState { mesh, front })),
@@ -265,11 +278,15 @@ impl Simulator {
     where
         T: AsyncRead + AsyncWrite + Send + 'static,
     {
-        let is_ezsp = matches!(lock(&self.state).front, Front::Ezsp(_));
-        if is_ezsp {
-            crate::ezsp::serve(self, io).await
-        } else {
-            crate::znp::serve(self, io).await
+        let kind = match lock(&self.state).front {
+            Front::Ezsp(_) => 0,
+            Front::Znp(_) => 1,
+            Front::Deconz(_) => 2,
+        };
+        match kind {
+            0 => crate::ezsp::serve(self, io).await,
+            1 => crate::znp::serve(self, io).await,
+            _ => crate::deconz::serve(self, io).await,
         }
     }
 }

@@ -7,7 +7,8 @@ port = "/dev/ttyUSB0"
 baud = 115200
 # none, hardware (RTS/CTS) or software
 flow_control = "none"
-# auto (probe the port), ezsp (Silicon Labs EmberZNet) or znp (TI Z-Stack)
+# auto (probe the port), ezsp (Silicon Labs EmberZNet), znp (TI Z-Stack) or
+# deconz (ConBee, RaspBee)
 adapter = "auto"
 
 [mqtt]

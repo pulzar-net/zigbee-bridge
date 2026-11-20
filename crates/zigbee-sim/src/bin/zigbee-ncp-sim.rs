@@ -1,7 +1,7 @@
 //! Serve the NCP simulator over TCP.
 //!
 //! ```text
-//! zigbee-ncp-sim [--listen 127.0.0.1:9999] [--ncp ezsp|znp] [--protocol 13] [--devices th,plug,door] [--report-every 30]
+//! zigbee-ncp-sim [--listen 127.0.0.1:9999] [--ncp ezsp|znp|deconz] [--protocol 13] [--devices th,plug,door] [--report-every 30]
 //! ```
 //!
 //! Point a host at `tcp://127.0.0.1:9999`. Devices join when the host opens
@@ -14,7 +14,7 @@ use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 fn usage() -> ! {
-    eprintln!("usage: zigbee-ncp-sim [--listen ADDR] [--ncp ezsp|znp] [--protocol 13..19] [--devices th,plug,door] [--report-every SECONDS]");
+    eprintln!("usage: zigbee-ncp-sim [--listen ADDR] [--ncp ezsp|znp|deconz] [--protocol 13..19] [--devices th,plug,door] [--report-every SECONDS]");
     std::process::exit(2)
 }
 
@@ -41,6 +41,7 @@ async fn main() {
                 config.ncp = match args.next().as_deref() {
                     Some("ezsp") => SimNcp::Ezsp { protocol: 13 },
                     Some("znp") => SimNcp::Znp { product: 1 },
+                    Some("deconz") => SimNcp::Deconz,
                     _ => usage(),
                 }
             }

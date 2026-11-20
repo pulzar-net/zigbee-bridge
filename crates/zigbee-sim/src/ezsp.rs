@@ -458,11 +458,17 @@ impl EzspFront {
                     aps_sequence,
                 }
             }
-            Command::SendBroadcast { .. } => Response::Sent {
-                frame_id: fid::SEND_BROADCAST,
-                status: if mesh.up { ok } else { Status::network_down(v) },
-                aps_sequence: mesh.next_aps_seq(),
-            },
+            Command::SendBroadcast { aps, payload, .. } => {
+                if mesh.up && aps.profile_id == 0 && aps.cluster_id == 0x0038 {
+                    // A network update reaches the coordinator too.
+                    let _ = mesh.network_update(payload.get(1..).unwrap_or(&[]));
+                }
+                Response::Sent {
+                    frame_id: fid::SEND_BROADCAST,
+                    status: if mesh.up { ok } else { Status::network_down(v) },
+                    aps_sequence: mesh.next_aps_seq(),
+                }
+            }
             Command::SetConcentrator { .. } => status(fid::SET_CONCENTRATOR, ok),
             Command::SetSourceRouteDiscoveryMode { .. } => Response::SetSourceRouteDiscoveryMode {
                 remaining_ms: 10_000,
@@ -613,7 +619,7 @@ where
                         Some(front) => front.translate(event),
                         None => continue,
                     },
-                    Scheduled::Znp(_) => continue,
+                    Scheduled::Znp(_) | Scheduled::Deconz(_) => continue,
                 }
             }
         };

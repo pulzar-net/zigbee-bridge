@@ -1453,8 +1453,9 @@ impl<A: Adapter> Host<A> {
     }
 
     fn on_announce(&self, nwk: NodeId, ieee: Ieee) {
-        {
+        let is_new = {
             let mut state = self.state();
+            let is_new = !state.devices.contains_key(&ieee);
             let mut device = state
                 .devices
                 .get(&ieee)
@@ -1462,8 +1463,22 @@ impl<A: Adapter> Host<A> {
                 .unwrap_or_else(|| Device::new(ieee, nwk, now_unix()));
             device.nwk = nwk;
             state.put_device(device);
-        }
+            if is_new {
+                state.backup_wanted = true;
+            }
+            is_new
+        };
         self.inner.dirty.mark();
+        if is_new {
+            // A coordinator that reports no joins (deCONZ): the announce is
+            // the first the host hears of the device.
+            tracing::info!(%ieee, nwk = format!("{nwk:#06x}"), "device joined (announce)");
+            self.emit(HostEvent::DeviceJoined {
+                ieee,
+                nwk,
+                rejoin: false,
+            });
+        }
         self.emit(HostEvent::DeviceAnnounced { ieee, nwk });
         self.maybe_interview(ieee, true);
     }

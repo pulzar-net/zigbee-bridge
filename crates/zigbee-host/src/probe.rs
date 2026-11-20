@@ -7,6 +7,7 @@
 //!   strings.
 //! - ZNP: the CC2652 bootloader skip byte, `SYS_PING`, `SYS_VERSION` and
 //!   `UTIL_GET_DEVICE_INFO`.
+//! - deCONZ: `VERSION` and the `MAC_ADDRESS` parameter.
 //!
 //! Nothing is written. A probe finishes in under three seconds and drops
 //! the port when it returns.
@@ -27,17 +28,20 @@ pub enum NcpKind {
     Ezsp,
     /// Texas Instruments Z-Stack (ZNP).
     Znp,
+    /// dresden elektronik deCONZ (ConBee, RaspBee).
+    Deconz,
 }
 
 impl NcpKind {
     /// Every family, in the order [`probe_any`] tries them.
-    pub const ALL: [NcpKind; 2] = [NcpKind::Ezsp, NcpKind::Znp];
+    pub const ALL: [NcpKind; 3] = [NcpKind::Ezsp, NcpKind::Znp, NcpKind::Deconz];
 
-    /// The lower-case name: `ezsp`, `znp`.
+    /// The lower-case name: `ezsp`, `znp`, `deconz`.
     pub fn name(self) -> &'static str {
         match self {
             NcpKind::Ezsp => "ezsp",
             NcpKind::Znp => "znp",
+            NcpKind::Deconz => "deconz",
         }
     }
 }
@@ -48,7 +52,7 @@ impl std::str::FromStr for NcpKind {
         NcpKind::ALL
             .into_iter()
             .find(|k| k.name() == s)
-            .ok_or_else(|| format!("unknown coordinator family {s:?} (ezsp or znp)"))
+            .ok_or_else(|| format!("unknown coordinator family {s:?} (ezsp, znp or deconz)"))
     }
 }
 
@@ -74,8 +78,9 @@ pub struct NcpIdentity {
     /// The board name token, if set (often names the product or chip;
     /// EZSP only).
     pub board: Option<String>,
-    /// The firmware product: `Z-Stack 3.x.0` (CC13x2, CC26x2, CC2652),
-    /// `Z-Stack 3.0.x` (CC2530, CC2531) or `Z-Stack 1.2` (ZNP only).
+    /// The product the firmware implies: `Z-Stack 3.x.0` (CC13x2, CC26x2,
+    /// CC2652), `Z-Stack 3.0.x` (CC2530, CC2531) or `Z-Stack 1.2` for ZNP;
+    /// `ConBee II/RaspBee II`, `ConBee III` or `ConBee/RaspBee` for deCONZ.
     pub product: Option<String>,
 }
 
@@ -225,6 +230,46 @@ where
     }))
 }
 
+/// Probe an open stream for a deCONZ coordinator (ConBee, RaspBee).
+/// `Ok(None)` means nothing valid answered.
+pub async fn probe_deconz<T>(io: T) -> Result<Option<NcpIdentity>, ProbeError>
+where
+    T: AsyncRead + AsyncWrite + Send + 'static,
+{
+    use zigbee_deconz::client::{ClientConfig as DeconzConfig, Deconz, DeconzError};
+    let config = DeconzConfig {
+        response_timeout: Duration::from_millis(600),
+        version_attempts: 2,
+    };
+    let (deconz, _events) =
+        match tokio::time::timeout(PROBE_TIMEOUT, Deconz::open(io, config)).await {
+            Err(_) => return Ok(None),
+            Ok(Ok(opened)) => opened,
+            Ok(Err(DeconzError::Down(why))) if why.starts_with("read:") => {
+                return Err(ProbeError::Io(std::io::Error::other(why)))
+            }
+            Ok(Err(_)) => return Ok(None),
+        };
+    let v = deconz.version();
+    let ieee = deconz
+        .read_parameter(zigbee_deconz::ids::param::MAC_ADDRESS, &[])
+        .await
+        .ok()
+        .and_then(|b| <[u8; 8]>::try_from(b.as_slice()).ok())
+        .map(Ieee::from_le_bytes);
+    Ok(Some(NcpIdentity {
+        kind: NcpKind::Deconz,
+        firmware: v.text(),
+        protocol: 0,
+        supported: v.is_supported(),
+        reset_code: 0,
+        ieee,
+        manufacturer: Some("dresden elektronik".into()),
+        board: None,
+        product: Some(v.product().into()),
+    }))
+}
+
 /// Probe an open stream for `kind`.
 pub async fn probe_stream<T>(io: T, kind: NcpKind) -> Result<Option<NcpIdentity>, ProbeError>
 where
@@ -233,6 +278,7 @@ where
     match kind {
         NcpKind::Ezsp => probe_ezsp(io).await,
         NcpKind::Znp => probe_znp(io).await,
+        NcpKind::Deconz => probe_deconz(io).await,
     }
 }
 

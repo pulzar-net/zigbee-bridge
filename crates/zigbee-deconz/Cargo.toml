@@ -1,0 +1,28 @@
+[package]
+name = "zigbee-deconz"
+description = "dresden elektronik deCONZ serial protocol (ConBee, RaspBee) frames and an async client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "deconz", "conbee", "raspbee"]
+categories = ["embedded", "network-programming"]
+
+[dependencies]
+zigbee-types.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, optional = true, features = ["sync", "time", "rt", "macros", "io-util"] }
+tracing.workspace = true
+
+[features]
+default = ["client"]
+## The async client.
+client = ["dep:tokio"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "rt-multi-thread", "io-util"] }
+
+[lints]
+workspace = true

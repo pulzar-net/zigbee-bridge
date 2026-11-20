@@ -3,7 +3,8 @@
 //!
 //! [`Simulator`] plays one coordinator family over any byte stream:
 //! Silicon Labs EmberZNet (ASH and EZSP, protocol 13 as EmberZNet 7.4 does,
-//! or 14 and later) or Texas Instruments Z-Stack 3 (ZNP). It keeps a
+//! or 14 and later), Texas Instruments Z-Stack 3 (ZNP) or dresden
+//! elektronik deCONZ (a ConBee II). It keeps a
 //! network as an NCP keeps its non-volatile memory (keys, PAN ids, frame
 //! counter, link keys, a written IEEE address), and runs simulated
 //! [`SimDevice`]s that join when the network opens, answer ZDO and ZCL
@@ -13,6 +14,7 @@
 //! The `zigbee-ncp-sim` binary serves it over TCP, so a bridge can be pointed
 //! at `tcp://127.0.0.1:<port>`.
 
+mod deconz;
 pub mod device;
 mod ezsp;
 mod mesh;

@@ -99,7 +99,7 @@ async fn main() -> ExitCode {
             }
             Ok(None) => {
                 eprintln!(
-                    "zigbee-bridge: no EZSP or ZNP coordinator answered on {port} at {baud} baud"
+                    "zigbee-bridge: no EZSP, ZNP or deCONZ coordinator answered on {port} at {baud} baud"
                 );
                 ExitCode::from(1)
             }

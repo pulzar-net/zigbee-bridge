@@ -357,14 +357,14 @@ impl ZnpFront {
                     return status_only(status::FAILURE);
                 }
                 if destination == 0x0000 && cluster == 0x0038 {
-                    return self.nwk_update_to_self(mesh, &data);
+                    return self.nwk_update_to_self(mesh, tsn, &data);
                 }
                 let mut payload = vec![tsn];
                 payload.extend_from_slice(&data);
                 if destination >= 0xFFF8 {
                     // A broadcast: a channel change reaches every device.
                     if cluster == 0x0038 {
-                        return self.nwk_update_to_self(mesh, &data);
+                        return self.nwk_update_to_self(mesh, tsn, &data);
                     }
                     return status_only(status::SUCCESS);
                 }
@@ -401,7 +401,7 @@ impl ZnpFront {
                 data.put_u32(channel_mask);
                 data.put_u8(scan_duration);
                 if destination == 0x0000 || destination >= 0xFFF8 {
-                    let _ = self.nwk_update_to_self(mesh, &data);
+                    let _ = self.nwk_update_to_self(mesh, 0, &data);
                 }
                 status_only(status::SUCCESS)
             }
@@ -546,43 +546,23 @@ impl ZnpFront {
     /// A Mgmt_NWK_Update_req the coordinator handles itself: an energy
     /// scan (duration 0 to 5) answered with a notify, or a channel change
     /// (0xFE). `data` is the request after the sequence number.
-    fn nwk_update_to_self(&mut self, mesh: &mut Mesh, data: &[u8]) -> Vec<u8> {
-        let (Some(mask), Some(&duration)) = (
-            data.get(..4)
-                .and_then(|b| <[u8; 4]>::try_from(b).ok())
-                .map(u32::from_le_bytes),
-            data.get(4),
-        ) else {
-            return status_only(status::FAILURE);
+    fn nwk_update_to_self(&mut self, mesh: &mut Mesh, tsn: u8, data: &[u8]) -> Vec<u8> {
+        let Some(notify) = mesh.network_update(data) else {
+            return status_only(status::SUCCESS);
         };
-        if duration == 0xFE {
-            if let Some(channel) = (11..=26u8).find(|c| mask & (1 << c) != 0) {
-                mesh.change_channel(channel);
-            }
-        } else if duration <= 5 {
-            let energies = Mesh::energy(mask);
-            let mut notify = vec![0];
-            notify.put_u16(100);
-            notify.put_u16(0);
-            notify.put_u32(mask);
-            notify.put_u8(energies.len() as u8);
-            for (_, dbm) in energies {
-                notify.put_u8(dbm_to_ed(dbm));
-            }
-            if self.zdo_callbacks {
-                mesh.schedule(
-                    Duration::from_millis(30),
-                    Scheduled::Znp(Indication::ZdoMessage {
-                        source: 0x0000,
-                        broadcast: false,
-                        cluster: MGMT_NWK_UPDATE_NOTIFY,
-                        secured: false,
-                        tsn: data.get(5).copied().unwrap_or(0),
-                        mac_destination: 0x0000,
-                        data: notify,
-                    }),
-                );
-            }
+        if self.zdo_callbacks {
+            mesh.schedule(
+                Duration::from_millis(30),
+                Scheduled::Znp(Indication::ZdoMessage {
+                    source: 0x0000,
+                    broadcast: false,
+                    cluster: MGMT_NWK_UPDATE_NOTIFY,
+                    secured: false,
+                    tsn,
+                    mac_destination: 0x0000,
+                    data: notify,
+                }),
+            );
         }
         status_only(status::SUCCESS)
     }
@@ -652,11 +632,6 @@ impl ZnpFront {
             }
         }
     }
-}
-
-/// An energy reading in 802.15.4 ED units, as Z-Stack reports them.
-fn dbm_to_ed(dbm: i8) -> u8 {
-    ((i16::from(dbm) + 100).clamp(0, 40) * 255 / 40) as u8
 }
 
 fn sec_material(n: &SimNetwork) -> Vec<u8> {
@@ -769,7 +744,7 @@ where
                         }
                         None => continue,
                     },
-                    Scheduled::Ezsp(_) => continue,
+                    Scheduled::Ezsp(_) | Scheduled::Deconz(_) => continue,
                 }
             }
         };

@@ -17,17 +17,19 @@ use zigbee_zcl::{attr, cluster_id, Value};
 const TH: Ieee = Ieee(0x00124B0000000001);
 const DOOR: Ieee = Ieee(0x00124B0000000002);
 const PLUG: Ieee = Ieee(0x00124B0000000003);
-const NCPS: [SimNcp; 4] = [
+const NCPS: [SimNcp; 5] = [
     SimNcp::Ezsp { protocol: 13 },
     SimNcp::Ezsp { protocol: 16 },
     SimNcp::Znp { product: 1 },
     SimNcp::Znp { product: 2 },
+    SimNcp::Deconz,
 ];
 
 fn kind(ncp: SimNcp) -> NcpKind {
     match ncp {
         SimNcp::Ezsp { .. } => NcpKind::Ezsp,
         SimNcp::Znp { .. } => NcpKind::Znp,
+        SimNcp::Deconz => NcpKind::Deconz,
     }
 }
 
@@ -303,8 +305,11 @@ async fn forms_joins_interviews_and_reports() {
         let backup = host.backup().await.unwrap();
         assert_eq!(backup.network_key.key, settings.network_key);
         assert_eq!(backup.coordinator_ieee, host.network().ieee);
-        let stack = backup.stack_specific.as_ref().expect("stack data");
-        assert!(stack.ezsp.is_some() || stack.zstack.is_some());
+        // deCONZ keeps one global link key: nothing stack-specific.
+        if ncp != SimNcp::Deconz {
+            let stack = backup.stack_specific.as_ref().expect("stack data");
+            assert!(stack.ezsp.is_some() || stack.zstack.is_some());
+        }
         assert!(backup.devices.iter().any(|d| d.ieee_address == TH));
         let on_disk =
             Backup::from_json(&std::fs::read_to_string(dir.path().join("backup.json")).unwrap())
@@ -463,14 +468,15 @@ async fn restores_a_backup_onto_a_new_ncp() {
         assert_eq!(network.network_key, settings.network_key);
         assert_eq!(network.pan_id, settings.pan_id);
         assert_eq!(network.channel, 25);
-        let stack = backup.stack_specific.clone().unwrap();
-        assert_eq!(
-            Some(network.tc_root),
-            stack
-                .ezsp
-                .map(|e| e.hashed_tclk)
-                .or(stack.zstack.map(|z| z.tclk_seed))
-        );
+        if let Some(stack) = backup.stack_specific.clone() {
+            assert_eq!(
+                Some(network.tc_root),
+                stack
+                    .ezsp
+                    .map(|e| e.hashed_tclk)
+                    .or(stack.zstack.map(|z| z.tclk_seed))
+            );
+        }
         assert!(
             network.frame_counter
                 >= backup.network_key.frame_counter
@@ -510,6 +516,15 @@ async fn install_code_only_and_legacy_policies() {
         )
         .await
         .unwrap();
+        if ncp == SimNcp::Deconz {
+            // The firmware cannot require install codes or turn away
+            // legacy devices: refused, not pretended.
+            assert!(matches!(
+                host.permit_join(30, None).await,
+                Err(HostError::Invalid(_))
+            ));
+            continue;
+        }
         host.permit_join(30, None).await.unwrap();
         tokio::time::sleep(Duration::from_millis(600)).await;
         assert!(
@@ -599,6 +614,10 @@ async fn probe_identifies_the_ncp_without_changing_it() {
                     "Z-Stack 3.0.x"
                 };
                 assert_eq!(id.product.as_deref(), Some(name));
+            }
+            SimNcp::Deconz => {
+                assert_eq!(id.firmware, "0x26780700");
+                assert_eq!(id.product.as_deref(), Some("ConBee II/RaspBee II"));
             }
         }
         assert!(sim.snapshot().network.is_none());

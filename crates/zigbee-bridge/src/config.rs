@@ -39,7 +39,8 @@ pub struct SerialConfig {
     /// `none`, `hardware` (RTS/CTS) or `software`.
     #[serde(default)]
     pub flow_control: FlowControl,
-    /// The coordinator family: `auto` (probe for it), `ezsp` or `znp`.
+    /// The coordinator family: `auto` (probe for it), `ezsp`, `znp` or
+    /// `deconz`.
     #[serde(default)]
     pub adapter: AdapterChoice,
 }
@@ -55,6 +56,8 @@ pub enum AdapterChoice {
     Ezsp,
     /// Texas Instruments Z-Stack.
     Znp,
+    /// dresden elektronik deCONZ (ConBee, RaspBee).
+    Deconz,
 }
 
 /// Serial flow control.

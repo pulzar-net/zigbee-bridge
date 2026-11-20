@@ -20,10 +20,17 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `probe_stream` probes an open stream.
 - `zigbee-host`: backups carry Z-Stack's link key seed
   (`stack_specific.zstack.tclk_seed`).
-- `zigbee-sim`: a ZNP front-end (`SimNcp::Znp`) on the same simulated
-  network as EZSP; `zigbee-ncp-sim --ncp znp`.
-- `zigbee-bridge`: `serial.adapter` (`auto`, `ezsp`, `znp`); `auto` probes
-  the port.
+- `zigbee-deconz`: the deCONZ serial protocol (ConBee, RaspBee): SLIP
+  framing, typed requests and responses, and an async client.
+- `zigbee-host`: `DeconzAdapter` (formation from parameters, the firmware's
+  queues read on every device state, the firmware watchdog refreshed,
+  backup and restore, energy scan) and `NcpKind::Deconz` in the probe.
+- `zigbee-host`: a device first heard of by its announce counts as joined
+  (`HostEvent::DeviceJoined`), for coordinators that report no joins.
+- `zigbee-sim`: ZNP and deCONZ front-ends (`SimNcp::Znp`, `SimNcp::Deconz`)
+  on the same simulated network as EZSP; `zigbee-ncp-sim --ncp`.
+- `zigbee-bridge`: `serial.adapter` (`auto`, `ezsp`, `znp`, `deconz`);
+  `auto` probes the port.
 
 ### Changed
 
