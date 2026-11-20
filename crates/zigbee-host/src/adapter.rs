@@ -239,6 +239,10 @@ pub trait Adapter: Send + Sync + 'static {
         payload: Vec<u8>,
     ) -> impl Future<Output = Result<(), HostError>> + Send;
 
+    /// Read the running network's parameters again (after a channel
+    /// change).
+    fn network_info(&self) -> impl Future<Output = Result<NetworkInfo, HostError>> + Send;
+
     /// Export everything a restore needs.
     fn backup(&self) -> impl Future<Output = Result<Backup, HostError>> + Send;
 

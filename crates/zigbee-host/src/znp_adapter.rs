@@ -597,6 +597,10 @@ impl ZnpAdapter {
                 tracing::warn!(dbm, error = %e, "setting transmit power");
             }
         }
+        self.read_network_info().await
+    }
+
+    async fn read_network_info(&self) -> Result<NetworkInfo, HostError> {
         let (nwk, pan_id, extended_pan_id, channel) = self.nwk_info().await?;
         Ok(NetworkInfo {
             ieee: self.ieee().await?,
@@ -777,6 +781,10 @@ impl Adapter for ZnpAdapter {
             data: payload,
         })
         .await
+    }
+
+    async fn network_info(&self) -> Result<NetworkInfo, HostError> {
+        self.read_network_info().await
     }
 
     async fn backup(&self) -> Result<Backup, HostError> {

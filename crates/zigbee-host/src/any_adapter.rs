@@ -111,6 +111,10 @@ impl Adapter for AnyAdapter {
         each!(self, a => a.send_broadcast(destination, aps, payload).await)
     }
 
+    async fn network_info(&self) -> Result<NetworkInfo, HostError> {
+        each!(self, a => a.network_info().await)
+    }
+
     async fn backup(&self) -> Result<Backup, HostError> {
         each!(self, a => a.backup().await)
     }

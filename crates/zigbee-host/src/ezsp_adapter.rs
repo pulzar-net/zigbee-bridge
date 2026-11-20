@@ -562,6 +562,10 @@ impl EzspAdapter {
                 tracing::warn!(power, error = %e, "setting radio power");
             }
         }
+        self.read_network_info().await
+    }
+
+    async fn read_network_info(&self) -> Result<NetworkInfo, HostError> {
         let (_, p) = self.network_parameters().await?;
         let nwk = match self.ezsp.call(Command::GetNodeId).await? {
             Response::GetNodeId { node_id } => node_id,
@@ -770,6 +774,10 @@ impl Adapter for EzspAdapter {
             Response::Sent { status, .. } if status.is_ok() => Ok(()),
             other => Err(HostError::Ncp(format!("sendBroadcast: {other:?}"))),
         }
+    }
+
+    async fn network_info(&self) -> Result<NetworkInfo, HostError> {
+        self.read_network_info().await
     }
 
     async fn backup(&self) -> Result<Backup, HostError> {

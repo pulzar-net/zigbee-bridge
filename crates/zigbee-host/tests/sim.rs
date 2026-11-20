@@ -623,3 +623,45 @@ async fn probe_identifies_the_ncp_without_changing_it() {
         assert!(sim.snapshot().network.is_none());
     }
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn moves_the_network_to_another_channel() {
+    for ncp in NCPS {
+        let dir = tempfile::tempdir().unwrap();
+        let sim = sim(ncp, vec![SimDevice::plug(PLUG)]);
+        let (host, mut rx) = start(
+            &sim,
+            ncp,
+            StartMode::Normal {
+                settings: random_network(15).unwrap(),
+                replace_other: false,
+            },
+            config(dir.path()),
+        )
+        .await
+        .unwrap();
+        host.permit_join(30, None).await.unwrap();
+        wait_for(&mut rx, |e| {
+            matches!(e, HostEvent::InterviewDone { .. }).then_some(())
+        })
+        .await;
+        assert!(matches!(
+            host.change_channel(27).await,
+            Err(HostError::Invalid(_))
+        ));
+        let network = host.change_channel(20).await.unwrap();
+        assert_eq!((network.channel, network.nwk_update_id), (20, 1));
+        assert_eq!(host.network().channel, 20);
+        let moved = sim.snapshot().network.unwrap();
+        assert_eq!((moved.channel, moved.nwk_update_id), (20, 1));
+        wait_for(&mut rx, |e| match e {
+            HostEvent::ChannelChanged { network } => Some(network.channel),
+            _ => None,
+        })
+        .await;
+        // The device is still reachable on the new channel.
+        host.command(PLUG, 1, cluster_id::ON_OFF, "toggle", &[])
+            .await
+            .unwrap();
+    }
+}

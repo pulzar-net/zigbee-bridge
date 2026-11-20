@@ -100,6 +100,11 @@ pub enum HostEvent {
         /// Its network address.
         nwk: NodeId,
     },
+    /// The network moved to another channel.
+    ChannelChanged {
+        /// The network now.
+        network: NetworkInfo,
+    },
     /// A device left the network.
     DeviceLeft {
         /// The device.
@@ -303,7 +308,7 @@ impl State {
 struct Inner<A: Adapter> {
     adapter: A,
     config: HostConfig,
-    network: NetworkInfo,
+    network: Mutex<NetworkInfo>,
     state: Mutex<State>,
     waiters: Mutex<Waiters>,
     seq: AtomicU8,
@@ -331,7 +336,7 @@ impl<A: Adapter> Clone for Host<A> {
 impl<A: Adapter> std::fmt::Debug for Host<A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Host")
-            .field("network", &self.inner.network)
+            .field("network", &*lock(&self.inner.network))
             .finish_non_exhaustive()
     }
 }
@@ -379,7 +384,7 @@ impl<A: Adapter> Host<A> {
             inner: Arc::new(Inner {
                 adapter,
                 config,
-                network: network.clone(),
+                network: Mutex::new(network.clone()),
                 state: Mutex::new(state),
                 waiters: Mutex::new(Waiters::default()),
                 seq: AtomicU8::new(1),
@@ -415,8 +420,8 @@ impl<A: Adapter> Host<A> {
     }
 
     /// The network.
-    pub fn network(&self) -> &NetworkInfo {
-        &self.inner.network
+    pub fn network(&self) -> NetworkInfo {
+        lock(&self.inner.network).clone()
     }
 
     /// The NCP.
@@ -468,8 +473,8 @@ impl<A: Adapter> Host<A> {
     }
 
     fn nwk_of(&self, ieee: Ieee) -> Result<NodeId, HostError> {
-        if ieee == self.inner.network.ieee {
-            return Ok(self.inner.network.nwk);
+        if ieee == self.network().ieee {
+            return Ok(self.network().nwk);
         }
         self.state()
             .devices
@@ -910,7 +915,7 @@ impl<A: Adapter> Host<A> {
             source_endpoint: endpoint,
             cluster,
             target: zigbee_zdo::BindTarget::Endpoint {
-                ieee: self.inner.network.ieee,
+                ieee: self.network().ieee,
                 endpoint: HOST_ENDPOINT,
             },
         });
@@ -1087,7 +1092,7 @@ impl<A: Adapter> Host<A> {
     /// Current links, with addresses resolved to IEEE where known.
     pub fn topology(&self) -> Vec<(Option<Ieee>, Option<Ieee>, Link)> {
         let state = self.state();
-        let coordinator = (self.inner.network.nwk, self.inner.network.ieee);
+        let coordinator = (self.network().nwk, self.network().ieee);
         let resolve = |nwk: NodeId| {
             if nwk == coordinator.0 {
                 Some(coordinator.1)
@@ -1157,6 +1162,75 @@ impl<A: Adapter> Host<A> {
         Ok(neighbors)
     }
 
+    /// Move the network to `channel` (11 to 26): broadcast a network
+    /// update with the next update id and wait until the coordinator runs
+    /// on the new channel. Devices follow the broadcast; sleepy ones that
+    /// miss it find the network again when they next rejoin.
+    pub async fn change_channel(&self, channel: u8) -> Result<NetworkInfo, HostError> {
+        if !(11..=26).contains(&channel) {
+            return Err(HostError::Invalid(format!(
+                "channel {channel} is not 11 to 26"
+            )));
+        }
+        let current = self.network();
+        if current.channel == channel {
+            return Ok(current);
+        }
+        let update_id = current.nwk_update_id.wrapping_add(1);
+        let (cluster, payload) = Message {
+            tsn: self.next_seq(),
+            body: Body::MgmtNwkUpdateReq {
+                channel_mask: 1 << channel,
+                scan_duration: 0xFE,
+                scan_count: None,
+                nwk_update_id: Some(update_id),
+                manager: None,
+            },
+        }
+        .encode();
+        let aps = Aps {
+            profile: zigbee_zdo::PROFILE_ID,
+            cluster,
+            source_endpoint: 0,
+            destination_endpoint: 0,
+        };
+        self.inner
+            .adapter
+            .send_broadcast(zigbee_types::BROADCAST_RX_ON_WHEN_IDLE, aps, payload)
+            .await?;
+        // Devices switch after the broadcast has spread (nwkNetworkBroadcast
+        // DeliveryTime); the coordinator with them.
+        let deadline = Instant::now() + Duration::from_secs(20);
+        loop {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let mut now = self.inner.adapter.network_info().await?;
+            if now.channel == channel {
+                // Z-Stack does not report the update id: keep the one sent.
+                if now.nwk_update_id == 0 {
+                    now.nwk_update_id = update_id;
+                }
+                *lock(&self.inner.network) = now.clone();
+                self.state().backup_wanted = true;
+                self.inner.dirty.mark();
+                tracing::info!(
+                    channel,
+                    update_id = now.nwk_update_id,
+                    "network moved to a new channel"
+                );
+                self.emit(HostEvent::ChannelChanged {
+                    network: now.clone(),
+                });
+                return Ok(now);
+            }
+            if Instant::now() > deadline {
+                return Err(HostError::Ncp(format!(
+                    "the coordinator is still on channel {} after asking for {channel}",
+                    now.channel
+                )));
+            }
+        }
+    }
+
     /// Measure every channel's energy (channel, max RSSI in dBm).
     pub async fn energy_scan(&self) -> Result<Vec<(u8, i8)>, HostError> {
         self.inner.adapter.energy_scan(0x07FF_F800).await
@@ -1170,7 +1244,7 @@ impl<A: Adapter> Host<A> {
         let mut backup = self.inner.adapter.backup().await?;
         {
             let state = self.state();
-            let coordinator = self.inner.network.nwk;
+            let coordinator = self.network().nwk;
             for entry in &mut backup.devices {
                 if let Some(d) = state.devices.get(&entry.ieee_address) {
                     entry.nwk_address = Some(d.nwk);
@@ -1350,7 +1424,7 @@ impl<A: Adapter> Host<A> {
                     lqi,
                     rssi,
                 } => {
-                    let coordinator = self.inner.network.nwk;
+                    let coordinator = self.network().nwk;
                     let mut state = self.state();
                     state.topology.route_record(
                         source,
@@ -1549,7 +1623,7 @@ impl<A: Adapter> Host<A> {
                     }
                 }
             }
-            let coordinator = self.inner.network.nwk;
+            let coordinator = self.network().nwk;
             state.topology.last_hop(source, coordinator, lqi, rssi, now);
             let ieee = state.by_nwk.get(&source).copied();
             if let Some(d) = ieee.and_then(|i| state.devices.get_mut(&i)) {

@@ -133,7 +133,7 @@ impl Bridge {
         let info = json!({
             "version": VERSION,
             "coordinator": {"ieee_address": n.ieee.to_prefixed_hex(), "type": a.kind, "firmware": a.firmware, "protocol": a.protocol},
-            "network": {"channel": n.channel, "pan_id": n.pan_id, "extended_pan_id": n.extended_pan_id.to_string()},
+            "network": {"channel": n.channel, "pan_id": n.pan_id, "extended_pan_id": n.extended_pan_id.to_string(), "update_id": n.nwk_update_id},
             "permit_join": self.permit_join > 0,
             "permit_join_timeout": self.permit_join,
         });
@@ -255,6 +255,26 @@ impl Bridge {
                 self.event(
                     "device_announce",
                     json!({"ieee_address": ieee.to_prefixed_hex(), "network_address": nwk}),
+                )
+                .await;
+            }
+            HostEvent::ChannelChanged { network } => {
+                // A re-formation after a coordinator reset uses the new
+                // channel too.
+                let dir = &self.config.data.dir;
+                match crate::network::load_or_create(dir, network.channel, None) {
+                    Ok((mut settings, _)) => {
+                        settings.channel = network.channel;
+                        if let Err(e) = crate::network::save(dir, &settings) {
+                            tracing::warn!(error = %e, "saving the new channel");
+                        }
+                    }
+                    Err(e) => tracing::warn!(error = %e, "reading the network file"),
+                }
+                self.publish_info().await;
+                self.event(
+                    "channel_changed",
+                    json!({"channel": network.channel, "update_id": network.nwk_update_id}),
                 )
                 .await;
             }
@@ -596,6 +616,15 @@ impl Bridge {
                 };
                 match self.host.scan_neighbors(target).await {
                     Ok(neighbors) => ok(json!({"neighbors": neighbors})),
+                    Err(e) => error(e),
+                }
+            }
+            "change_channel" => {
+                let Some(channel) = body.get("channel").and_then(Json::as_u64) else {
+                    return error("change_channel needs {\"channel\": 11..26}");
+                };
+                match self.host.change_channel(channel.min(255) as u8).await {
+                    Ok(n) => ok(json!({"channel": n.channel, "update_id": n.nwk_update_id})),
                     Err(e) => error(e),
                 }
             }

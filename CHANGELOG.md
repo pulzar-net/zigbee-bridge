@@ -31,6 +31,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   on the same simulated network as EZSP; `zigbee-ncp-sim --ncp`.
 - `zigbee-bridge`: `serial.adapter` (`auto`, `ezsp`, `znp`, `deconz`);
   `auto` probes the port.
+- `zigbee-host`: `Host::change_channel` moves the network to another
+  channel on every family (a network update broadcast with the next update
+  id, then the coordinator confirmed on the new channel), with
+  `HostEvent::ChannelChanged` and `Adapter::network_info`.
+- `zigbee-bridge`: the `change_channel` request (`{"channel": 20}`), the
+  `channel_changed` event, `network.update_id` in `bridge/info`; the new
+  channel is saved to `network.json`.
 
 ### Changed
 
@@ -39,6 +46,8 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   address and link quality) as `Option`, since Z-Stack does not report
   them. `AdapterInfo` gains `reports_key_exchange`. `NcpKind` is
   `#[non_exhaustive]`.
+- `zigbee-host`: `Host::network` returns the network by value (it changes
+  with the channel).
 - `zigbee-sim`: `SimConfig` names the family with `ncp: SimNcp`;
   `SimNetwork` is family-neutral (`channel`, `pan_id`, ... instead of
   EmberZNet's network parameters).

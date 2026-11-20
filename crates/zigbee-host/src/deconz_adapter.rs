@@ -378,7 +378,7 @@ impl DeconzAdapter {
         self.set_net_state(net_state::CONNECTED).await
     }
 
-    async fn network_info(&self) -> Result<NetworkInfo, HostError> {
+    async fn read_network_info(&self) -> Result<NetworkInfo, HostError> {
         Ok(NetworkInfo {
             ieee: Ieee(self.read_u64(param::MAC_ADDRESS).await?),
             nwk: self.read_u16(param::NWK_ADDRESS).await?,
@@ -448,7 +448,7 @@ impl Adapter for DeconzAdapter {
                     tx_power: None,
                 };
                 self.form(&settings, Some(&backup)).await?;
-                Ok((StartOutcome::Restored, self.network_info().await?))
+                Ok((StartOutcome::Restored, self.read_network_info().await?))
             }
             StartMode::Normal {
                 settings,
@@ -460,7 +460,7 @@ impl Adapter for DeconzAdapter {
                     if state & device_state::NETWORK_MASK != net_state::CONNECTED {
                         self.set_net_state(net_state::CONNECTED).await?;
                     }
-                    return Ok((StartOutcome::Resumed, self.network_info().await?));
+                    return Ok((StartOutcome::Resumed, self.read_network_info().await?));
                 }
                 if designed {
                     let pan = self.read_u16(param::NWK_PANID).await?;
@@ -474,7 +474,7 @@ impl Adapter for DeconzAdapter {
                     tracing::warn!("deCONZ firmware sets its own transmit power");
                 }
                 self.form(&settings, None).await?;
-                Ok((StartOutcome::Formed, self.network_info().await?))
+                Ok((StartOutcome::Formed, self.read_network_info().await?))
             }
         }
     }
@@ -543,8 +543,12 @@ impl Adapter for DeconzAdapter {
         .await
     }
 
+    async fn network_info(&self) -> Result<NetworkInfo, HostError> {
+        self.read_network_info().await
+    }
+
     async fn backup(&self) -> Result<Backup, HostError> {
-        let info = self.network_info().await?;
+        let info = self.read_network_info().await?;
         let frame_counter = self
             .read(param::NWK_FRAME_COUNTER)
             .await
