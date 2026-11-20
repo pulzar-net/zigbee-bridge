@@ -13,7 +13,10 @@ export default defineConfig({
 	base: '/zigbee-bridge',
 	// Pages are page.html, the URLs the earlier mdBook site had.
 	build: { format: 'file' },
-	redirects: { '/library/index': '/zigbee-bridge/library.html' },
+	redirects: {
+		'/library/index': '/zigbee-bridge/library.html',
+		'/library/zigbee-types': '/zigbee-bridge/library/zigbee-primitives.html',
+	},
 	integrations: [
 		starlight({
 			title: 'zigbee-bridge',
