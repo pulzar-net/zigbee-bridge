@@ -10,7 +10,7 @@ use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use serde_json::{json, Value as Json};
 use tokio::sync::{mpsc, oneshot};
 use zigbee_bridge::Config;
-use zigbee_sim::{SimConfig, SimDevice, Simulator};
+use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
 use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
@@ -61,9 +61,9 @@ fn start_broker() -> SocketAddr {
     addr
 }
 
-async fn start_sim(protocol: u8) -> (Simulator, SocketAddr) {
+async fn start_sim(ncp: SimNcp) -> (Simulator, SocketAddr) {
     let sim = Simulator::new(SimConfig {
-        protocol,
+        ncp,
         devices: vec![
             SimDevice::temperature_humidity_sensor(TH),
             SimDevice::plug(PLUG),
@@ -164,9 +164,21 @@ impl Watcher {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn device_joins_is_interviewed_and_reports_over_mqtt() {
+async fn ezsp_device_joins_is_interviewed_and_reports_over_mqtt() {
+    end_to_end(SimNcp::Ezsp { protocol: 13 }, "ezsp", "7.4.4.0").await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn znp_device_joins_is_interviewed_and_reports_over_mqtt() {
+    end_to_end(SimNcp::Znp { product: 1 }, "znp", "2.7.1.20230507").await;
+}
+
+/// The bridge detects the coordinator family (the configuration leaves
+/// `serial.adapter` at `auto`), forms, admits and interviews devices, and
+/// carries reports and requests over MQTT.
+async fn end_to_end(sim_ncp: SimNcp, kind: &str, firmware: &str) {
     let broker = start_broker();
-    let (sim, ncp) = start_sim(13).await;
+    let (sim, ncp) = start_sim(sim_ncp).await;
     let data = tempfile::tempdir().unwrap();
     let config = Config::from_toml(&format!(
         "[serial]\nport = \"tcp://{ncp}\"\n[mqtt]\nhost = \"{}\"\nport = {}\n[network]\nchannel = 20\n[data]\ndir = \"{}\"\n",
@@ -189,8 +201,8 @@ async fn device_joins_is_interviewed_and_reports_over_mqtt() {
     let info = mqtt
         .wait("zigbee/bridge/info", |v| v["network"]["channel"] == 20)
         .await;
-    assert_eq!(info["coordinator"]["type"], "ezsp");
-    assert_eq!(info["coordinator"]["firmware"], "7.4.4.0");
+    assert_eq!(info["coordinator"]["type"], kind);
+    assert_eq!(info["coordinator"]["firmware"], firmware);
 
     let response = mqtt
         .request("permit_join", json!({"time": 60, "transaction": "t1"}))

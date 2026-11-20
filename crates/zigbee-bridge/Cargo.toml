@@ -16,7 +16,6 @@ path = "src/main.rs"
 
 [dependencies]
 zigbee-types.workspace = true
-zigbee-ezsp.workspace = true
 zigbee-zcl.workspace = true
 zigbee-zdo.workspace = true
 zigbee-host = { workspace = true, features = ["host", "serial"] }

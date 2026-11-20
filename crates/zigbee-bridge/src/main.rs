@@ -85,30 +85,29 @@ async fn main() -> ExitCode {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
-        Action::Probe { port, baud } => {
-            match zigbee_host::probe::probe(&port, zigbee_host::NcpKind::Ezsp, baud).await {
-                Ok(Some(id)) => {
-                    println!(
-                        "{}",
-                        serde_json::json!({
-                            "kind": "ezsp", "firmware": id.firmware, "protocol": id.protocol, "supported": id.supported,
-                            "ieee_address": id.ieee.map(|i| i.to_prefixed_hex()), "manufacturer": id.manufacturer, "board": id.board,
-                        })
-                    );
-                    ExitCode::SUCCESS
-                }
-                Ok(None) => {
-                    eprintln!(
-                        "zigbee-bridge: no EZSP coordinator answered on {port} at {baud} baud"
-                    );
-                    ExitCode::from(1)
-                }
-                Err(e) => {
-                    eprintln!("zigbee-bridge: {port}: {e}");
-                    ExitCode::from(1)
-                }
+        Action::Probe { port, baud } => match zigbee_host::probe::probe_any(&port, baud).await {
+            Ok(Some(id)) => {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "kind": id.kind.name(), "firmware": id.firmware, "protocol": id.protocol, "supported": id.supported,
+                        "ieee_address": id.ieee.map(|i| i.to_prefixed_hex()), "manufacturer": id.manufacturer, "board": id.board,
+                        "product": id.product,
+                    })
+                );
+                ExitCode::SUCCESS
             }
-        }
+            Ok(None) => {
+                eprintln!(
+                    "zigbee-bridge: no EZSP or ZNP coordinator answered on {port} at {baud} baud"
+                );
+                ExitCode::from(1)
+            }
+            Err(e) => {
+                eprintln!("zigbee-bridge: {port}: {e}");
+                ExitCode::from(1)
+            }
+        },
         Action::Restore { backup } => {
             let config = match load(&config_path) {
                 Ok(c) => c,

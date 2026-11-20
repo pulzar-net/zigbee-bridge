@@ -129,7 +129,7 @@ fn translate(
             )
             .then_some(aps.group_id),
             lqi: info.last_hop_lqi,
-            rssi: info.last_hop_rssi,
+            rssi: Some(info.last_hop_rssi),
             payload,
         }),
         Callback::TrustCenterJoin {
@@ -179,10 +179,10 @@ fn translate(
             relays,
         } => Some(AdapterEvent::RouteRecord {
             source,
-            ieee,
+            ieee: Some(ieee),
             relays,
-            lqi: last_hop_lqi,
-            rssi: last_hop_rssi,
+            lqi: Some(last_hop_lqi),
+            rssi: Some(last_hop_rssi),
         }),
         Callback::MessageSent { status, tag, .. } => Some(AdapterEvent::Delivery {
             tag,
@@ -608,6 +608,7 @@ impl Adapter for EzspAdapter {
             kind: "ezsp",
             firmware: format!("{}.{}.{}.{}", v.major, v.minor, v.patch, v.special),
             protocol: self.info.protocol.0,
+            reports_key_exchange: true,
         }
     }
 
@@ -829,6 +830,7 @@ impl Adapter for EzspAdapter {
                 ezsp: Some(EzspSpecific {
                     hashed_tclk: tc_root,
                 }),
+                zstack: None,
             }),
             coordinator_ieee: self.eui64().await?,
             pan_id: p.pan_id,

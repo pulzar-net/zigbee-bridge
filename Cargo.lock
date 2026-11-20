@@ -2207,7 +2207,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "zigbee-ezsp",
  "zigbee-host",
  "zigbee-sim",
  "zigbee-types",
@@ -2246,6 +2245,7 @@ dependencies = [
  "zigbee-types",
  "zigbee-zcl",
  "zigbee-zdo",
+ "zigbee-znp",
 ]
 
 [[package]]
@@ -2261,6 +2261,7 @@ dependencies = [
  "zigbee-types",
  "zigbee-zcl",
  "zigbee-zdo",
+ "zigbee-znp",
 ]
 
 [[package]]
@@ -2289,6 +2290,16 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
+ "zigbee-types",
+]
+
+[[package]]
+name = "zigbee-znp"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
  "zigbee-types",
 ]
 

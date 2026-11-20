@@ -1,26 +1,39 @@
-//! The host against the EZSP NCP simulator, for both EZSP layouts
-//! (protocol 13, EmberZNet 7.4; protocol 16, EmberZNet 8.x).
+//! The host against the NCP simulator, for every coordinator family and
+//! layout: EZSP protocol 13 (EmberZNet 7.4) and 16 (8.x), and Z-Stack
+//! 3.x.0 and 3.0.x over ZNP.
 
 use std::time::Duration;
 
 use tokio::sync::mpsc::UnboundedReceiver;
-use zigbee_ezsp::ClientConfig;
+use zigbee_host::probe::NcpKind;
 use zigbee_host::{
-    random_network, Backup, EzspAdapter, Host, HostConfig, HostError, HostEvent, InterviewStage,
+    random_network, AnyAdapter, Backup, Host, HostConfig, HostError, HostEvent, InterviewStage,
     JoinPolicy, NetworkSettings, StartMode, StartOutcome,
 };
-use zigbee_sim::{SimConfig, SimDevice, Simulator};
+use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
 use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 const TH: Ieee = Ieee(0x00124B0000000001);
 const DOOR: Ieee = Ieee(0x00124B0000000002);
 const PLUG: Ieee = Ieee(0x00124B0000000003);
-const PROTOCOLS: [u8; 2] = [13, 16];
+const NCPS: [SimNcp; 4] = [
+    SimNcp::Ezsp { protocol: 13 },
+    SimNcp::Ezsp { protocol: 16 },
+    SimNcp::Znp { product: 1 },
+    SimNcp::Znp { product: 2 },
+];
 
-fn sim(protocol: u8, devices: Vec<SimDevice>) -> Simulator {
+fn kind(ncp: SimNcp) -> NcpKind {
+    match ncp {
+        SimNcp::Ezsp { .. } => NcpKind::Ezsp,
+        SimNcp::Znp { .. } => NcpKind::Znp,
+    }
+}
+
+fn sim(ncp: SimNcp, devices: Vec<SimDevice>) -> Simulator {
     Simulator::new(SimConfig {
-        protocol,
+        ncp,
         devices,
         ..SimConfig::default()
     })
@@ -37,15 +50,16 @@ fn config(dir: &std::path::Path) -> HostConfig {
 
 async fn start(
     sim: &Simulator,
+    ncp: SimNcp,
     mode: StartMode,
     config: HostConfig,
-) -> Result<(Host<EzspAdapter>, UnboundedReceiver<HostEvent>), HostError> {
+) -> Result<(Host<AnyAdapter>, UnboundedReceiver<HostEvent>), HostError> {
     let (host_io, ncp_io) = tokio::io::duplex(4096);
     let sim = sim.clone();
     tokio::spawn(async move {
         let _ = sim.serve(ncp_io).await;
     });
-    let (adapter, events) = EzspAdapter::connect(host_io, ClientConfig::default()).await?;
+    let (adapter, events) = AnyAdapter::connect(host_io, kind(ncp)).await?;
     Host::start(adapter, events, mode, config).await
 }
 
@@ -70,10 +84,10 @@ async fn wait_for<T>(
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn forms_joins_interviews_and_reports() {
-    for protocol in PROTOCOLS {
+    for ncp in NCPS {
         let dir = tempfile::tempdir().unwrap();
         let sim = sim(
-            protocol,
+            ncp,
             vec![
                 SimDevice::temperature_humidity_sensor(TH),
                 SimDevice::contact_sensor(DOOR),
@@ -82,6 +96,7 @@ async fn forms_joins_interviews_and_reports() {
         let settings = random_network(15).unwrap();
         let (host, mut rx) = start(
             &sim,
+            ncp,
             StartMode::Normal {
                 settings: settings.clone(),
                 replace_other: false,
@@ -98,7 +113,7 @@ async fn forms_joins_interviews_and_reports() {
             } => {
                 assert_eq!(network.channel, 15);
                 assert_eq!(network.pan_id, settings.pan_id);
-                assert_eq!(adapter.protocol, protocol);
+                assert_eq!(adapter.kind, kind(ncp).name());
                 Some(*outcome)
             }
             _ => None,
@@ -107,7 +122,7 @@ async fn forms_joins_interviews_and_reports() {
         assert_eq!(outcome, StartOutcome::Formed);
         let network = sim.snapshot().network.expect("formed");
         assert_eq!(network.network_key, settings.network_key);
-        assert_eq!(network.parameters.extended_pan_id, settings.extended_pan_id);
+        assert_eq!(network.extended_pan_id, settings.extended_pan_id);
 
         host.permit_join(60, None).await.unwrap();
         assert!(sim.snapshot().permit_join);
@@ -132,7 +147,10 @@ async fn forms_joins_interviews_and_reports() {
             (Some(8), Some(2), Some(1))
         );
         assert!(th.is_sleepy());
-        assert!(th.unique_link_key);
+        if matches!(ncp, SimNcp::Ezsp { .. }) {
+            // Z-Stack does not report link key exchanges.
+            assert!(th.unique_link_key);
+        }
         assert_eq!(th.interview.stage, InterviewStage::Done);
         assert!(th
             .endpoint_with(cluster_id::TEMPERATURE_MEASUREMENT)
@@ -285,11 +303,8 @@ async fn forms_joins_interviews_and_reports() {
         let backup = host.backup().await.unwrap();
         assert_eq!(backup.network_key.key, settings.network_key);
         assert_eq!(backup.coordinator_ieee, host.network().ieee);
-        assert!(backup
-            .stack_specific
-            .as_ref()
-            .and_then(|s| s.ezsp.as_ref())
-            .is_some());
+        let stack = backup.stack_specific.as_ref().expect("stack data");
+        assert!(stack.ezsp.is_some() || stack.zstack.is_some());
         assert!(backup.devices.iter().any(|d| d.ieee_address == TH));
         let on_disk =
             Backup::from_json(&std::fs::read_to_string(dir.path().join("backup.json")).unwrap())
@@ -301,13 +316,14 @@ async fn forms_joins_interviews_and_reports() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn resumes_after_restart_and_refuses_another_network() {
-    for protocol in PROTOCOLS {
+    for ncp in NCPS {
         let dir = tempfile::tempdir().unwrap();
-        let sim = sim(protocol, vec![SimDevice::plug(PLUG)]);
+        let sim = sim(ncp, vec![SimDevice::plug(PLUG)]);
         let settings = random_network(20).unwrap();
         {
             let (host, mut rx) = start(
                 &sim,
+                ncp,
                 StartMode::Normal {
                     settings: settings.clone(),
                     replace_other: false,
@@ -340,6 +356,7 @@ async fn resumes_after_restart_and_refuses_another_network() {
         // A new host on the same NCP resumes the network and keeps the device.
         let (host, mut rx) = start(
             &sim,
+            ncp,
             StartMode::Normal {
                 settings: settings.clone(),
                 replace_other: false,
@@ -365,6 +382,7 @@ async fn resumes_after_restart_and_refuses_another_network() {
         };
         let err = start(
             &sim,
+            ncp,
             StartMode::Normal {
                 settings: other,
                 replace_other: false,
@@ -383,12 +401,13 @@ async fn resumes_after_restart_and_refuses_another_network() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn restores_a_backup_onto_a_new_ncp() {
-    for protocol in PROTOCOLS {
+    for ncp in NCPS {
         let dir = tempfile::tempdir().unwrap();
-        let old = sim(protocol, vec![SimDevice::temperature_humidity_sensor(TH)]);
+        let old = sim(ncp, vec![SimDevice::temperature_humidity_sensor(TH)]);
         let settings = random_network(25).unwrap();
         let (host, mut rx) = start(
             &old,
+            ncp,
             StartMode::Normal {
                 settings: settings.clone(),
                 replace_other: false,
@@ -408,20 +427,25 @@ async fn restores_a_backup_onto_a_new_ncp() {
 
         // A replacement NCP with another factory IEEE address.
         let new = Simulator::new(SimConfig {
-            protocol,
+            ncp,
             ieee: Ieee(0x000D6FFFFE999999),
             ..SimConfig::default()
         });
-        let err = start(
-            &new,
-            StartMode::Restore(Box::new(backup.clone())),
-            config(dir.path()),
-        )
-        .await
-        .unwrap_err();
-        assert!(matches!(err, HostError::RestartRequired), "{err}");
+        if let SimNcp::Ezsp { .. } = ncp {
+            // EmberZNet takes the IEEE address once, at the next start.
+            let err = start(
+                &new,
+                ncp,
+                StartMode::Restore(Box::new(backup.clone())),
+                config(dir.path()),
+            )
+            .await
+            .unwrap_err();
+            assert!(matches!(err, HostError::RestartRequired), "{err}");
+        }
         let (host, mut rx) = start(
             &new,
+            ncp,
             StartMode::Restore(Box::new(backup.clone())),
             config(dir.path()),
         )
@@ -437,14 +461,15 @@ async fn restores_a_backup_onto_a_new_ncp() {
         let network = snap.network.unwrap();
         assert_eq!(snap.ieee, backup.coordinator_ieee);
         assert_eq!(network.network_key, settings.network_key);
-        assert_eq!(network.parameters.pan_id, settings.pan_id);
-        assert_eq!(network.parameters.radio_channel, 25);
+        assert_eq!(network.pan_id, settings.pan_id);
+        assert_eq!(network.channel, 25);
+        let stack = backup.stack_specific.clone().unwrap();
         assert_eq!(
             Some(network.tc_root),
-            backup
-                .stack_specific
-                .and_then(|s| s.ezsp)
+            stack
+                .ezsp
                 .map(|e| e.hashed_tclk)
+                .or(stack.zstack.map(|z| z.tclk_seed))
         );
         assert!(
             network.frame_counter
@@ -458,7 +483,7 @@ async fn restores_a_backup_onto_a_new_ncp() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn install_code_only_and_legacy_policies() {
-    for protocol in PROTOCOLS {
+    for ncp in NCPS {
         let dir = tempfile::tempdir().unwrap();
         let code =
             zigbee_host::install_code::parse_hex("83FED3407A939723A5C639B26916D505C3B5").unwrap();
@@ -467,7 +492,7 @@ async fn install_code_only_and_legacy_policies() {
         secure.install_code_key = Some(key);
         let mut legacy = SimDevice::temperature_humidity_sensor(TH);
         legacy.legacy = true;
-        let sim = sim(protocol, vec![secure, legacy]);
+        let sim = sim(ncp, vec![secure, legacy]);
         let mut cfg = config(dir.path());
         cfg.join = JoinPolicy {
             install_code_only: true,
@@ -476,6 +501,7 @@ async fn install_code_only_and_legacy_policies() {
         cfg.legacy_grace = Duration::from_secs(1);
         let (host, mut rx) = start(
             &sim,
+            ncp,
             StartMode::Normal {
                 settings: random_network(11).unwrap(),
                 replace_other: false,
@@ -504,7 +530,7 @@ async fn install_code_only_and_legacy_policies() {
         let dir = tempfile::tempdir().unwrap();
         let mut legacy = SimDevice::temperature_humidity_sensor(TH);
         legacy.legacy = true;
-        let sim = self::sim(protocol, vec![legacy]);
+        let sim = self::sim(ncp, vec![legacy]);
         let mut cfg = config(dir.path());
         cfg.join = JoinPolicy {
             install_code_only: false,
@@ -513,6 +539,7 @@ async fn install_code_only_and_legacy_policies() {
         cfg.legacy_grace = Duration::from_secs(1);
         let (host, mut rx) = start(
             &sim,
+            ncp,
             StartMode::Normal {
                 settings: random_network(11).unwrap(),
                 replace_other: false,
@@ -522,41 +549,58 @@ async fn install_code_only_and_legacy_policies() {
         .await
         .unwrap();
         host.permit_join(30, None).await.unwrap();
+        // The host removes it (EZSP), or Z-Stack does and the host hears it
+        // leave.
         let removed = wait_for(&mut rx, |e| match e {
-            HostEvent::DeviceRemoved { ieee, reason } => Some((*ieee, reason.clone())),
+            HostEvent::DeviceRemoved { ieee, .. } | HostEvent::DeviceLeft { ieee } => Some(*ieee),
             _ => None,
         })
         .await;
-        assert_eq!(removed.0, TH);
+        assert_eq!(removed, TH);
         assert!(host.device(TH).is_none());
     }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn probe_identifies_the_ncp_without_changing_it() {
-    for protocol in PROTOCOLS {
-        let sim = sim(protocol, vec![]);
+    for ncp in NCPS {
+        let sim = sim(ncp, vec![]);
         let (host_io, ncp_io) = tokio::io::duplex(4096);
         let s = sim.clone();
         let served = tokio::spawn(async move {
             let _ = s.serve(ncp_io).await;
         });
         let started = std::time::Instant::now();
-        let id = zigbee_host::probe::probe_ezsp(host_io)
+        let id = zigbee_host::probe::probe_stream(host_io, kind(ncp))
             .await
             .unwrap()
-            .expect("an EZSP NCP");
+            .expect("an NCP");
         // The probe closed its end: the simulator sees the stream end.
         tokio::time::timeout(Duration::from_secs(2), served)
             .await
             .expect("the probe left the port open")
             .unwrap();
         assert!(started.elapsed() < zigbee_host::probe::PROBE_TIMEOUT);
-        assert_eq!(id.protocol, protocol);
+        assert_eq!(id.kind, kind(ncp));
         assert!(id.supported);
-        assert_eq!(id.firmware, "7.4.4.0");
         assert_eq!(id.ieee, Some(SimConfig::default().ieee));
-        assert_eq!(id.manufacturer.as_deref(), Some("zigbee-bridge sim"));
+        match ncp {
+            SimNcp::Ezsp { protocol } => {
+                assert_eq!(id.protocol, protocol);
+                let firmware = if protocol == 13 { "7.4.4.0" } else { "8.0.2.0" };
+                assert_eq!(id.firmware, firmware);
+                assert_eq!(id.manufacturer.as_deref(), Some("zigbee-bridge sim"));
+            }
+            SimNcp::Znp { product } => {
+                assert_eq!(id.firmware, "2.7.1.20230507");
+                let name = if product == 1 {
+                    "Z-Stack 3.x.0"
+                } else {
+                    "Z-Stack 3.0.x"
+                };
+                assert_eq!(id.product.as_deref(), Some(name));
+            }
+        }
         assert!(sim.snapshot().network.is_none());
     }
 }

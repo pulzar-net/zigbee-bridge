@@ -13,8 +13,9 @@ pub mod network;
 
 use std::path::Path;
 
-use zigbee_ezsp::ClientConfig;
-use zigbee_host::{Backup, EzspAdapter, Host, HostConfig, HostError, JoinPolicy, StartMode};
+use zigbee_host::{
+    AnyAdapter, Backup, Host, HostConfig, HostError, JoinPolicy, NcpKind, StartMode,
+};
 
 pub use config::Config;
 
@@ -66,6 +67,25 @@ fn create_dir(dir: &Path) -> Result<(), RunError> {
     Ok(())
 }
 
+/// Probe `port` for each coordinator family.
+async fn detect(port: &str, baud: u32) -> Result<NcpKind, RunError> {
+    match zigbee_host::probe::probe_any(port, baud).await {
+        Ok(Some(id)) if id.supported => {
+            tracing::info!(kind = id.kind.name(), firmware = %id.firmware, "coordinator detected");
+            Ok(id.kind)
+        }
+        Ok(Some(id)) => Err(RunError::Setup(format!(
+            "{port}: {} coordinator firmware {} is too old; update it (EmberZNet 7.4 or newer, Z-Stack 3)",
+            id.kind.name(),
+            id.firmware
+        ))),
+        Ok(None) => Err(RunError::Setup(format!(
+            "{port}: no EZSP or ZNP coordinator answered at {baud} baud (set serial.adapter to skip detection)"
+        ))),
+        Err(e) => Err(RunError::Setup(format!("{port}: {e}"))),
+    }
+}
+
 /// Run the bridge until `stop` resolves.
 pub async fn run(
     config: Config,
@@ -108,10 +128,15 @@ pub async fn run(
         config::FlowControl::Hardware => zigbee_host::port::FlowControl::Hardware,
         config::FlowControl::Software => zigbee_host::port::FlowControl::Software,
     };
+    let kind = match config.serial.adapter {
+        config::AdapterChoice::Ezsp => NcpKind::Ezsp,
+        config::AdapterChoice::Znp => NcpKind::Znp,
+        config::AdapterChoice::Auto => detect(&config.serial.port, config.serial.baud).await?,
+    };
     let port = zigbee_host::port::open(&config.serial.port, config.serial.baud, flow)
         .await
         .map_err(|e| RunError::Setup(format!("opening {}: {e}", config.serial.port)))?;
-    let (adapter, adapter_events) = EzspAdapter::connect(port, ClientConfig::default()).await?;
+    let (adapter, adapter_events) = AnyAdapter::connect(port, kind).await?;
     let host_config = HostConfig {
         store_path: Some(dir.join(STORE_FILE)),
         backup_path: Some(dir.join(BACKUP_FILE)),

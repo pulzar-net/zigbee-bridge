@@ -213,8 +213,9 @@ pub struct FrameLink {
     pub broadcast: bool,
     /// Last hop link quality.
     pub lqi: u8,
-    /// Last hop signal strength, dBm.
-    pub rssi: i8,
+    /// Last hop signal strength, dBm, when the coordinator reports it
+    /// (EmberZNet and deCONZ do; Z-Stack does not).
+    pub rssi: Option<i8>,
     /// The device the frame came from on its last hop: the last relay of
     /// the sender's recorded route, or the sender itself.
     pub last_hop: NodeId,
@@ -1359,7 +1360,8 @@ impl<A: Adapter> Host<A> {
                         rssi,
                         now_unix(),
                     );
-                    if !state.by_nwk.contains_key(&source) && state.devices.contains_key(&ieee) {
+                    let known = ieee.filter(|i| state.devices.contains_key(i));
+                    if let (false, Some(ieee)) = (state.by_nwk.contains_key(&source), known) {
                         if let Some(mut d) = state.devices.get(&ieee).cloned() {
                             d.nwk = source;
                             state.put_device(d);
@@ -1424,7 +1426,11 @@ impl<A: Adapter> Host<A> {
             device.parent = Some(parent);
             state.put_device(device);
             state.install_codes.remove(&ieee);
-            if is_new && !rejoin && !self.inner.config.join.allow_legacy {
+            if is_new
+                && !rejoin
+                && !self.inner.config.join.allow_legacy
+                && self.inner.adapter.info().reports_key_exchange
+            {
                 state
                     .legacy_deadlines
                     .insert(ieee, Instant::now() + self.inner.config.legacy_grace);
@@ -1514,7 +1520,7 @@ impl<A: Adapter> Host<A> {
         broadcast: bool,
         group: Option<u16>,
         lqi: u8,
-        rssi: i8,
+        rssi: Option<i8>,
         payload: Vec<u8>,
     ) {
         let now = now_unix();
@@ -1534,7 +1540,7 @@ impl<A: Adapter> Host<A> {
             if let Some(d) = ieee.and_then(|i| state.devices.get_mut(&i)) {
                 d.last_seen_unix = Some(now);
                 d.last_lqi = Some(lqi);
-                d.last_rssi = Some(rssi);
+                d.last_rssi = rssi.or(d.last_rssi);
             }
             ieee
         };

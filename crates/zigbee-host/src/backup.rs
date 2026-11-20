@@ -82,6 +82,16 @@ pub struct StackSpecific {
     /// For EmberZNet.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ezsp: Option<EzspSpecific>,
+    /// For Z-Stack.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zstack: Option<ZstackSpecific>,
+}
+
+/// Z-Stack-specific data.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ZstackSpecific {
+    /// The seed Z-Stack derives each device's unique link key from.
+    pub tclk_seed: Key,
 }
 
 /// EmberZNet-specific data.
@@ -237,6 +247,7 @@ mod tests {
                 ezsp: Some(EzspSpecific {
                     hashed_tclk: Key([1; 16]),
                 }),
+                zstack: None,
             }),
             coordinator_ieee: Ieee(0x00124B0001020304),
             pan_id: 0x1A62,

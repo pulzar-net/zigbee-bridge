@@ -1,0 +1,28 @@
+[package]
+name = "zigbee-znp"
+description = "Texas Instruments Z-Stack ZNP (Monitor and Test API) frames and an async client, Z-Stack 3.x"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["zigbee", "znp", "z-stack", "ti"]
+categories = ["embedded", "network-programming"]
+
+[dependencies]
+zigbee-types.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, optional = true, features = ["sync", "time", "rt", "macros", "io-util"] }
+tracing.workspace = true
+
+[features]
+default = ["client"]
+## The async client.
+client = ["dep:tokio"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros", "rt-multi-thread", "io-util"] }
+
+[lints]
+workspace = true

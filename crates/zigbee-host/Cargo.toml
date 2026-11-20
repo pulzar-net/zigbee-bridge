@@ -7,7 +7,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-keywords = ["zigbee", "coordinator", "ezsp", "iot"]
+keywords = ["zigbee", "coordinator", "ezsp", "znp", "iot"]
 categories = ["embedded", "network-programming"]
 
 [features]
@@ -34,6 +34,7 @@ serial = ["dep:tokio-serial", "tokio/net"]
 zigbee-types.workspace = true
 zigbee-ash.workspace = true
 zigbee-ezsp.workspace = true
+zigbee-znp.workspace = true
 zigbee-zcl = { workspace = true, optional = true }
 zigbee-zdo = { workspace = true, optional = true }
 aes = { workspace = true, optional = true }

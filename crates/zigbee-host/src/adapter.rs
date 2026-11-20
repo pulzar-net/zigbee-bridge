@@ -81,6 +81,11 @@ pub struct AdapterInfo {
     pub firmware: String,
     /// Serial protocol version.
     pub protocol: u8,
+    /// The NCP reports each device's link key exchange
+    /// ([`AdapterEvent::KeyExchange`]), so the host can remove devices
+    /// that never do one. Without it the NCP enforces
+    /// [`JoinPolicy::allow_legacy`] itself, or cannot.
+    pub reports_key_exchange: bool,
 }
 
 /// Trust center join policy.
@@ -132,8 +137,8 @@ pub enum AdapterEvent {
         group: Option<u16>,
         /// Last hop link quality.
         lqi: u8,
-        /// Last hop signal strength, dBm.
-        rssi: i8,
+        /// Last hop signal strength, dBm, when the NCP reports it.
+        rssi: Option<i8>,
         /// The APS payload.
         payload: Vec<u8>,
     },
@@ -166,14 +171,14 @@ pub enum AdapterEvent {
     RouteRecord {
         /// The originator.
         source: NodeId,
-        /// Its IEEE address.
-        ieee: Ieee,
+        /// Its IEEE address, when the NCP reports it.
+        ieee: Option<Ieee>,
         /// Relays, nearest the source first.
         relays: Vec<NodeId>,
-        /// Last hop link quality.
-        lqi: u8,
-        /// Last hop signal strength.
-        rssi: i8,
+        /// Last hop link quality, when the NCP reports it.
+        lqi: Option<u8>,
+        /// Last hop signal strength, when the NCP reports it.
+        rssi: Option<i8>,
     },
     /// A frame given to [`Adapter::send_unicast`] was delivered (APS
     /// acknowledged) or not.

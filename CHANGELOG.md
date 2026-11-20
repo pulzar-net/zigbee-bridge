@@ -6,6 +6,36 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `zigbee-znp`: Texas Instruments Z-Stack MT frames, typed requests and
+  indications in both directions, and an async client, for Z-Stack 3.x.0
+  and 3.0.x.
+- `zigbee-host`: `ZnpAdapter` (formation with a random link key seed,
+  resume, install codes, raw ZDO both ways, backup and restore with the
+  frame counter advanced, energy scan), and `AnyAdapter` to choose the
+  family at run time.
+- `zigbee-host`: `probe` identifies Z-Stack coordinators (`NcpKind::Znp`,
+  `NcpIdentity::product`); `probe_any` tries every family and
+  `probe_stream` probes an open stream.
+- `zigbee-host`: backups carry Z-Stack's link key seed
+  (`stack_specific.zstack.tclk_seed`).
+- `zigbee-sim`: a ZNP front-end (`SimNcp::Znp`) on the same simulated
+  network as EZSP; `zigbee-ncp-sim --ncp znp`.
+- `zigbee-bridge`: `serial.adapter` (`auto`, `ezsp`, `znp`); `auto` probes
+  the port.
+
+### Changed
+
+- `zigbee-host`: `AdapterEvent::Message`, `AdapterEvent::RouteRecord` and
+  `FrameLink` carry signal strength (and, for route records, the IEEE
+  address and link quality) as `Option`, since Z-Stack does not report
+  them. `AdapterInfo` gains `reports_key_exchange`. `NcpKind` is
+  `#[non_exhaustive]`.
+- `zigbee-sim`: `SimConfig` names the family with `ncp: SimNcp`;
+  `SimNetwork` is family-neutral (`channel`, `pan_id`, ... instead of
+  EmberZNet's network parameters).
+
 ## [0.1.0] - 2026-11-19
 
 The first milestone: Silicon Labs EmberZNet coordinators.

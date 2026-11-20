@@ -10,8 +10,8 @@ Cluster Library, reporting, backups and topology. It is a set of library
 crates you can embed, and a standalone bridge that speaks MQTT with Home
 Assistant discovery and a plain JSON topic scheme.
 
-**Status: 0.1.0, first milestone, not yet tested on hardware.** Silicon Labs
-EmberZNet coordinators only. Everything is exercised in CI against the EZSP
+**Status: not yet tested on hardware.** Silicon Labs EmberZNet and Texas
+Instruments Z-Stack coordinators. Everything is exercised in CI against the
 NCP simulator in this repository; bench testing on real dongles is next.
 
 ## Coordinators
@@ -20,13 +20,23 @@ NCP simulator in this repository; bench testing on real dongles is next.
 |---|---|---|
 | Silicon Labs EmberZNet 7.4 and 8.x | EZSP 13 to 19 over ASHv2 | supported (simulator-tested) |
 | Silicon Labs EmberZNet 7.3 and older | EZSP 12 and older | refused with a "please update the firmware" message; `probe` still identifies it |
-| Texas Instruments Z-Stack 3.x | MT/ZNP | next milestone |
+| Texas Instruments Z-Stack 3.x.0 (CC2652, CC1352) and 3.0.x (CC2530, CC2531) | MT/ZNP | supported (simulator-tested) |
+| Texas Instruments Z-Stack Home 1.2 | MT/ZNP | refused (not Zigbee 3.0); `probe` identifies it |
 | dresden elektronik ConBee II/III | deCONZ serial | next milestone |
 
 Any EFR32MG21 or MG24 USB or network coordinator with EmberZNet 7.4 or newer
 NCP firmware should work, for example the Home Assistant Connect ZBT-1, the
 Sonoff ZBDongle-E (after a firmware update), or an SMLIGHT SLZB-06M
-(over `tcp://`).
+(over `tcp://`). For Z-Stack, any CC2652 or CC1352 stick with Z-Stack 3.x.0
+coordinator firmware, such as the Sonoff ZBDongle-P or an SMLIGHT SLZB-06.
+
+The bridge detects the family on its port (`serial.adapter = "auto"`), or
+takes `ezsp` or `znp`.
+
+Z-Stack does not report signal strength, which devices finished their link
+key exchange, or delivery of ZDO frames, so on Z-Stack those readings are
+absent rather than guessed, and Z-Stack itself turns away devices that skip
+the key exchange when `join.allow_legacy = false`.
 
 ## Crates
 
@@ -35,10 +45,11 @@ Sonoff ZBDongle-E (after a firmware update), or an SMLIGHT SLZB-06M
 | `zigbee-types` | IEEE addresses, PAN ids, keys (never printed by `Debug`), a bounds-checked wire reader |
 | `zigbee-ash` | ASHv2: CRC, byte stuffing, randomization, and the link as a sans-IO state machine (window, ACK/NAK, retransmission, adaptive ACK timer) with a tokio driver |
 | `zigbee-ezsp` | EZSP frames for protocol 13 to 19, typed commands, responses and callbacks in both directions, and an async client that negotiates the version |
+| `zigbee-znp` | TI Z-Stack MT frames, typed requests and indications in both directions, and an async client |
 | `zigbee-zcl` | ZCL data types, values, frames, global commands, and clusters generated at build time from [`data/clusters.toml`](crates/zigbee-zcl/data/clusters.toml) |
 | `zigbee-zdo` | ZDO discovery, binding and management frames |
 | `zigbee-host` | the coordinator host: formation, trust center, interview, reporting, device store, backup and restore, topology, `probe` |
-| `zigbee-sim` | an EZSP NCP simulator with simulated devices, and `zigbee-ncp-sim` to serve it over TCP |
+| `zigbee-sim` | an NCP simulator (EZSP or ZNP) with simulated devices, and `zigbee-ncp-sim` to serve it over TCP |
 | `zigbee-bridge` | the standalone MQTT bridge |
 
 `zigbee-host` with `default-features = false, features = ["probe", "serial"]`
@@ -117,13 +128,14 @@ zigbee-bridge probe /dev/ttyUSB0
 {"kind":"ezsp","firmware":"7.4.4.0","protocol":13,"supported":true,"ieee_address":"0x...","manufacturer":"...","board":"..."}
 ```
 
-One ASH reset and read-only queries; it never writes and finishes within
-three seconds.
+It tries EZSP (one ASH reset and read-only queries), then ZNP (a ping and
+version queries); it never writes and finishes within three seconds per
+family.
 
 ## Trying it without hardware
 
 ```sh
-cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --devices th,plug,door --report-every 10
+cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --ncp znp --devices th,plug,door --report-every 10
 # in zigbee-bridge's config: [serial] port = "tcp://127.0.0.1:9999"
 ```
 
@@ -153,9 +165,10 @@ and static musl builds for `aarch64` and `mipsel` (under 4 MB) with the test
 suite run under qemu. No `unsafe` code anywhere; parsers are bounds-checked
 and their allocations are bounded by their input.
 
-The reference implementations studied were zigbee-herdsman (MIT) and
-Silicon Labs' public EZSP and ASH documentation (UG100, UG101); no code was
-copied from any project.
+The references studied were zigbee-herdsman (MIT), Silicon Labs' public
+EZSP and ASH documentation (UG100, UG101) and Texas Instruments' public
+Z-Stack Monitor and Test API documentation; no code was copied from any
+project.
 
 ## License
 

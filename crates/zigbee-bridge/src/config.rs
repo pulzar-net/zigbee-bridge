@@ -39,6 +39,22 @@ pub struct SerialConfig {
     /// `none`, `hardware` (RTS/CTS) or `software`.
     #[serde(default)]
     pub flow_control: FlowControl,
+    /// The coordinator family: `auto` (probe for it), `ezsp` or `znp`.
+    #[serde(default)]
+    pub adapter: AdapterChoice,
+}
+
+/// Which coordinator family to speak.
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AdapterChoice {
+    /// Probe the port for each family.
+    #[default]
+    Auto,
+    /// Silicon Labs EmberZNet.
+    Ezsp,
+    /// Texas Instruments Z-Stack.
+    Znp,
 }
 
 /// Serial flow control.

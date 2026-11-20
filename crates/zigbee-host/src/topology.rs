@@ -81,7 +81,14 @@ impl Topology {
     /// A message from `source` arrived with this last-hop quality. The
     /// last hop is the last relay of `source`'s recorded route, or `source`
     /// itself when it has none.
-    pub fn last_hop(&mut self, source: NodeId, coordinator: NodeId, lqi: u8, rssi: i8, now: u64) {
+    pub fn last_hop(
+        &mut self,
+        source: NodeId,
+        coordinator: NodeId,
+        lqi: u8,
+        rssi: Option<i8>,
+        now: u64,
+    ) {
         let from = self
             .routes
             .get(&source)
@@ -91,7 +98,7 @@ impl Topology {
             from,
             to: coordinator,
             lqi: Some(lqi),
-            rssi: Some(rssi),
+            rssi,
             source: LinkSource::LastHop,
             seen_unix: now,
         });
@@ -103,8 +110,8 @@ impl Topology {
         source: NodeId,
         relays: &[NodeId],
         coordinator: NodeId,
-        lqi: u8,
-        rssi: i8,
+        lqi: Option<u8>,
+        rssi: Option<i8>,
         now: u64,
     ) {
         let mut path = Vec::with_capacity(relays.len() + 2);
@@ -117,8 +124,8 @@ impl Topology {
                 self.put(Link {
                     from: *from,
                     to: *to,
-                    lqi: last.then_some(lqi),
-                    rssi: last.then_some(rssi),
+                    lqi: lqi.filter(|_| last),
+                    rssi: rssi.filter(|_| last),
                     source: LinkSource::RouteRecord,
                     seen_unix: now,
                 });
@@ -172,9 +179,9 @@ mod tests {
     #[test]
     fn last_hop_follows_the_route_record() {
         let mut t = Topology::default();
-        t.last_hop(0x1111, 0, 200, -40, 10);
-        t.route_record(0x2222, &[0x3333, 0x1111], 0, 150, -60, 11);
-        t.last_hop(0x2222, 0, 140, -62, 12);
+        t.last_hop(0x1111, 0, 200, Some(-40), 10);
+        t.route_record(0x2222, &[0x3333, 0x1111], 0, Some(150), Some(-60), 11);
+        t.last_hop(0x2222, 0, 140, Some(-62), 12);
         let links = t.links();
         let hop = links
             .iter()

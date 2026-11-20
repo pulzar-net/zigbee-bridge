@@ -23,7 +23,7 @@ use std::time::Duration;
 
 use serde_json::{json, Map, Value as Json};
 use tokio::sync::mpsc;
-use zigbee_host::{Device, EzspAdapter, Host, HostEvent, InterviewStage};
+use zigbee_host::{AnyAdapter, Device, Host, HostEvent, InterviewStage};
 use zigbee_types::Ieee;
 use zigbee_zcl::{cluster_id, Value};
 
@@ -36,7 +36,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Bridge state between events.
 pub struct Bridge {
-    host: Host<EzspAdapter>,
+    host: Host<AnyAdapter>,
     mqtt: Mqtt,
     config: Config,
     states: HashMap<Ieee, Map<String, Json>>,
@@ -65,7 +65,7 @@ fn interview_name(stage: InterviewStage) -> &'static str {
 
 impl Bridge {
     /// A bridge over a running host and an MQTT session.
-    pub fn new(host: Host<EzspAdapter>, mqtt: Mqtt, config: Config) -> Bridge {
+    pub fn new(host: Host<AnyAdapter>, mqtt: Mqtt, config: Config) -> Bridge {
         Bridge {
             host,
             mqtt,

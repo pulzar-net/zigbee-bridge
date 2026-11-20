@@ -1,7 +1,7 @@
-//! Serve the EZSP NCP simulator over TCP.
+//! Serve the NCP simulator over TCP.
 //!
 //! ```text
-//! zigbee-ncp-sim [--listen 127.0.0.1:9999] [--protocol 13] [--devices th,plug,door] [--report-every 30]
+//! zigbee-ncp-sim [--listen 127.0.0.1:9999] [--ncp ezsp|znp] [--protocol 13] [--devices th,plug,door] [--report-every 30]
 //! ```
 //!
 //! Point a host at `tcp://127.0.0.1:9999`. Devices join when the host opens
@@ -9,12 +9,12 @@
 
 use std::time::Duration;
 
-use zigbee_sim::{SimConfig, SimDevice, Simulator};
+use zigbee_sim::{SimConfig, SimDevice, SimNcp, Simulator};
 use zigbee_types::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
 
 fn usage() -> ! {
-    eprintln!("usage: zigbee-ncp-sim [--listen ADDR] [--protocol 13..19] [--devices th,plug,door] [--report-every SECONDS]");
+    eprintln!("usage: zigbee-ncp-sim [--listen ADDR] [--ncp ezsp|znp] [--protocol 13..19] [--devices th,plug,door] [--report-every SECONDS]");
     std::process::exit(2)
 }
 
@@ -37,11 +37,19 @@ async fn main() {
                 return;
             }
             "--listen" => listen = args.next().unwrap_or_else(|| usage()),
+            "--ncp" => {
+                config.ncp = match args.next().as_deref() {
+                    Some("ezsp") => SimNcp::Ezsp { protocol: 13 },
+                    Some("znp") => SimNcp::Znp { product: 1 },
+                    _ => usage(),
+                }
+            }
             "--protocol" => {
-                config.protocol = args
+                let protocol = args
                     .next()
                     .and_then(|v| v.parse().ok())
-                    .unwrap_or_else(|| usage())
+                    .unwrap_or_else(|| usage());
+                config.ncp = SimNcp::Ezsp { protocol };
             }
             "--devices" => {
                 kinds = args
@@ -54,16 +62,6 @@ async fn main() {
             "--report-every" => report_every = args.next().and_then(|v| v.parse().ok()),
             _ => usage(),
         }
-    }
-    if config.protocol >= 14 {
-        config.stack_version = zigbee_ezsp::types::StackVersion {
-            build: 75,
-            major: 8,
-            minor: 0,
-            patch: 2,
-            special: 0,
-            kind: 0xAA,
-        };
     }
     for (i, kind) in kinds.iter().enumerate() {
         let ieee = Ieee(0x00_12_4B_00_00_00_00_00 | (i as u64 + 1));
@@ -84,6 +82,7 @@ async fn main() {
         })
         .map(|d| d.ieee)
         .collect();
+    let config_ncp = config.ncp;
     let sim = Simulator::new(config);
     if let Some(seconds) = report_every {
         let sim = sim.clone();
@@ -119,7 +118,7 @@ async fn main() {
             std::process::exit(1);
         }
     };
-    tracing::info!(%listen, "EZSP NCP simulator listening");
+    tracing::info!(%listen, ncp = ?config_ncp, "NCP simulator listening");
     loop {
         tokio::select! {
             accepted = listener.accept() => match accepted {
