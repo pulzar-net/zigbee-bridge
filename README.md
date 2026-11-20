@@ -159,8 +159,8 @@ see [installation](#installation).
   `SHA256SUMS` file. They have no runtime dependencies.
 - **From source**, with Rust 1.89 or newer:
   `cargo install --locked --git https://github.com/pulzar-net/zigbee-bridge zigbee-bridge`
-- **systemd**: a hardened unit is in [`dist/systemd/`](dist/systemd/zigbee-bridge.service).
-- **OpenWrt**: a procd init script is in [`dist/openwrt/`](dist/openwrt/zigbee-bridge.init).
+- **systemd**: a hardened unit is in [`contrib/systemd/`](contrib/systemd/zigbee-bridge.service).
+- **OpenWrt**: a procd init script is in [`contrib/openwrt/`](contrib/openwrt/zigbee-bridge.init).
 
 The [installation guide](https://pulzar-net.github.io/zigbee-bridge/installation.html)
 covers each one step by step.

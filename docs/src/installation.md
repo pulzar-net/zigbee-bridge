@@ -46,14 +46,14 @@ beyond the C library; no system packages are required.
 ## As a systemd service
 
 The repository has a hardened unit in
-[`dist/systemd/zigbee-bridge.service`](https://github.com/pulzar-net/zigbee-bridge/blob/main/dist/systemd/zigbee-bridge.service).
+[`contrib/systemd/zigbee-bridge.service`](https://github.com/pulzar-net/zigbee-bridge/blob/main/contrib/systemd/zigbee-bridge.service).
 It runs the bridge as an unprivileged dynamic user in the `dialout` group,
 keeps its data in `/var/lib/zigbee-bridge`, and restarts it on failure.
 
 ```sh
 sudo mkdir -p /etc/zigbee-bridge
 sudo cp config.example.toml /etc/zigbee-bridge/config.toml   # then edit it
-sudo install -m 0644 dist/systemd/zigbee-bridge.service /etc/systemd/system/
+sudo install -m 0644 contrib/systemd/zigbee-bridge.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now zigbee-bridge
 journalctl -u zigbee-bridge -f
@@ -80,7 +80,7 @@ The `mipsel` binary runs on MT7621 and MT7628 routers with OpenWrt.
    on flash**, such as `/etc/zigbee-bridge/data`: `/var` is in RAM on
    OpenWrt, and the network key would be lost at reboot.
 4. Install the procd script from
-   [`dist/openwrt/zigbee-bridge.init`](https://github.com/pulzar-net/zigbee-bridge/blob/main/dist/openwrt/zigbee-bridge.init):
+   [`contrib/openwrt/zigbee-bridge.init`](https://github.com/pulzar-net/zigbee-bridge/blob/main/contrib/openwrt/zigbee-bridge.init):
 
 ```sh
 cp zigbee-bridge.init /etc/init.d/zigbee-bridge
