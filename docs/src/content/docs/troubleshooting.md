@@ -25,8 +25,9 @@ to be in the group that owns the device, usually `dialout`
 (`ls -l /dev/ttyUSB0` shows it). The [systemd unit](/zigbee-bridge/installation.html#as-a-systemd-service)
 adds it.
 
-**`firmware ... is too old; update it`.** EmberZNet before 7.4 speaks EZSP 12
-or older. [Update the firmware](/zigbee-bridge/hardware.html#flashing-firmware).
+**`firmware ... is too old; update it`.** EmberZNet 7.0 to 7.3 speaks EZSP 9
+to 12, and EmberZNet before 6.7 speaks EZSP 7 or older; neither is
+supported. [Update the firmware](/zigbee-bridge/hardware.html#flashing-firmware).
 
 **The coordinator runs a different network.** The coordinator already has a
 network that is not the one in `network.json` (it was used with other

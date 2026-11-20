@@ -7,10 +7,12 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc;
 use zigbee_ash::{Config as AshConfig, Event as AshEvent, Link, LinkEvent, Role};
 use zigbee_ezsp::frame::{self, Format, CONTROL_ASYNC_CALLBACK, CONTROL_RESPONSE};
-use zigbee_ezsp::ids::{self, frame as fid, key_type, mfg_token, tc_decision, value};
+use zigbee_ezsp::ids::{
+    self, ember_key_type, frame as fid, key_struct, key_type, mfg_token, tc_decision, value,
+};
 use zigbee_ezsp::types::{
-    ApsKeyMetadata, InitialSecurityState, NetworkKeyInfo, NetworkParameters, SecManContext,
-    StackVersion,
+    ApsKeyMetadata, InitialSecurityState, KeyStruct, NetworkKeyInfo, NetworkParameters,
+    SecManContext, StackVersion,
 };
 use zigbee_ezsp::{ApsFrame, Callback, Command, ProtocolVersion, Response, RxPacketInfo, Status};
 use zigbee_primitives::{Ieee, Key};
@@ -30,7 +32,7 @@ pub(crate) fn stack_version(protocol: u8) -> StackVersion {
             special: 0,
             kind: 0xAA,
         }
-    } else {
+    } else if protocol >= 13 {
         StackVersion {
             build: 380,
             major: 7,
@@ -39,7 +41,38 @@ pub(crate) fn stack_version(protocol: u8) -> StackVersion {
             special: 0,
             kind: 0xAA,
         }
+    } else {
+        // The last EM35x release.
+        StackVersion {
+            build: 104,
+            major: 6,
+            minor: 7,
+            patch: 10,
+            special: 0,
+            kind: 0xAA,
+        }
     }
+}
+
+/// Key commands from the other side of the protocol 13 split, which a real
+/// NCP does not know.
+fn wrong_key_api(v: ProtocolVersion, command: &Command) -> bool {
+    let sec_man = matches!(
+        command,
+        Command::ExportKey { .. }
+            | Command::GetNetworkKeyInfo
+            | Command::ExportLinkKeyByIndex { .. }
+            | Command::ImportLinkKey { .. }
+            | Command::ImportTransientKey { .. }
+    );
+    let legacy = matches!(
+        command,
+        Command::GetKey { .. }
+            | Command::GetKeyTableEntry { .. }
+            | Command::SetKeyTableEntry { .. }
+            | Command::AddTransientLinkKey { .. }
+    );
+    (sec_man && !v.sec_man()) || (legacy && v.sec_man())
 }
 
 pub(crate) struct EzspFront {
@@ -173,6 +206,10 @@ impl EzspFront {
     fn command(&mut self, mesh: &mut Mesh, v: ProtocolVersion, command: Command) -> Response {
         let ok = Status::ok(v);
         let status = |frame_id: u16, status: Status| Response::Status { frame_id, status };
+        if wrong_key_api(v, &command) {
+            // EZSP_ERROR_INVALID_FRAME_ID
+            return Response::InvalidCommand { reason: 0x31 };
+        }
         match command {
             Command::Version { desired } => Response::Version {
                 protocol_version: if desired == self.protocol {
@@ -412,6 +449,69 @@ impl EzspFront {
                 }
                 status(fid::IMPORT_TRANSIENT_KEY, Status::SL_OK)
             }
+            Command::GetKey { key_type } => {
+                let found = match (key_type, &mesh.network) {
+                    (ember_key_type::CURRENT_NETWORK, Some(n)) => Some(KeyStruct {
+                        bitmask: key_struct::HAS_SEQUENCE_NUMBER
+                            | key_struct::HAS_OUTGOING_FRAME_COUNTER,
+                        key_type,
+                        key: n.network_key,
+                        outgoing_frame_counter: n.frame_counter,
+                        sequence_number: n.key_sequence,
+                        ..Default::default()
+                    }),
+                    (ember_key_type::TRUST_CENTER_LINK, Some(n)) => Some(KeyStruct {
+                        key_type,
+                        key: n.tc_root,
+                        ..Default::default()
+                    }),
+                    _ => None,
+                };
+                Response::GetKey {
+                    status: if found.is_some() { ok } else { Status::fail(v) },
+                    key: found.unwrap_or_default(),
+                }
+            }
+            Command::GetKeyTableEntry { index } => match self.key_table.get(&u16::from(index)) {
+                Some((ieee, key)) => Response::GetKeyTableEntry {
+                    status: ok,
+                    key: KeyStruct {
+                        bitmask: key_struct::HAS_PARTNER_EUI64,
+                        key_type: ember_key_type::APPLICATION_LINK,
+                        key: *key,
+                        partner: *ieee,
+                        ..Default::default()
+                    },
+                },
+                None => Response::GetKeyTableEntry {
+                    // EMBER_TABLE_ENTRY_ERASED
+                    status: Status {
+                        raw: 0x45,
+                        legacy: true,
+                    },
+                    key: KeyStruct::default(),
+                },
+            },
+            Command::SetKeyTableEntry {
+                index, ieee, key, ..
+            } => {
+                if u16::from(index) >= self.key_table_size {
+                    return status(fid::SET_KEY_TABLE_ENTRY, Status::fail(v));
+                }
+                self.key_table.insert(u16::from(index), (ieee, key));
+                status(fid::SET_KEY_TABLE_ENTRY, ok)
+            }
+            Command::AddTransientLinkKey { ieee, key } => {
+                if ieee == Ieee::UNSET {
+                    mesh.well_known_ok = key == Key::ZIGBEE_ALLIANCE_09;
+                } else {
+                    mesh.join_keys.insert(ieee, key);
+                }
+                if mesh.permit_open() {
+                    mesh.schedule_joins();
+                }
+                status(fid::ADD_TRANSIENT_LINK_KEY, ok)
+            }
             Command::ClearTransientLinkKeys => {
                 mesh.well_known_ok = false;
                 mesh.join_keys.clear();
@@ -550,7 +650,10 @@ impl EzspFront {
                         }),
                     );
                 }
-                status(fid::START_SCAN, Status::SL_OK)
+                status(
+                    fid::START_SCAN,
+                    if v.sec_man() { Status::SL_OK } else { ok },
+                )
             }
             Command::LookupEui64ByNodeId { node_id } => match mesh.ieee_of(node_id) {
                 Some(ieee) => Response::LookupEui64ByNodeId { status: ok, ieee },

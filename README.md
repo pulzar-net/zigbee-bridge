@@ -38,6 +38,7 @@ between 0.x releases, and keep a backup of your network
 | Feature | State |
 |---|---|
 | Silicon Labs EmberZNet 7.4 and 8.x coordinators (EZSP 13 to 19) | done in 0.1.0 |
+| Silicon Labs EmberZNet 6.7 to 6.10 coordinators (EZSP 8), including the EM35x | unreleased; tested on an EM357 |
 | Network formation, resume, and refusal to wipe an unknown network | done in 0.1.0 |
 | Zigbee 3.0 trust center: unique link keys, install codes, join policy | done in 0.1.0 |
 | Device interview, binding and reporting configuration, IAS zone enrollment | done in 0.1.0 |
@@ -67,12 +68,13 @@ one, please [tell us how it went](https://github.com/pulzar-net/zigbee-bridge/is
 | Coordinator | Chip | Firmware | State |
 |---|---|---|---|
 | Home Assistant Connect ZBT-1 (SkyConnect) | EFR32MG21 | EmberZNet 7.4 or newer, NCP | expected |
-| Sonoff ZBDongle-E | EFR32MG21 | EmberZNet 7.4 or newer, NCP (ships with 6.x: update it first) | expected |
+| Sonoff ZBDongle-E | EFR32MG21 | EmberZNet 6.10 as shipped, or 7.4 or newer, NCP | expected |
 | SMLIGHT SLZB-06M, SLZB-07 | EFR32MG21 | EmberZNet 7.4 or newer, NCP (SLZB-06M over `tcp://`) | expected |
 | Any EFR32MG21 or MG24 coordinator | EFR32MG2x | EmberZNet 7.4 to 8.x, NCP | expected |
 | Sonoff ZBDongle-P, SMLIGHT SLZB-06 | CC2652P | Z-Stack 3.x.0 | expected |
 | ConBee II, ConBee III, RaspBee II | deCONZ | deCONZ firmware 0x26580700 or newer | expected |
-| EmberZNet 7.3 and older | EFR32 | EZSP 12 and older | unsupported: refused with "update the firmware" |
+| Silicon Labs EM357 | EM35x | EmberZNet 6.7.10 (EZSP 8), NCP | working (Control4 CA-1, onboard UART) |
+| EmberZNet 7.0 to 7.3, and 6.6 and older | EFR32, EM35x | EZSP 9 to 12, and 7 and older | unsupported: refused with "update the firmware" |
 | CC2531, CC2530 | CC253x | Z-Stack Home 1.2 | unsupported: refused (`probe` still identifies it) |
 | XBee, ZiGate, Telink, NXP | | | unsupported, not planned |
 

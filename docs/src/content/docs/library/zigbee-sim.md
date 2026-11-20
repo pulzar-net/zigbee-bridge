@@ -31,7 +31,7 @@ cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --device
 ```
 
 `zigbee-ncp-sim` options: `--listen ADDR`, `--ncp ezsp|znp|deconz`,
-`--protocol 13..19` (EZSP version), `--devices` (a comma-separated list of
+`--protocol 8|13..19` (EZSP version), `--devices` (a comma-separated list of
 `th`, `plug`, `door`), and `--report-every SECONDS`.
 
 The simulator is a test tool. It models what a host sees, not radio

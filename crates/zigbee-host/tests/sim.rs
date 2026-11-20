@@ -1,5 +1,5 @@
 //! The host against the NCP simulator, for every coordinator family and
-//! layout: EZSP protocol 13 (EmberZNet 7.4) and 16 (8.x), and Z-Stack
+//! layout: EZSP protocol 8 (EmberZNet 6.7), 13 (7.4) and 16 (8.x), and Z-Stack
 //! 3.x.0 and 3.0.x over ZNP.
 
 use std::time::Duration;
@@ -17,7 +17,8 @@ use zigbee_zcl::{attr, cluster_id, Value};
 const TH: Ieee = Ieee(0x00124B0000000001);
 const DOOR: Ieee = Ieee(0x00124B0000000002);
 const PLUG: Ieee = Ieee(0x00124B0000000003);
-const NCPS: [SimNcp; 5] = [
+const NCPS: [SimNcp; 6] = [
+    SimNcp::Ezsp { protocol: 8 },
     SimNcp::Ezsp { protocol: 13 },
     SimNcp::Ezsp { protocol: 16 },
     SimNcp::Znp { product: 1 },
@@ -602,7 +603,11 @@ async fn probe_identifies_the_ncp_without_changing_it() {
         match ncp {
             SimNcp::Ezsp { protocol } => {
                 assert_eq!(id.protocol, protocol);
-                let firmware = if protocol == 13 { "7.4.4.0" } else { "8.0.2.0" };
+                let firmware = match protocol {
+                    8 => "6.7.10.0",
+                    13 => "7.4.4.0",
+                    _ => "8.0.2.0",
+                };
                 assert_eq!(id.firmware, firmware);
                 assert_eq!(id.manufacturer.as_deref(), Some("zigbee-bridge sim"));
             }
@@ -759,6 +764,8 @@ async fn restores_a_backup_onto_another_coordinator_family() {
         (SimNcp::Deconz, SimNcp::Ezsp { protocol: 16 }),
         (SimNcp::Znp { product: 2 }, SimNcp::Ezsp { protocol: 13 }),
         (SimNcp::Ezsp { protocol: 16 }, SimNcp::Deconz),
+        // An EM357 network moved onto a newer Silicon Labs dongle.
+        (SimNcp::Ezsp { protocol: 8 }, SimNcp::Ezsp { protocol: 16 }),
     ];
     for (from, to) in moves {
         let dir = tempfile::tempdir().unwrap();

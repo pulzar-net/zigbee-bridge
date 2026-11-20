@@ -6,6 +6,30 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- EZSP protocol 8: EmberZNet 6.7 to 6.10, the last firmware for the EM35x
+  (EM357, EM3581) and what the Sonoff ZBDongle-E ships with. The keys go
+  through `getKey`, `getKeyTableEntry`, `setKeyTableEntry` and
+  `addTransientLinkKey` (new `Command` and `Response` variants and
+  `types::KeyStruct`), and `startScan` answers with a one-byte status.
+  `ProtocolVersion::sec_man()` says which key API a version uses. Tested on
+  an EM357 on EmberZNet 6.7.10 (a Control4 CA-1's onboard radio): probe,
+  resuming its network, backup, energy scan and permit join. The simulator
+  plays protocol 8 (`--protocol 8`), and the host's simulator suite runs
+  against it.
+
+### Fixed
+
+- `probe` waits ASH's full reset time for an RSTACK, with one reset: a
+  second reset sent after 1.1 s landed while an EM357 (about 1.5 s to
+  answer) was still rebooting and cut its RSTACK off, so it was reported
+  as no coordinator. `PROBE_TIMEOUT` is 4 seconds.
+- Opening a serial port its last user has just closed waits up to 3
+  seconds for the kernel to release it, instead of failing with "Unable
+  to acquire exclusive lock". `probe` hit it when it reopened the port for
+  the next coordinator family, which hid what the port had answered.
+
 ## [0.3.0] - 2026-11-20
 
 The first release on crates.io.

@@ -9,7 +9,7 @@ use zigbee_primitives::{Ieee, Key, NodeId};
 
 use crate::ids::frame as id;
 use crate::types::{
-    ApsFrame, ApsKeyMetadata, InitialSecurityState, NetworkKeyInfo, NetworkParameters,
+    ApsFrame, ApsKeyMetadata, InitialSecurityState, KeyStruct, NetworkKeyInfo, NetworkParameters,
     ProtocolVersion, SecManContext, Status,
 };
 
@@ -111,6 +111,26 @@ pub enum Command {
     },
     ClearTransientLinkKeys,
     ClearKeyTable,
+    /// Before protocol 13: read a key by [`crate::ids::ember_key_type`].
+    GetKey {
+        key_type: u8,
+    },
+    /// Before protocol 13: read a key table entry.
+    GetKeyTableEntry {
+        index: u8,
+    },
+    /// Before protocol 13: write a key table entry.
+    SetKeyTableEntry {
+        index: u8,
+        ieee: Ieee,
+        link_key: bool,
+        key: Key,
+    },
+    /// Before protocol 13: a temporary key for one joining device.
+    AddTransientLinkKey {
+        ieee: Ieee,
+        key: Key,
+    },
     SendUnicast {
         kind: u8,
         destination: NodeId,
@@ -192,6 +212,10 @@ impl Command {
             Command::ImportTransientKey { .. } => id::IMPORT_TRANSIENT_KEY,
             Command::ClearTransientLinkKeys => id::CLEAR_TRANSIENT_LINK_KEYS,
             Command::ClearKeyTable => id::CLEAR_KEY_TABLE,
+            Command::GetKey { .. } => id::GET_KEY,
+            Command::GetKeyTableEntry { .. } => id::GET_KEY_TABLE_ENTRY,
+            Command::SetKeyTableEntry { .. } => id::SET_KEY_TABLE_ENTRY,
+            Command::AddTransientLinkKey { .. } => id::ADD_TRANSIENT_LINK_KEY,
             Command::SendUnicast { .. } => id::SEND_UNICAST,
             Command::SendBroadcast { .. } => id::SEND_BROADCAST,
             Command::SetConcentrator { .. } => id::SET_CONCENTRATOR,
@@ -256,8 +280,24 @@ impl Command {
             Command::PermitJoining { duration } => w.put_u8(*duration),
             Command::SetInitialSecurityState { state } => state.write(&mut w),
             Command::ExportKey { context } => context.write(&mut w),
-            Command::ExportLinkKeyByIndex { index } | Command::EraseKeyTableEntry { index } => {
-                w.put_u8(*index)
+            Command::ExportLinkKeyByIndex { index }
+            | Command::EraseKeyTableEntry { index }
+            | Command::GetKeyTableEntry { index } => w.put_u8(*index),
+            Command::GetKey { key_type } => w.put_u8(*key_type),
+            Command::SetKeyTableEntry {
+                index,
+                ieee,
+                link_key,
+                key,
+            } => {
+                w.put_u8(*index);
+                w.put_ieee(*ieee);
+                w.put_u8(u8::from(*link_key));
+                w.put_key(key);
+            }
+            Command::AddTransientLinkKey { ieee, key } => {
+                w.put_ieee(*ieee);
+                w.put_key(key);
             }
             Command::ImportLinkKey { index, ieee, key } => {
                 w.put_u8(*index);
@@ -430,6 +470,18 @@ impl Command {
             }
             id::CLEAR_TRANSIENT_LINK_KEYS => Command::ClearTransientLinkKeys,
             id::CLEAR_KEY_TABLE => Command::ClearKeyTable,
+            id::GET_KEY => Command::GetKey { key_type: r.u8()? },
+            id::GET_KEY_TABLE_ENTRY => Command::GetKeyTableEntry { index: r.u8()? },
+            id::SET_KEY_TABLE_ENTRY => Command::SetKeyTableEntry {
+                index: r.u8()?,
+                ieee: r.ieee()?,
+                link_key: r.bool()?,
+                key: r.key()?,
+            },
+            id::ADD_TRANSIENT_LINK_KEY => Command::AddTransientLinkKey {
+                ieee: r.ieee()?,
+                key: r.key()?,
+            },
             id::SEND_UNICAST => Command::SendUnicast {
                 kind: r.u8()?,
                 destination: r.u16()?,
@@ -556,6 +608,16 @@ pub enum Response {
         key: Key,
         metadata: ApsKeyMetadata,
     },
+    /// `getKey` (before protocol 13).
+    GetKey {
+        status: Status,
+        key: KeyStruct,
+    },
+    /// `getKeyTableEntry` (before protocol 13).
+    GetKeyTableEntry {
+        status: Status,
+        key: KeyStruct,
+    },
     /// `sendUnicast` and `sendBroadcast`.
     Sent {
         frame_id: u16,
@@ -597,8 +659,10 @@ enum Shape {
     Special,
 }
 
-fn shape(frame_id: u16) -> Option<Shape> {
+fn shape(frame_id: u16, v: ProtocolVersion) -> Option<Shape> {
     Some(match frame_id {
+        // `startScan` returned an `EmberStatus` until protocol 13.
+        id::START_SCAN if !v.sec_man() => Shape::Status,
         id::SET_CONFIGURATION_VALUE | id::ADD_ENDPOINT | id::SET_POLICY | id::SET_VALUE => {
             Shape::EzspStatus
         }
@@ -611,7 +675,9 @@ fn shape(frame_id: u16) -> Option<Shape> {
         | id::CLEAR_KEY_TABLE
         | id::SET_CONCENTRATOR
         | id::SET_MFG_TOKEN
-        | id::SET_RADIO_POWER => Shape::Status,
+        | id::SET_RADIO_POWER
+        | id::SET_KEY_TABLE_ENTRY
+        | id::ADD_TRANSIENT_LINK_KEY => Shape::Status,
         id::IMPORT_LINK_KEY | id::IMPORT_TRANSIENT_KEY | id::START_SCAN => Shape::SlStatus,
         id::SET_MANUFACTURER_CODE | id::CLEAR_TRANSIENT_LINK_KEYS | id::NOP => Shape::Empty,
         id::VERSION
@@ -624,6 +690,8 @@ fn shape(frame_id: u16) -> Option<Shape> {
         | id::EXPORT_KEY
         | id::GET_NETWORK_KEY_INFO
         | id::EXPORT_LINK_KEY_BY_INDEX
+        | id::GET_KEY
+        | id::GET_KEY_TABLE_ENTRY
         | id::SEND_UNICAST
         | id::SEND_BROADCAST
         | id::SET_SOURCE_ROUTE_DISCOVERY_MODE
@@ -656,6 +724,8 @@ impl Response {
             Response::ExportKey { .. } => id::EXPORT_KEY,
             Response::GetNetworkKeyInfo { .. } => id::GET_NETWORK_KEY_INFO,
             Response::ExportLinkKeyByIndex { .. } => id::EXPORT_LINK_KEY_BY_INDEX,
+            Response::GetKey { .. } => id::GET_KEY,
+            Response::GetKeyTableEntry { .. } => id::GET_KEY_TABLE_ENTRY,
             Response::SetSourceRouteDiscoveryMode { .. } => id::SET_SOURCE_ROUTE_DISCOVERY_MODE,
             Response::GetMfgToken { .. } => id::GET_MFG_TOKEN,
             Response::LookupEui64ByNodeId { .. } => id::LOOKUP_EUI64_BY_NODE_ID,
@@ -674,6 +744,8 @@ impl Response {
             | Response::ExportKey { status, .. }
             | Response::GetNetworkKeyInfo { status, .. }
             | Response::ExportLinkKeyByIndex { status, .. }
+            | Response::GetKey { status, .. }
+            | Response::GetKeyTableEntry { status, .. }
             | Response::Sent { status, .. }
             | Response::LookupEui64ByNodeId { status, .. } => Some(*status),
             _ => None,
@@ -687,7 +759,7 @@ impl Response {
         params: &[u8],
     ) -> Result<Response, DecodeError> {
         let mut r = Reader::new(params);
-        let shape = shape(frame_id).ok_or(DecodeError::UnknownFrame(frame_id))?;
+        let shape = shape(frame_id, v).ok_or(DecodeError::UnknownFrame(frame_id))?;
         let response = match shape {
             Shape::Status => Response::Status {
                 frame_id,
@@ -775,6 +847,14 @@ impl Response {
                         }
                     }
                 }
+                id::GET_KEY => Response::GetKey {
+                    status: Status::read(&mut r, v)?,
+                    key: KeyStruct::read(&mut r)?,
+                },
+                id::GET_KEY_TABLE_ENTRY => Response::GetKeyTableEntry {
+                    status: Status::read(&mut r, v)?,
+                    key: KeyStruct::read(&mut r)?,
+                },
                 id::SEND_UNICAST | id::SEND_BROADCAST => Response::Sent {
                     frame_id,
                     status: Status::read(&mut r, v)?,
@@ -873,6 +953,10 @@ impl Response {
                     status.write(&mut w);
                 }
             }
+            Response::GetKey { status, key } | Response::GetKeyTableEntry { status, key } => {
+                status.write(&mut w);
+                key.write(&mut w);
+            }
             Response::Sent {
                 status,
                 aps_sequence,
@@ -968,6 +1052,18 @@ mod tests {
             },
             Command::ClearTransientLinkKeys,
             Command::ClearKeyTable,
+            Command::GetKey { key_type: 3 },
+            Command::GetKeyTableEntry { index: 4 },
+            Command::SetKeyTableEntry {
+                index: 4,
+                ieee: Ieee(42),
+                link_key: true,
+                key: Key([5; 16]),
+            },
+            Command::AddTransientLinkKey {
+                ieee: Ieee::UNSET,
+                key: Key::ZIGBEE_ALLIANCE_09,
+            },
             Command::SendUnicast {
                 kind: 0,
                 destination: 0x1234,
@@ -1006,7 +1102,7 @@ mod tests {
 
     #[test]
     fn commands_round_trip_in_both_layouts() {
-        for v in [ProtocolVersion(13), ProtocolVersion(16)] {
+        for v in [ProtocolVersion(8), ProtocolVersion(13), ProtocolVersion(16)] {
             for c in every_command() {
                 let bytes = c.encode(v);
                 assert_eq!(
@@ -1046,7 +1142,7 @@ mod tests {
 
     #[test]
     fn responses_round_trip() {
-        for v in [ProtocolVersion(13), ProtocolVersion(18)] {
+        for v in [ProtocolVersion(8), ProtocolVersion(13), ProtocolVersion(18)] {
             let responses = vec![
                 Response::Version {
                     protocol_version: 13,
@@ -1087,6 +1183,25 @@ mod tests {
                 },
                 Response::Empty { frame_id: id::NOP },
                 Response::InvalidCommand { reason: 0x58 },
+                Response::GetKey {
+                    status: Status::ok(v),
+                    key: KeyStruct {
+                        bitmask: 0x03,
+                        key_type: 3,
+                        key: Key([1; 16]),
+                        outgoing_frame_counter: 1000,
+                        sequence_number: 2,
+                        ..Default::default()
+                    },
+                },
+                Response::GetKeyTableEntry {
+                    status: Status::ok(v),
+                    key: KeyStruct::default(),
+                },
+                Response::Status {
+                    frame_id: id::ADD_TRANSIENT_LINK_KEY,
+                    status: Status::ok(v),
+                },
             ];
             for resp in responses {
                 assert_eq!(
@@ -1112,6 +1227,41 @@ mod tests {
                 Response::decode(v, export.frame_id(), &export.encode(v)),
                 Ok(export)
             );
+        }
+    }
+}
+
+#[cfg(test)]
+mod v8_tests {
+    use super::*;
+
+    /// `startScan` answered with a one-byte `EmberStatus` before protocol 13.
+    #[test]
+    fn start_scan_status_width() {
+        let ok8 = Response::decode(ProtocolVersion(8), id::START_SCAN, &[0x00]).unwrap();
+        assert_eq!(ok8.status(), Some(Status::ok(ProtocolVersion(8))));
+        let ok13 = Response::decode(ProtocolVersion(13), id::START_SCAN, &[0, 0, 0, 0]).unwrap();
+        assert_eq!(ok13.status(), Some(Status::SL_OK));
+    }
+
+    /// A `getKey(CURRENT_NETWORK)` response as an EmberZNet 6.7 NCP lays it out.
+    #[test]
+    fn get_key_wire_layout() {
+        let mut bytes = vec![0x00, 0x03, 0x00, 0x03];
+        bytes.extend([0xAB; 16]);
+        bytes.extend(1234u32.to_le_bytes());
+        bytes.extend(0u32.to_le_bytes());
+        bytes.push(7);
+        bytes.extend([0u8; 8]);
+        match Response::decode(ProtocolVersion(8), id::GET_KEY, &bytes).unwrap() {
+            Response::GetKey { status, key } => {
+                assert!(status.is_ok());
+                assert_eq!(key.key_type, crate::ids::ember_key_type::CURRENT_NETWORK);
+                assert_eq!(key.key, Key([0xAB; 16]));
+                assert_eq!(key.outgoing_frame_counter, 1234);
+                assert_eq!(key.sequence_number, 7);
+            }
+            other => panic!("{other:?}"),
         }
     }
 }

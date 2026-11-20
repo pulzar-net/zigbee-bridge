@@ -93,13 +93,15 @@ pub enum ProbeError {
 }
 
 /// The longest a probe takes.
-pub const PROBE_TIMEOUT: Duration = Duration::from_secs(3);
+pub const PROBE_TIMEOUT: Duration = Duration::from_secs(4);
 
 fn probe_config() -> ClientConfig {
     ClientConfig {
+        // One reset, waited for as long as ASH allows (T_RSTACK_MAX, 3.2 s):
+        // an EM357 takes about 1.5 s to reboot and answer, and a second RST
+        // sent sooner resets it again in the middle of its RSTACK.
         ash: AshConfig {
-            rst_timeout: Duration::from_millis(1100),
-            rst_attempts: 2,
+            rst_attempts: 1,
             ..AshConfig::default()
         },
         response_timeout: Duration::from_millis(600),
