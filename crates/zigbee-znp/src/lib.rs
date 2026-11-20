@@ -8,4 +8,4 @@ pub mod ids;
 pub mod message;
 
 pub use frame::{Decoded, Decoder, Frame, FrameError, Kind};
-pub use message::{DecodeError, IncomingMsg, Indication, Request};
+pub use message::{Beacon, DecodeError, IncomingMsg, Indication, Request};
