@@ -1,4 +1,7 @@
-# Hardware and firmware
+---
+title: "Hardware and firmware"
+description: "zigbee-bridge drives a Zigbee coordinator: a radio module running network co-processor (NCP) firmware, attached over USB serial, a UART, or TCP."
+---
 
 zigbee-bridge drives a Zigbee coordinator: a radio module running network
 co-processor (NCP) firmware, attached over USB serial, a UART, or TCP. The
@@ -141,8 +144,8 @@ firmware from their [download site](https://deconz.dresden-elektronik.de/deconz-
 
 The bridge has no per-device database. Any device that implements the
 standard Zigbee Cluster Library clusters reports through them; the
-[MQTT API](mqtt.md#device-state) lists which clusters become which fields,
-and [Home Assistant](home-assistant.md#what-is-created) which entities they
+[MQTT API](/zigbee-bridge/mqtt.html#device-state) lists which clusters become which fields,
+and [Home Assistant](/zigbee-bridge/home-assistant.html#what-is-created) which entities they
 become. Every attribute report is also published raw on
 `zigbee/<device>/report`, so nothing a device sends is lost.
 
@@ -156,6 +159,6 @@ setup step. Support for those is on the [roadmap](https://github.com/pulzar-net/
 Zigbee shares the 2.4 GHz band with Wi-Fi, and USB 3 ports radiate noise in
 the same band. Put the coordinator on a USB 2 extension cable, away from the
 computer and from USB 3 devices. Choose a channel away from your Wi-Fi: the
-[`energy_scan`](mqtt.md#energy_scan) request measures every channel, and
+[`energy_scan`](/zigbee-bridge/mqtt.html#energy_scan) request measures every channel, and
 `network.channel` sets the channel of a new network. Channels 15, 20 and 25
 sit between the common Wi-Fi channels 1, 6 and 11.

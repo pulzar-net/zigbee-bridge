@@ -1,4 +1,7 @@
-# Architecture
+---
+title: "Architecture"
+description: "A Zigbee coordinator is split in two:"
+---
 
 ## Who does what
 
@@ -103,4 +106,4 @@ locks.
 The host's device store and backup, and the bridge's network file, are JSON
 files in the data directory, written with a temporary file, `fsync` and a
 rename, readable by their owner only. See
-[the data directory](configuration.md#the-data-directory).
+[the data directory](/zigbee-bridge/configuration.html#the-data-directory).

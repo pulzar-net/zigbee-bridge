@@ -1,4 +1,7 @@
-# zigbee-zdo
+---
+title: "zigbee-zdo"
+description: "Zigbee Device Object frames (Zigbee specification section 2.4): device and service discovery, binding, and network management."
+---
 
 Zigbee Device Object frames (Zigbee specification section 2.4): device and
 service discovery, binding, and network management. No I/O.

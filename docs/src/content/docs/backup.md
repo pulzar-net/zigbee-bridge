@@ -1,4 +1,7 @@
-# Backup and restore
+---
+title: "Backup and restore"
+description: "A Zigbee network lives in the coordinator's non-volatile memory: the network key, its frame counter, the PAN ids, and the trust center's link keys."
+---
 
 A Zigbee network lives in the coordinator's non-volatile memory: the network
 key, its frame counter, the PAN ids, and the trust center's link keys. If the
@@ -12,7 +15,7 @@ The bridge writes `backup.json` to the data directory:
 - on start, unless it resumed the network unchanged;
 - after every join and leave;
 - every hour;
-- on the [`backup`](mqtt.md#backup) request.
+- on the [`backup`](/zigbee-bridge/mqtt.html#backup) request.
 
 It uses the open coordinator backup format
 (`"format": "zigpy/open-coordinator-backup"`, version 1), the JSON format

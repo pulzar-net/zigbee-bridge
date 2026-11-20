@@ -1,7 +1,10 @@
-# Troubleshooting and FAQ
+---
+title: "Troubleshooting and FAQ"
+description: "Start with the log."
+---
 
 Start with the log. Run the bridge with `RUST_LOG=debug` to see every
-request and report; see [logging](configuration.md#logging) for more.
+request and report; see [logging](/zigbee-bridge/configuration.html#logging) for more.
 
 ## The bridge does not start
 
@@ -13,30 +16,30 @@ The port is right but nothing speaks a supported protocol on it.
   `sudo systemctl stop ModemManager`.
 - Is the baud rate right? Try `zigbee-bridge probe PORT --baud 460800`.
 - Is it NCP firmware? Router, RCP (multiprotocol) and Thread builds do not
-  answer. See [flashing firmware](hardware.md#flashing-firmware).
+  answer. See [flashing firmware](/zigbee-bridge/hardware.html#flashing-firmware).
 - Does the flow control match the firmware build? See
-  [Silicon Labs EmberZNet](hardware.md#silicon-labs-emberznet).
+  [Silicon Labs EmberZNet](/zigbee-bridge/hardware.html#silicon-labs-emberznet).
 
 **`Permission denied` opening the port.** Your user (or the service's) needs
 to be in the group that owns the device, usually `dialout`
-(`ls -l /dev/ttyUSB0` shows it). The [systemd unit](installation.md#as-a-systemd-service)
+(`ls -l /dev/ttyUSB0` shows it). The [systemd unit](/zigbee-bridge/installation.html#as-a-systemd-service)
 adds it.
 
 **`firmware ... is too old; update it`.** EmberZNet before 7.4 speaks EZSP 12
-or older. [Update the firmware](hardware.md#flashing-firmware).
+or older. [Update the firmware](/zigbee-bridge/hardware.html#flashing-firmware).
 
 **The coordinator runs a different network.** The coordinator already has a
 network that is not the one in `network.json` (it was used with other
 software, or `network.json` was deleted). The bridge refuses to wipe it. To
 keep that network, restore its backup from the other software. To replace
-it, see [starting over](backup.md#starting-over).
+it, see [starting over](/zigbee-bridge/backup.html#starting-over).
 
 **`network.channel ... is not 11 to 26`, `unknown field`, `missing field`.**
 The configuration file has an error; the message names the key. See the
-[configuration reference](config-reference.md).
+[configuration reference](/zigbee-bridge/config-reference.html).
 
 **The bridge exits with status 75.** It wrote the IEEE address for a
-[restore](backup.md#restoring-onto-a-new-coordinator) and must be started
+[restore](/zigbee-bridge/backup.html#restoring-onto-a-new-coordinator) and must be started
 again.
 
 ## Devices
@@ -69,9 +72,9 @@ talks; you can also send the `interview` request.
   it.
 
 **Readings are late or missing; devices drop off.** Usually radio trouble.
-See [radio placement](hardware.md#radio-placement). Add mains-powered
+See [radio placement](/zigbee-bridge/hardware.html#radio-placement). Add mains-powered
 routers (plugs, bulbs) between the coordinator and distant devices. The
-[`topology`](mqtt.md#topology) request and each device's `linkquality` show
+[`topology`](/zigbee-bridge/mqtt.html#topology) request and each device's `linkquality` show
 weak links.
 
 ## Home Assistant
@@ -88,7 +91,7 @@ broker.
 
 **A removed device came back.** Remove it with the bridge's `remove`
 request, not only in Home Assistant. See
-[removing a device](home-assistant.md#removing-a-device).
+[removing a device](/zigbee-bridge/home-assistant.html#removing-a-device).
 
 ## FAQ
 
@@ -98,7 +101,7 @@ separate coordinators, each with its own network.
 
 **Can I move my network from Zigbee2MQTT or ZHA without pairing again?**
 Probably, with their coordinator backup: it is the same open format. This
-has not been tested yet. See [backup and restore](backup.md).
+has not been tested yet. See [backup and restore](/zigbee-bridge/backup.html).
 
 **Is the topic scheme compatible with Zigbee2MQTT?** It is modeled on it
 (`bridge/request/permit_join`, `bridge/devices`, `<device>/set`, readings
@@ -108,7 +111,7 @@ converters.
 
 **Does it support OTA firmware updates?** Since 0.2.0:
 from image files you put in the OTA directory, one device at a time, on
-request. See [`ota_update`](mqtt.md#ota_check-and-ota_update). There is no
+request. See [`ota_update`](/zigbee-bridge/mqtt.html#ota_check-and-ota_update). There is no
 automatic download of images.
 
 **Groups or scenes?** Not yet. See the

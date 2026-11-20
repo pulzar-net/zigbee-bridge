@@ -1,4 +1,7 @@
-# zigbee-ezsp and zigbee-ash
+---
+title: "zigbee-ezsp and zigbee-ash"
+description: "The two protocols between a host and a Silicon Labs EmberZNet NCP."
+---
 
 The two protocols between a host and a Silicon Labs EmberZNet NCP.
 [zigbee-ezsp API](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_ezsp/index.html),

@@ -1,4 +1,7 @@
-# Home Assistant
+---
+title: "Home Assistant"
+description: "zigbee-bridge works with Home Assistant through its MQTT integration and MQTT discovery."
+---
 
 zigbee-bridge works with Home Assistant through its
 [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) and
@@ -14,7 +17,7 @@ MQTT discovery. There is no custom integration to install.
    Discovery is on by default.
 3. Point zigbee-bridge at the same broker (`[mqtt] host`, `port`, and, if the
    broker needs them, `username` and `password_file`).
-4. Start the bridge and [pair a device](getting-started.md#4-watch-mqtt-and-pair).
+4. Start the bridge and [pair a device](/zigbee-bridge/getting-started.html#4-watch-mqtt-and-pair).
 
 When a device finishes its interview, it appears under **Settings > Devices
 & services > MQTT** with one entity per reading.
@@ -35,7 +38,7 @@ Its entities:
 | every device | `sensor` | link quality, as a diagnostic entity |
 
 A battery reading is not created for mains-powered devices. The
-[MQTT API](mqtt.md#device-state) lists every field and its cluster.
+[MQTT API](/zigbee-bridge/mqtt.html#device-state) lists every field and its cluster.
 
 Entity ids are derived from the device's name, so renaming a device with the
 `rename` request before it is added to dashboards gives readable ids such as
@@ -60,7 +63,7 @@ retained, and republished when Home Assistant restarts.
 
 ## Removing a device
 
-Remove it with the bridge's [`remove`](mqtt.md#remove) request, not only in
+Remove it with the bridge's [`remove`](/zigbee-bridge/mqtt.html#remove) request, not only in
 Home Assistant: the bridge clears its retained discovery messages and state,
 so the entities disappear. Deleting the device only in Home Assistant leaves
 it on the Zigbee network, and the bridge recreates it the next time Home
@@ -70,5 +73,5 @@ Assistant restarts.
 
 Discovery is the only part that is specific to Home Assistant. Node-RED,
 openHAB, scripts and anything else that speaks MQTT can use the
-[topics](mqtt.md) directly; set `homeassistant.enabled = false` if nothing
+[topics](/zigbee-bridge/mqtt.html) directly; set `homeassistant.enabled = false` if nothing
 uses discovery.

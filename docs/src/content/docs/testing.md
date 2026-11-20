@@ -1,4 +1,7 @@
-# Testing
+---
+title: "Testing"
+description: "The whole stack is developed and tested without hardware."
+---
 
 The whole stack is developed and tested without hardware. CI runs every
 test on every commit; most run in seconds on a laptop.
@@ -24,7 +27,7 @@ vector.
 
 ## The simulator
 
-[zigbee-sim](library/zigbee-sim.md) plays a coordinator, with simulated
+[zigbee-sim](/zigbee-bridge/library/zigbee-sim.html) plays a coordinator, with simulated
 devices behind it. Tests connect the real host to it over an in-memory pipe,
 so they exercise the same code paths as hardware: the serial protocol,
 formation, joins, the trust center key exchange, interviews, reporting,
@@ -40,7 +43,7 @@ commands, backups, restores and topology.
   release binary and with the current build, against the simulator.
 
 To try things by hand, run `zigbee-ncp-sim` and point a bridge at it; see
-[getting started](getting-started.md).
+[getting started](/zigbee-bridge/getting-started.html).
 
 ## Recorded sessions
 
@@ -77,7 +80,7 @@ tests when you fix it.
 ## Documentation
 
 The `docs` workflow checks the claims this site makes: the
-[configuration reference](config-reference.md) is regenerated from the code
+[configuration reference](/zigbee-bridge/config-reference.html) is regenerated from the code
 and compared, every doctest runs (the README's library example among them),
 the README's quick start runs, the workspace builds on the minimum supported
 Rust version, and every relative link resolves.

@@ -1,4 +1,7 @@
-# zigbee-bridge (crate)
+---
+title: "zigbee-bridge (crate)"
+description: "The bridge as a library: the same code as the binary, for programs that want to run it in-process or reuse its parts."
+---
 
 The bridge as a library: the same code as the binary, for programs that want
 to run it in-process or reuse its parts. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_bridge/index.html).
@@ -12,5 +15,5 @@ to run it in-process or reuse its parts. [API docs](https://pulzar-net.github.io
   discovery messages.
 - `bridge` is the topic scheme and request handling.
 
-The [MQTT API](../mqtt.md) and [configuration reference](../config-reference.md)
+The [MQTT API](/zigbee-bridge/mqtt.html) and [configuration reference](/zigbee-bridge/config-reference.html)
 document the behavior.

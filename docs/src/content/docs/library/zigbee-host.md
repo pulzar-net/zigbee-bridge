@@ -1,4 +1,7 @@
-# zigbee-host
+---
+title: "zigbee-host"
+description: "The coordinator host: the application that runs a Zigbee network on top of an NCP."
+---
 
 The coordinator host: the application that runs a Zigbee network on top of
 an NCP. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html).

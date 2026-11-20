@@ -1,0 +1,62 @@
+---
+title: zigbee-bridge
+description: A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust, as one static binary for routers, gateways and servers.
+template: splash
+---
+
+import { Hero, Features, ReleaseDownload, StatusMatrix } from '@pulzar-net/docs-theme/components';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+<Hero
+	eyebrow="Pulzar open source"
+	title="zigbee-bridge"
+	tagline="A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust. One static binary with no runtime, small enough for routers and gateways, with Home Assistant discovery."
+	actions={[
+		{ text: 'Get started', link: '/zigbee-bridge/getting-started.html', icon: 'right-arrow' },
+		{ text: 'MQTT API', link: '/zigbee-bridge/mqtt.html', variant: 'minimal' },
+		{ text: 'GitHub', link: 'https://github.com/pulzar-net/zigbee-bridge', variant: 'minimal', icon: 'github' },
+	]}
+/>
+
+<Features
+	items={[
+		{ title: 'Three coordinator families', body: 'Silicon Labs EmberZNet, Texas Instruments Z-Stack and ConBee/RaspBee, over USB serial or TCP, detected on the port.', icon: 'seti:hex', link: '/zigbee-bridge/hardware.html' },
+		{ title: 'Home Assistant', body: 'Devices appear through MQTT discovery as soon as their interview finishes. No custom integration.', icon: 'puzzle', link: '/zigbee-bridge/home-assistant.html' },
+		{ title: 'Never lose the network', body: 'Backups in the open coordinator format, restored onto a new coordinator of any family without pairing again.', icon: 'approve-check', link: '/zigbee-bridge/backup.html' },
+		{ title: 'Small and static', body: 'Under 4 MB, under 16 MB of memory with 200 devices. Runs on MIPS routers and Raspberry Pis.', icon: 'rocket', link: '/zigbee-bridge/installation.html' },
+		{ title: 'A Rust library', body: 'The coordinator host, the ZCL and ZDO, EZSP, ZNP and deCONZ as crates you can embed.', icon: 'seti:rust', link: '/zigbee-bridge/library.html' },
+		{ title: 'Tested without hardware', body: 'A coordinator simulator drives every test, and the docs\' quick start runs in CI.', icon: 'laptop', link: '/zigbee-bridge/testing.html' },
+	]}
+/>
+
+## Install
+
+<ReleaseDownload repo="pulzar-net/zigbee-bridge" version="0.2.0" binary="zigbee-bridge" asset="{binary}-v{version}-{arch}-unknown-linux-musl" />
+
+Then follow [getting started](/zigbee-bridge/getting-started.html) to pair a device, or
+[install it as a service](/zigbee-bridge/installation.html).
+
+## Status
+
+zigbee-bridge is 0.x: the whole stack is tested in CI against a coordinator simulator, but no release has been tested on real hardware yet.
+
+<StatusMatrix
+	rows={[
+		{ feature: 'Silicon Labs EmberZNet 7.4 and 8.x coordinators', status: 'done', note: '0.1.0' },
+		{ feature: 'Zigbee 3.0 trust center, interview, reporting, Home Assistant discovery', status: 'done', note: '0.1.0' },
+		{ feature: 'Backup and restore in the open coordinator backup format', status: 'done', note: '0.1.0' },
+		{ feature: 'Texas Instruments Z-Stack and ConBee/RaspBee coordinators', status: 'done', note: '0.2.0' },
+		{ feature: 'Channel change, device firmware updates (OTA), cross-family restore', status: 'done', note: '0.2.0' },
+		{ feature: 'Testing on real coordinators and devices', status: 'progress' },
+		{ feature: 'Manufacturer-specific clusters, groups and scenes', status: 'planned' },
+	]}
+/>
+
+## Where to go next
+
+<CardGrid>
+	<LinkCard title="Hardware and firmware" description="Which coordinators work, and how to flash them." href="/zigbee-bridge/hardware.html" />
+	<LinkCard title="Configuration reference" description="Every key, generated from the code." href="/zigbee-bridge/config-reference.html" />
+	<LinkCard title="Troubleshooting and FAQ" description="When a device does not join or report." href="/zigbee-bridge/troubleshooting.html" />
+	<LinkCard title="API documentation" description="Every crate, type and function." href="https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html" />
+</CardGrid>

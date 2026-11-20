@@ -1,4 +1,7 @@
-# zigbee-znp
+---
+title: "zigbee-znp"
+description: "Texas Instruments Z-Stack's ZNP serial protocol, the Monitor and Test (MT) API, for Z-Stack 3.0.x (CC2530, CC2531) and 3.x.0 (CC13x2, CC26x2, CC2652)."
+---
 
 Texas Instruments Z-Stack's ZNP serial protocol, the Monitor and Test (MT)
 API, for Z-Stack 3.0.x (CC2530, CC2531) and 3.x.0 (CC13x2, CC26x2, CC2652).

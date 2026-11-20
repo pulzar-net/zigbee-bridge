@@ -1,4 +1,7 @@
-# zigbee-sim
+---
+title: "zigbee-sim"
+description: "A Zigbee coordinator simulator with simulated devices, for testing Zigbee hosts without hardware."
+---
 
 A Zigbee coordinator simulator with simulated devices, for testing Zigbee
 hosts without hardware. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_sim/index.html).

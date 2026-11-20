@@ -1,4 +1,7 @@
-# zigbee-zcl
+---
+title: "zigbee-zcl"
+description: "The Zigbee Cluster Library: data types, frames, global commands and cluster definitions."
+---
 
 The Zigbee Cluster Library: data types, frames, global commands and cluster
 definitions. No I/O. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_zcl/index.html).

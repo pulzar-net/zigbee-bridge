@@ -1,4 +1,7 @@
-# The library crates
+---
+title: "The library crates"
+description: "zigbee-bridge is built as a stack of library crates."
+---
 
 zigbee-bridge is built as a stack of library crates. The bridge binary is
 the thinnest layer on top; everything else can be used without it, to build
@@ -6,15 +9,15 @@ a different bridge, a gateway, a test tool or a protocol analyzer.
 
 | Crate | Layer | Use it to |
 |---|---|---|
-| [zigbee-host](zigbee-host.md) | coordinator application | run a Zigbee network from Rust |
-| [zigbee-zcl](zigbee-zcl.md) | Zigbee Cluster Library | encode and decode ZCL frames and values |
-| [zigbee-zdo](zigbee-zdo.md) | Zigbee Device Objects | encode and decode ZDO requests and responses |
-| [zigbee-ezsp and zigbee-ash](zigbee-ezsp.md) | Silicon Labs serial protocols | talk to an EmberZNet NCP directly |
-| [zigbee-znp](zigbee-znp.md) | Texas Instruments serial protocol | talk to a Z-Stack NCP directly |
-| [zigbee-deconz](zigbee-deconz.md) | dresden elektronik serial protocol | talk to a ConBee or RaspBee directly |
-| [zigbee-types](zigbee-types.md) | shared types | addresses, keys, a safe wire reader |
-| [zigbee-sim](zigbee-sim.md) | test support | test Zigbee software without hardware |
-| [zigbee-bridge](zigbee-bridge.md) | MQTT bridge | run or embed the bridge itself |
+| [zigbee-host](/zigbee-bridge/library/zigbee-host.html) | coordinator application | run a Zigbee network from Rust |
+| [zigbee-zcl](/zigbee-bridge/library/zigbee-zcl.html) | Zigbee Cluster Library | encode and decode ZCL frames and values |
+| [zigbee-zdo](/zigbee-bridge/library/zigbee-zdo.html) | Zigbee Device Objects | encode and decode ZDO requests and responses |
+| [zigbee-ezsp and zigbee-ash](/zigbee-bridge/library/zigbee-ezsp.html) | Silicon Labs serial protocols | talk to an EmberZNet NCP directly |
+| [zigbee-znp](/zigbee-bridge/library/zigbee-znp.html) | Texas Instruments serial protocol | talk to a Z-Stack NCP directly |
+| [zigbee-deconz](/zigbee-bridge/library/zigbee-deconz.html) | dresden elektronik serial protocol | talk to a ConBee or RaspBee directly |
+| [zigbee-types](/zigbee-bridge/library/zigbee-types.html) | shared types | addresses, keys, a safe wire reader |
+| [zigbee-sim](/zigbee-bridge/library/zigbee-sim.html) | test support | test Zigbee software without hardware |
+| [zigbee-bridge](/zigbee-bridge/library/zigbee-bridge.html) | MQTT bridge | run or embed the bridge itself |
 
 The [API documentation](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html) covers every public item.
 This guide explains what each crate is for and how the pieces fit.
@@ -30,7 +33,7 @@ zigbee-host = { git = "https://github.com/pulzar-net/zigbee-bridge", tag = "v0.2
 
 Every crate shares the workspace version and is released together. While
 the project is at 0.x, minor versions may break the API; the
-[changelog](../changelog.md) says what changed.
+[changelog](/zigbee-bridge/changelog.html) says what changed.
 
 ## Conventions shared by every crate
 

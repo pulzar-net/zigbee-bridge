@@ -1,4 +1,7 @@
-# zigbee-bridge
+---
+title: "zigbee-bridge"
+description: "zigbee-bridge is a Zigbee coordinator stack and a Zigbee to MQTT bridge, written in Rust."
+---
 
 zigbee-bridge is a Zigbee coordinator stack and a Zigbee to MQTT bridge,
 written in Rust. It runs a Zigbee network through a USB or network
@@ -16,15 +19,15 @@ cover every type and function.
 
 | You want to | Read |
 |---|---|
-| try it without hardware | [Getting started](getting-started.md) |
-| run it with a coordinator | [Installation](installation.md), then [Hardware and firmware](hardware.md) |
-| connect it to Home Assistant | [Home Assistant](home-assistant.md) |
-| script it or build on its topics | [MQTT API](mqtt.md) |
-| change a setting | [Configuration](configuration.md) and the [reference](config-reference.md) |
-| move to a new coordinator | [Backup and restore](backup.md) |
-| embed the stack in Rust | [Library overview](library/index.md) |
-| understand how it works | [Architecture](architecture.md) |
-| fix a problem | [Troubleshooting and FAQ](troubleshooting.md) |
+| try it without hardware | [Getting started](/zigbee-bridge/getting-started.html) |
+| run it with a coordinator | [Installation](/zigbee-bridge/installation.html), then [Hardware and firmware](/zigbee-bridge/hardware.html) |
+| connect it to Home Assistant | [Home Assistant](/zigbee-bridge/home-assistant.html) |
+| script it or build on its topics | [MQTT API](/zigbee-bridge/mqtt.html) |
+| change a setting | [Configuration](/zigbee-bridge/configuration.html) and the [reference](/zigbee-bridge/config-reference.html) |
+| move to a new coordinator | [Backup and restore](/zigbee-bridge/backup.html) |
+| embed the stack in Rust | [Library overview](/zigbee-bridge/library.html) |
+| understand how it works | [Architecture](/zigbee-bridge/architecture.html) |
+| fix a problem | [Troubleshooting and FAQ](/zigbee-bridge/troubleshooting.html) |
 
 ## Status
 
@@ -35,7 +38,7 @@ but **no release has been tested on real hardware yet**. Pages that
 describe something only real hardware can confirm say so.
 
 Features added after the first release are marked with the version that
-brought them ("since 0.2.0"). The [changelog](changelog.md) lists what each
+brought them ("since 0.2.0"). The [changelog](/zigbee-bridge/changelog.html) lists what each
 release contains.
 
 ## Terms used in these docs

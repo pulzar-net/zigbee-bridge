@@ -1,7 +1,10 @@
-# Installation
+---
+title: "Installation"
+description: "zigbee-bridge is one static Linux binary."
+---
 
 zigbee-bridge is one static Linux binary. Pick one of the ways below, then
-[configure](configuration.md) it.
+[configure](/zigbee-bridge/configuration.html) it.
 
 ## Release binaries
 
@@ -107,7 +110,7 @@ zigbee-bridge --version
 `FILE` defaults to `/etc/zigbee-bridge/config.toml`. `PORT` is a serial
 device or `tcp://host:port`. Exit status: 0 on a clean stop, 1 on an error,
 2 for bad arguments or configuration, and 75 when the bridge must be started
-again to finish a [restore](backup.md).
+again to finish a [restore](/zigbee-bridge/backup.html).
 
 The log goes to standard error. `RUST_LOG` sets its level, for example
 `RUST_LOG=debug`, or `RUST_LOG=info,zigbee_ash=trace` to see every serial

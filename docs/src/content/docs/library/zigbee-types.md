@@ -1,4 +1,7 @@
-# zigbee-types
+---
+title: "zigbee-types"
+description: "The types every other crate shares."
+---
 
 The types every other crate shares. [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_types/index.html).
 

@@ -1,4 +1,7 @@
-# zigbee-deconz
+---
+title: "zigbee-deconz"
+description: "dresden elektronik's deCONZ serial protocol, which ConBee II, ConBee III and RaspBee II coordinator firmware speaks."
+---
 
 dresden elektronik's deCONZ serial protocol, which ConBee II, ConBee III and
 RaspBee II coordinator firmware speaks. Since 0.2.0.

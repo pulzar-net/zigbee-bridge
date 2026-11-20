@@ -1,4 +1,10 @@
-# Configuration
+---
+title: "Configuration"
+description: "zigbee-bridge reads one TOML file, /etc/zigbee-bridge/config.toml unless --config FILE names another."
+---
+
+import config from '../../../../config.example.toml?raw';
+import { Code } from '@astrojs/starlight/components';
 
 zigbee-bridge reads one TOML file, `/etc/zigbee-bridge/config.toml` unless
 `--config FILE` names another. Only the coordinator's port is required:
@@ -10,10 +16,10 @@ port = "/dev/serial/by-id/usb-Nabu_Casa_SkyConnect_v1.0_..."
 
 Everything else has a default. Unknown keys and wrong types are errors, so a
 typo stops the bridge at startup with the file, line and key, instead of
-being silently ignored. The [configuration reference](config-reference.md)
+being silently ignored. The [configuration reference](/zigbee-bridge/config-reference.html)
 lists every key; it is generated from the code, so it is always current.
 
-A [JSON Schema](config.schema.json) generated from the same code lets an
+A [JSON Schema](/zigbee-bridge/config.schema.json) generated from the same code lets an
 editor with TOML schema support (Taplo, or VS Code's Even Better TOML)
 complete and check the file. Point it at the schema with a first line of:
 
@@ -39,9 +45,7 @@ complete and check the file. Point it at the schema with a first line of:
 in the repository sets every key to its default, with comments. CI checks
 that it parses.
 
-```toml
-{{#include ../../config.example.toml}}
-```
+<Code code={config} lang="toml" />
 
 ## Choosing the port
 
@@ -93,7 +97,7 @@ network.
 
 All of them are written atomically (a temporary file, then a rename) and are
 readable by their owner only, because they hold the network key. Back up the
-whole directory. [Backup and restore](backup.md) explains moving a network
+whole directory. [Backup and restore](/zigbee-bridge/backup.html) explains moving a network
 to a new coordinator.
 
 ## Logging

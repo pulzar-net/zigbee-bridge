@@ -1,4 +1,7 @@
-# Getting started
+---
+title: "Getting started"
+description: "This page runs zigbee-bridge end to end without any Zigbee hardware: a simulated coordinator with three simulated devices takes the place of a USB stick."
+---
 
 This page runs zigbee-bridge end to end without any Zigbee hardware: a
 simulated coordinator with three simulated devices takes the place of a USB
@@ -116,7 +119,7 @@ mosquitto_pub -h localhost -t zigbee/bridge/request/rename \
 
 ## Next steps
 
-- [Install](installation.md) a release binary as a service.
-- [Choose and flash a coordinator](hardware.md), then set `serial.port` to
+- [Install](/zigbee-bridge/installation.html) a release binary as a service.
+- [Choose and flash a coordinator](/zigbee-bridge/hardware.html), then set `serial.port` to
   it. Use `zigbee-bridge probe PORT` first to check that it answers.
-- Read the [MQTT API](mqtt.md) for every request and payload.
+- Read the [MQTT API](/zigbee-bridge/mqtt.html) for every request and payload.

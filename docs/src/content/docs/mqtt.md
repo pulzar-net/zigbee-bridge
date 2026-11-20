@@ -1,4 +1,7 @@
-# MQTT API
+---
+title: "MQTT API"
+description: "The bridge publishes and listens under one base topic, zigbee unless mqtt.base_topic says otherwise."
+---
 
 The bridge publishes and listens under one base topic, `zigbee` unless
 `mqtt.base_topic` says otherwise. Every payload is JSON. This page uses the
@@ -392,4 +395,4 @@ not name; `fields` holds its decoded fields.
 
 With `homeassistant.enabled` (the default), the bridge also publishes
 discovery messages under `homeassistant/` and listens on
-`homeassistant/status`. See [Home Assistant](home-assistant.md).
+`homeassistant/status`. See [Home Assistant](/zigbee-bridge/home-assistant.html).
