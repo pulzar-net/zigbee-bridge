@@ -29,7 +29,7 @@ Rust.
 
 ## Status
 
-zigbee-bridge is **0.x and young**. Version 0.2.0 is the second release. The
+zigbee-bridge is **0.x and young**. Version 0.3.0 is the third release and the first on crates.io. The
 whole stack is tested in CI against a coordinator simulator, but **it has not
 yet been tested on real hardware**. Expect rough edges and breaking changes
 between 0.x releases, and keep a backup of your network

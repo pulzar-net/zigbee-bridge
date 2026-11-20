@@ -31,7 +31,7 @@ cover every type and function.
 
 ## Status
 
-zigbee-bridge is at 0.x. Version 0.2.0 supports Silicon Labs EmberZNet,
+zigbee-bridge is at 0.x. Version 0.3.0 supports Silicon Labs EmberZNet,
 Texas Instruments Z-Stack and dresden elektronik ConBee/RaspBee
 coordinators. Everything is tested in CI against a coordinator simulator,
 but **no release has been tested on real hardware yet**. Pages that
