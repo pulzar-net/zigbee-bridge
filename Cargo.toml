@@ -67,6 +67,6 @@ panic = "abort"
 # published. Default and release builds never use asyncapi-rust, and
 # `cargo publish` ignores this patch. Remove it once a release has all three.
 [patch.crates-io]
-asyncapi-rust = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }
-asyncapi-rust-codegen = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }
-asyncapi-rust-models = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }
+asyncapi-rust = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "d62a75517859cc031a3f716df86e64d6406040d1" }
+asyncapi-rust-codegen = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "d62a75517859cc031a3f716df86e64d6406040d1" }
+asyncapi-rust-models = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "d62a75517859cc031a3f716df86e64d6406040d1" }
