@@ -8,7 +8,6 @@ import { Hero, Features, ReleaseDownload, StatusMatrix } from '@pulzr/docs-theme
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 <Hero
-	eyebrow="Pulzar open source"
 	title="zigbee-bridge"
 	tagline="A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust. One static binary with no runtime, small enough for routers and gateways, with Home Assistant discovery."
 	actions={[
@@ -24,7 +23,7 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 		{ title: 'Home Assistant', body: 'Devices appear through MQTT discovery as soon as their interview finishes. No custom integration.', icon: 'puzzle', link: '/zigbee-bridge/home-assistant.html' },
 		{ title: 'Never lose the network', body: 'Backups in the open coordinator format, restored onto a new coordinator of any family without pairing again.', icon: 'approve-check', link: '/zigbee-bridge/backup.html' },
 		{ title: 'Small and static', body: 'Under 4 MB, under 16 MB of memory with 200 devices. Runs on MIPS routers and Raspberry Pis.', icon: 'rocket', link: '/zigbee-bridge/installation.html' },
-		{ title: 'A Rust library', body: 'The coordinator host, the ZCL and ZDO, EZSP, ZNP and deCONZ as crates you can embed.', icon: 'seti:rust', link: '/zigbee-bridge/library.html' },
+		{ title: 'A Rust library', body: 'The coordinator host, the ZCL and ZDO, EZSP, ZNP and deCONZ as crates you can embed.', mark: 'rust', link: '/zigbee-bridge/library.html' },
 		{ title: 'Tested without hardware', body: 'A coordinator simulator drives every test, and the docs\' quick start runs in CI.', icon: 'laptop', link: '/zigbee-bridge/testing.html' },
 	]}
 />
