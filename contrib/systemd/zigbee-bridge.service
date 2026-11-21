@@ -11,7 +11,7 @@
 
 [Unit]
 Description=Zigbee to MQTT bridge
-Documentation=https://pulzar-net.github.io/zigbee-bridge/
+Documentation=https://oss.pulzr.net/zigbee-bridge/
 After=network-online.target
 Wants=network-online.target
 

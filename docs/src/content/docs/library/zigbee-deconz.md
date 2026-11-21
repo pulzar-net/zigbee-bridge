@@ -5,7 +5,7 @@ description: "dresden elektronik's deCONZ serial protocol, which ConBee II, ConB
 
 dresden elektronik's deCONZ serial protocol, which ConBee II, ConBee III and
 RaspBee II coordinator firmware speaks. Since 0.2.0.
-[crates.io](https://crates.io/crates/zigbee-deconz), [docs.rs](https://docs.rs/zigbee-deconz), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_deconz/index.html).
+[crates.io](https://crates.io/crates/zigbee-deconz), [docs.rs](https://docs.rs/zigbee-deconz), [API docs for `main`](https://oss.pulzr.net/zigbee-bridge/api/zigbee_deconz/index.html).
 
 - `frame`: SLIP framing, the frame header and checksum.
 - `message`: requests and responses, typed in both directions.

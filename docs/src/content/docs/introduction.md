@@ -12,7 +12,7 @@ for anyone building Zigbee software in Rust.
 
 This site is the user guide and the reference. The
 [README](https://github.com/pulzar-net/zigbee-bridge#readme) is the
-two-minute overview; the [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html)
+two-minute overview; the [API docs](https://oss.pulzr.net/zigbee-bridge/api/zigbee_host/index.html)
 cover every type and function.
 
 ## Where to start

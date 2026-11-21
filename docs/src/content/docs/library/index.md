@@ -19,7 +19,7 @@ a different bridge, a gateway, a test tool or a protocol analyzer.
 | [zigbee-sim](/zigbee-bridge/library/zigbee-sim.html) | test support | test Zigbee software without hardware |
 | [zigbee-bridge](/zigbee-bridge/library/zigbee-bridge.html) | MQTT bridge | run or embed the bridge itself |
 
-The [API documentation](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html) covers every public item.
+The [API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_host/index.html) covers every public item.
 This guide explains what each crate is for and how the pieces fit.
 
 ## Depending on the crates

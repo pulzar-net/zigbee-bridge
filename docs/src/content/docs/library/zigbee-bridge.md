@@ -4,7 +4,7 @@ description: "The bridge as a library: the same code as the binary, for programs
 ---
 
 The bridge as a library: the same code as the binary, for programs that want
-to run it in-process or reuse its parts. [crates.io](https://crates.io/crates/zigbee-bridge), [docs.rs](https://docs.rs/zigbee-bridge), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_bridge/index.html).
+to run it in-process or reuse its parts. [crates.io](https://crates.io/crates/zigbee-bridge), [docs.rs](https://docs.rs/zigbee-bridge), [API docs for `main`](https://oss.pulzr.net/zigbee-bridge/api/zigbee_bridge/index.html).
 
 - `run(config, stop)` opens the coordinator, starts, resumes or restores
   the network, connects to MQTT, and bridges until `stop` resolves.

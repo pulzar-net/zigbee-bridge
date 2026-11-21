@@ -4,7 +4,7 @@ description: "The Zigbee Cluster Library: data types, frames, global commands an
 ---
 
 The Zigbee Cluster Library: data types, frames, global commands and cluster
-definitions. No I/O. [crates.io](https://crates.io/crates/zigbee-zcl), [docs.rs](https://docs.rs/zigbee-zcl), [API docs for `main`](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_zcl/index.html).
+definitions. No I/O. [crates.io](https://crates.io/crates/zigbee-zcl), [docs.rs](https://docs.rs/zigbee-zcl), [API docs for `main`](https://oss.pulzr.net/zigbee-bridge/api/zigbee_zcl/index.html).
 
 | Module | What it has |
 |---|---|

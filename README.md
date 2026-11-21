@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/pulzar-net/zigbee-bridge)](https://github.com/pulzar-net/zigbee-bridge/releases/latest)
 [![crates.io](https://img.shields.io/crates/v/zigbee-host)](https://crates.io/crates/zigbee-host)
 [![docs.rs](https://img.shields.io/docsrs/zigbee-host)](https://docs.rs/zigbee-host)
-[![Docs](https://img.shields.io/badge/docs-pulzar--net.github.io-blue)](https://pulzar-net.github.io/zigbee-bridge/)
+[![Docs](https://img.shields.io/badge/docs-oss.pulzr.net-blue)](https://oss.pulzr.net/zigbee-bridge/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![MSRV](https://img.shields.io/badge/MSRV-1.89-blue)](Cargo.toml)
 
@@ -20,10 +20,10 @@ It exists because the established Zigbee stacks need a Node.js or Python
 runtime, and there was no complete, embeddable Zigbee coordinator stack in
 Rust.
 
-**[Documentation](https://pulzar-net.github.io/zigbee-bridge/)** |
+**[Documentation](https://oss.pulzr.net/zigbee-bridge/)** |
 **[Quick start](#quick-start)** |
 **[Hardware](#supported-hardware)** |
-**[MQTT API](https://pulzar-net.github.io/zigbee-bridge/mqtt.html)** |
+**[MQTT API](https://oss.pulzr.net/zigbee-bridge/mqtt.html)** |
 **[Library](#use-it-as-a-library)** |
 **[Changelog](CHANGELOG.md)**
 
@@ -33,7 +33,7 @@ zigbee-bridge is **0.x and young**. Version 0.3.0 is the third release and the f
 whole stack is tested in CI against a coordinator simulator, but **it has not
 yet been tested on real hardware**. Expect rough edges and breaking changes
 between 0.x releases, and keep a backup of your network
-([backup and restore](https://pulzar-net.github.io/zigbee-bridge/backup.html)).
+([backup and restore](https://oss.pulzr.net/zigbee-bridge/backup.html)).
 
 | Feature | State |
 |---|---|
@@ -80,7 +80,7 @@ one, please [tell us how it went](https://github.com/pulzar-net/zigbee-bridge/is
 
 Devices: any Zigbee 3.0 or Zigbee HA 1.2 device that uses the standard
 clusters reports its readings without device-specific code. The
-[hardware page](https://pulzar-net.github.io/zigbee-bridge/hardware.html)
+[hardware page](https://oss.pulzr.net/zigbee-bridge/hardware.html)
 lists what is exposed and how to flash recommended firmware.
 
 ## Quick start
@@ -113,7 +113,7 @@ sudo zigbee-bridge probe /dev/serial/by-id/usb-...
 ```
 
 It prints the firmware it found, for example `{"kind":"ezsp","firmware":"7.4.4.0",...}`.
-If it says the firmware is too old, [update it](https://pulzar-net.github.io/zigbee-bridge/hardware.html#flashing-firmware).
+If it says the firmware is too old, [update it](https://oss.pulzr.net/zigbee-bridge/hardware.html#flashing-firmware).
 
 **3. Write a minimal configuration** to `/etc/zigbee-bridge/config.toml`.
 Only `serial.port` is required; everything else has a default.
@@ -151,7 +151,7 @@ publishes:
 mosquitto_sub -h localhost -t 'zigbee/#' -v
 ```
 
-No coordinator yet? The [getting started guide](https://pulzar-net.github.io/zigbee-bridge/getting-started.html)
+No coordinator yet? The [getting started guide](https://oss.pulzr.net/zigbee-bridge/getting-started.html)
 runs the same steps against the simulator. To run the bridge as a service,
 see [installation](#installation).
 
@@ -166,7 +166,7 @@ see [installation](#installation).
 - **systemd**: a hardened unit is in [`contrib/systemd/`](contrib/systemd/zigbee-bridge.service).
 - **OpenWrt**: a procd init script is in [`contrib/openwrt/`](contrib/openwrt/zigbee-bridge.init).
 
-The [installation guide](https://pulzar-net.github.io/zigbee-bridge/installation.html)
+The [installation guide](https://oss.pulzr.net/zigbee-bridge/installation.html)
 covers each one step by step.
 
 ## Configuration
@@ -186,7 +186,7 @@ The bridge reads one TOML file, `/etc/zigbee-bridge/config.toml` by default
 
 Unknown keys are an error, so a typo stops the bridge at startup. Every key,
 its type and default are in the
-[configuration reference](https://pulzar-net.github.io/zigbee-bridge/config-reference.html),
+[configuration reference](https://oss.pulzr.net/zigbee-bridge/config-reference.html),
 which is generated from the code. [`config.example.toml`](config.example.toml)
 shows them all. Log verbosity comes from `RUST_LOG` (default `info`).
 
@@ -209,7 +209,7 @@ Everything lives under a base topic, `zigbee` by default. Payloads are JSON.
 
 `<device>` is the name you gave the device with the `rename` request, or its
 IEEE address (`0x00124b0001020304`). Network keys never appear on MQTT. The
-[MQTT reference](https://pulzar-net.github.io/zigbee-bridge/mqtt.html) has
+[MQTT reference](https://oss.pulzr.net/zigbee-bridge/mqtt.html) has
 every payload with examples.
 
 ## Use it as a library
@@ -284,8 +284,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-The [library guide](https://pulzar-net.github.io/zigbee-bridge/library/index.html)
-covers each crate, and the [API docs](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_host/index.html)
+The [library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html)
+covers each crate, and the [API docs](https://oss.pulzr.net/zigbee-bridge/api/zigbee_host/index.html)
 cover every item.
 
 ## Architecture
@@ -313,7 +313,7 @@ cover every item.
 
 The coordinator's firmware runs the radio, MAC, network layer and routing.
 Everything above it, including the trust center, runs in the host. The
-[architecture page](https://pulzar-net.github.io/zigbee-bridge/architecture.html)
+[architecture page](https://oss.pulzr.net/zigbee-bridge/architecture.html)
 explains the layers, the event flow and the design rules (no `unsafe`, no
 panics on radio input, bounded memory).
 
@@ -359,7 +359,7 @@ Please report vulnerabilities privately through
 [GitHub private vulnerability reporting](https://github.com/pulzar-net/zigbee-bridge/security/advisories/new),
 never in a public issue. See [SECURITY.md](SECURITY.md) for what to include
 and how fast we respond, and the
-[security model](https://pulzar-net.github.io/zigbee-bridge/security.html)
+[security model](https://oss.pulzr.net/zigbee-bridge/security.html)
 for what the bridge protects.
 
 ## License

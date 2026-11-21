@@ -20,7 +20,7 @@ edition = "2021"
 rust-version = "1.89"
 license = "MIT"
 repository = "https://github.com/pulzar-net/zigbee-bridge"
-homepage = "https://pulzar-net.github.io/zigbee-bridge/"
+homepage = "https://oss.pulzr.net/zigbee-bridge/"
 authors = ["Pulzar LLC"]
 
 [workspace.dependencies]

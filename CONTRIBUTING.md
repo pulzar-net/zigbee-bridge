@@ -44,7 +44,7 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
 
 The tests drive the real host against the coordinator simulator, so a
 change to formation, the trust center, interviews or the bridge is tested
-end to end without hardware. See [Testing](https://pulzar-net.github.io/zigbee-bridge/testing.html)
+end to end without hardware. See [Testing](https://oss.pulzr.net/zigbee-bridge/testing.html)
 for what each suite covers.
 
 If you change a configuration type, regenerate the configuration reference
@@ -64,7 +64,7 @@ cargo run -p zigbee-sim --bin zigbee-ncp-sim -- --listen 127.0.0.1:9999 --device
 cargo run -p zigbee-bridge -- --config my-test.toml   # [serial] port = "tcp://127.0.0.1:9999"
 ```
 
-[Getting started](https://pulzar-net.github.io/zigbee-bridge/getting-started.html)
+[Getting started](https://oss.pulzr.net/zigbee-bridge/getting-started.html)
 walks through it with an MQTT broker.
 
 ## Fuzz

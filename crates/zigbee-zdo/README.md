@@ -8,8 +8,8 @@ simulated device share one definition. Clusters this crate does not
 decode pass through as `Body::Other`.
 
 Part of [zigbee-bridge](https://github.com/pulzar-net/zigbee-bridge), maintained by
-[Pulzar](https://pulzr.net). See the [user guide](https://pulzar-net.github.io/zigbee-bridge/), the
-[library guide](https://pulzar-net.github.io/zigbee-bridge/library/index.html) and the
-[API documentation](https://pulzar-net.github.io/zigbee-bridge/api/zigbee_zdo/index.html).
+[Pulzar](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
+[library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html) and the
+[API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_zdo/index.html).
 
 License: MIT.
