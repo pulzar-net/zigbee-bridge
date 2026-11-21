@@ -4,7 +4,7 @@
 //! committed description differs from what the types say; regenerate it with
 //!
 //! ```sh
-//! UPDATE_DOCS=1 cargo test -p zigbee-bridge --features schema --test asyncapi
+//! UPDATE_DOCS=1 cargo test -p zigbee-bridge --features unstable-asyncapi-docs --test asyncapi
 //! ```
 //!
 //! Topics are written with the default base topic (`zigbee`) and discovery
@@ -325,6 +325,6 @@ fn asyncapi_description_is_current() {
     assert!(
         committed == json,
         "{SPEC} is stale: regenerate it with \
-         UPDATE_DOCS=1 cargo test -p zigbee-bridge --features schema --test asyncapi"
+         UPDATE_DOCS=1 cargo test -p zigbee-bridge --features unstable-asyncapi-docs --test asyncapi"
     );
 }

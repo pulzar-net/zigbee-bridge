@@ -7,20 +7,16 @@ The bridge publishes and listens under one base topic, `zigbee` unless
 `mqtt.base_topic` says otherwise. Every payload is JSON. This page uses the
 default base topic throughout.
 
-## Topics at a glance
+This page explains how the topics work together. The
+[MQTT reference](/zigbee-bridge/mqtt-reference.html) lists every topic with its QoS, retain flag and
+payload schema, field by field. It is generated from the bridge's own types,
+so it always matches the code.
 
-| Topic | Direction | Retained | What |
-|---|---|---|---|
-| `zigbee/bridge/state` | out | yes | whether the bridge is online |
-| `zigbee/bridge/info` | out | yes | version, coordinator, network, join state |
-| `zigbee/bridge/devices` | out | yes | every device and its interview |
-| `zigbee/bridge/event` | out | no | joins, announces, interviews, leaves, removals |
-| `zigbee/bridge/request/<name>` | in | | a request to the bridge |
-| `zigbee/bridge/response/<name>` | out | no | the answer to a request |
-| `zigbee/<device>` | out | per `mqtt.retain_state` (default yes) | the device's current state |
-| `zigbee/<device>/set` | in | | a command to the device |
-| `zigbee/<device>/report` | out | no | every attribute report, decoded by name |
-| `zigbee/<device>/action` | out | no | commands the device sends |
+Bridge topics are `zigbee/bridge/state`, `info`, `devices` and `event`, and
+requests and responses under `zigbee/bridge/request/<name>` and
+`zigbee/bridge/response/<name>`. Each device has `zigbee/<device>` for its
+state, `/set` for commands, `/report` for raw attribute reports and
+`/action` for the commands it sends.
 
 `<device>` is the device's name if it has one (see [`rename`](#rename)), and
 otherwise its IEEE address as `0x` and 16 lowercase hex digits, such as
@@ -90,16 +86,7 @@ An array with one entry per device:
 ]
 ```
 
-| Field | Meaning |
-|---|---|
-| `type` | `router`, `end_device`, `coordinator`, `unknown`, or `null` before the interview reads it |
-| `power_source` | the Basic cluster's power source: 1 mains, 3 battery, 4 DC; `null` if not read |
-| `interview.stage` | the last step reached: `node_descriptor`, `active_endpoints`, `simple_descriptors`, `basic`, `configure`, `done` |
-| `interview.error` | why the interview stopped, if it did; it resumes when the device next talks |
-| `unique_link_key` | the device has a Zigbee 3.0 unique trust center link key |
-| `input_clusters`, `output_clusters` | cluster names, or a hex id such as `"0xfc00"` for clusters the library does not name |
-
-Published on connect, after every interview, leave and removal, and on the
+Every field is described in the [MQTT reference](/zigbee-bridge/mqtt-reference.html). Published on connect, after every interview, leave and removal, and on the
 `devices` request.
 
 ### `bridge/event`
@@ -108,18 +95,11 @@ Published on connect, after every interview, leave and removal, and on the
 { "type": "device_joined", "data": { "ieee_address": "0x00124b0000000001", "network_address": 23456, "rejoin": false } }
 ```
 
-| `type` | `data` |
-|---|---|
-| `permit_join` | `time` (seconds open, 0 when closed), `device` (the router it was opened on, or `null`) |
-| `device_joined` | `ieee_address`, `network_address`, `rejoin` |
-| `device_announce` | `ieee_address`, `network_address` (sent after a join or a power cycle) |
-| `device_interview` | `ieee_address`, `status`: `started`, `successful` (with `manufacturer`, `model` and `definition`, the device as in `bridge/devices`), or `failed` (with `stage` and `error`) |
-| `device_leave` | `ieee_address` |
-| `device_removed` | `ieee_address`, `reason` |
-| `channel_changed` | `channel`, `update_id` (since 0.2.0) |
-| `ota_available` | `device`, `ieee_address`, `installed_version`, `latest_version`: a device asked for an update and a newer image is in the OTA directory (since 0.2.0) |
-| `ota_progress` | `device`, `ieee_address`, `progress` (percent) (since 0.2.0) |
-| `ota_finished` | `device`, `ieee_address`, `from_version`, `to_version`, `success`, `status` (since 0.2.0) |
+`type` names the event and `data` holds it: `permit_join`, `device_joined`,
+`device_announce`, `device_interview` (`started`, `successful` or
+`failed`), `device_leave`, `device_removed`, `channel_changed`,
+`ota_available`, `ota_progress` and `ota_finished`. The
+[MQTT reference](/zigbee-bridge/mqtt-reference.html) has each event's fields.
 
 ## Requests and responses
 
@@ -139,17 +119,16 @@ mosquitto_pub -t zigbee/bridge/request/permit_join -m '{"time": 120, "transactio
 # zigbee/bridge/response/permit_join {"status":"ok","data":{"time":120},"transaction":"a1"}
 ```
 
-An empty payload is the same as `{}`.
+An empty payload is the same as `{}`. A request of the wrong shape, such as
+a string where a number belongs, gets an error response that names the
+problem. Each request's fields and its response are in the
+[MQTT reference](/zigbee-bridge/mqtt-reference.html); the sections below say what each request does.
 
 ### `permit_join`
 
-Open the network for joining, or close it.
-
-| Field | Type | |
-|---|---|---|
-| `time` | integer, 0 to 254 | seconds to stay open; 0 closes. Values over 254 are capped at 254 |
-| `value` | boolean | alternative to `time`: `true` is 254 seconds, `false` closes |
-| `device` | string, optional | open only through this router |
+Open the network for joining for `time` seconds (at most 254), or close it
+with 0. `value` is an alternative: `true` is 254 seconds, `false` closes.
+`device` opens it through one router only.
 
 ```json
 { "time": 120 }
@@ -160,13 +139,8 @@ the window closes.
 
 ### `remove`
 
-Ask a device to leave, and forget it.
-
-| Field | Type | |
-|---|---|---|
-| `device` (or `id`) | string | name or IEEE address |
-| `force` | boolean, default `false` | forget it even if it does not confirm (it is asleep or gone) |
-
+Ask a device (`device`, or `id`) to leave, and forget it. With `force`, it
+is forgotten even if it does not confirm, because it is asleep or gone.
 Response: `{"device": "<name>"}`. Its retained state and Home Assistant
 entities are cleared.
 
@@ -174,12 +148,8 @@ entities are cleared.
 
 Give a device a name. Its state topic moves to `zigbee/<name>`, its old
 retained topics are cleared, and its Home Assistant entities are published
-again under the new name.
-
-| Field | Type | |
-|---|---|---|
-| `from` (or `device`) | string | current name or IEEE address |
-| `to` (or `name`) | string | the new name |
+again under the new name. `from` (or `device`) is the current name or IEEE
+address, `to` (or `name`) the new name.
 
 A name may contain `/` to group devices (`kitchen/ceiling`), but must not be
 empty, contain `+` or `#`, start or end with `/`, end with `/set`, or be
@@ -189,12 +159,7 @@ empty, contain `+` or `#`, start or end with `/`, end with `/set`, or be
 
 Allow a device to join with its install code (printed on the device or its
 box). With `join.install_code_only`, this is the only way a device can join.
-
-| Field | Type | |
-|---|---|---|
-| `ieee_address` (or `device`) | string | the device's IEEE address |
-| `code` | string | the install code in hex, as printed with its CRC; spaces, dashes and colons are ignored |
-
+Give the device's `ieee_address` and the `code` as printed, with its CRC.
 Response: `{"ieee_address": "..."}`. Install codes are held in memory only;
 add them again after a restart if the device has not joined yet.
 
@@ -318,30 +283,10 @@ each one:
 ```
 
 Fields come from the standard clusters, so a device the bridge has never
-seen still reports what it has:
-
-| Field | Cluster | Unit |
-|---|---|---|
-| `temperature` | Temperature Measurement | °C |
-| `humidity` | Relative Humidity Measurement | % |
-| `pressure` | Pressure Measurement | hPa |
-| `illuminance` | Illuminance Measurement | lx |
-| `flow` | Flow Measurement | m³/h |
-| `soil_moisture` | Soil Moisture Measurement | % |
-| `co2` | Carbon Dioxide Measurement | ppm |
-| `pm25` | PM2.5 Measurement | µg/m³ |
-| `occupancy` | Occupancy Sensing | `true`/`false` |
-| `state` | On/Off | `"ON"`/`"OFF"` |
-| `brightness` | Level Control | 0 to 254 |
-| `battery` | Power Configuration | % |
-| `battery_voltage` | Power Configuration | mV |
-| `power` | Electrical Measurement | W |
-| `voltage` | Electrical Measurement | V |
-| `current` | Electrical Measurement | A |
-| `energy` | Metering | kWh |
-| `local_temperature` | Thermostat | °C |
-| `device_temperature` | Device Temperature Configuration | °C |
-| `linkquality` | (every message) | 0 to 255 |
+seen still reports what it has: `temperature`, `humidity`, `battery`,
+`state`, `brightness`, `power`, `energy` and the rest. The
+[MQTT reference](/zigbee-bridge/mqtt-reference.html) lists every field with its cluster and unit, and
+`linkquality` comes with every message.
 
 IAS zone devices (contact, motion, leak, smoke and similar sensors) add a
 field named for their zone type, `contact`, `occupancy`, `water_leak`,
@@ -354,12 +299,10 @@ by endpoint number.
 
 ### `<device>/set`
 
-| Field | Type | Effect |
-|---|---|---|
-| `state` | `"ON"`, `"OFF"`, `"TOGGLE"` (any case) | On/Off cluster |
-| `brightness` | 0 to 254 | Level Control, move to level with on/off |
-| `color_temp` | mireds | Color Control, move to color temperature |
-| `transition` | seconds, decimals allowed | transition time for `brightness` and `color_temp` |
+Switch a device with `state` (`ON`, `OFF` or `TOGGLE`), dim it with
+`brightness` (0 to 254), set its color temperature with `color_temp`
+(mireds), and give either change a `transition` in seconds. Any combination
+works in one message; the [MQTT reference](/zigbee-bridge/mqtt-reference.html) has the details.
 
 ```sh
 mosquitto_pub -t zigbee/kitchen/set -m '{"state": "ON", "brightness": 200, "transition": 1.5}'

@@ -19,10 +19,14 @@ name = "zigbee-bridge"
 path = "src/main.rs"
 
 [features]
-## Derive JSON Schemas for the configuration and the MQTT payloads, from
-## which the docs' configuration reference (tests/config_reference.rs) and
-## the AsyncAPI description of the MQTT API (tests/asyncapi.rs) are generated.
-schema = ["dep:schemars", "dep:asyncapi-rust"]
+## Derive a JSON Schema for the configuration, from which the docs' configuration
+## reference is generated (tests/config_reference.rs).
+schema = ["dep:schemars"]
+## Docs tooling, not API: derive JSON Schemas and AsyncAPI messages for the MQTT
+## payloads (src/api.rs), from which the docs' MQTT reference is generated
+## (tests/asyncapi.rs). It may change in any release; default builds, release
+## binaries and cross builds never turn it on.
+unstable-asyncapi-docs = ["dep:schemars", "dep:asyncapi-rust"]
 
 [dependencies]
 zigbee-primitives.workspace = true
@@ -52,7 +56,7 @@ required-features = ["schema"]
 
 [[test]]
 name = "asyncapi"
-required-features = ["schema"]
+required-features = ["unstable-asyncapi-docs"]
 
 [lints]
 workspace = true

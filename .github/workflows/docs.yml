@@ -43,7 +43,7 @@ jobs:
       - name: The configuration reference is generated from the code
         run: cargo test -p zigbee-bridge --features schema --test config_reference
       - name: The MQTT reference is generated from the payload types
-        run: cargo test -p zigbee-bridge --features schema --test asyncapi
+        run: cargo test -p zigbee-bridge --features unstable-asyncapi-docs --test asyncapi
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

@@ -1947,7 +1947,7 @@
                 "number",
                 "null"
               ],
-              "description": "Seconds a `brightness` or `color_temp` change takes, in tenths.",
+              "description": "How long a `brightness` or `color_temp` change takes, in seconds, to a\ntenth.",
               "format": "double"
             }
           },
@@ -1978,7 +1978,7 @@
                 "integer",
                 "null"
               ],
-              "description": "Seconds to keep joining open, 0 to 254; 0 closes it.",
+              "description": "Seconds to keep joining open; 0 closes it. Values over 254 are\ncapped at 254.",
               "format": "uint64",
               "minimum": 0,
               "default": null
@@ -2215,7 +2215,7 @@
                 "string",
                 "null"
               ],
-              "description": "The install code, as hex, with its CRC.",
+              "description": "The install code in hex, as printed with its CRC; spaces, dashes\nand colons are ignored.",
               "default": null
             },
             "transaction": {
@@ -2954,7 +2954,7 @@
               "integer",
               "null"
             ],
-            "description": "From the Basic cluster: 1 mains, 3 battery, and so on.",
+            "description": "From the Basic cluster: 1 mains, 3 battery, 4 DC; `null` until the\ninterview reads it.",
             "format": "uint8",
             "minimum": 0,
             "maximum": 255
@@ -2974,7 +2974,7 @@
             "description": "From the Basic cluster."
           },
           "type": {
-            "description": "Its role, from the node descriptor.",
+            "description": "Its role, from the node descriptor; `null` until the interview reads\nit.",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/LogicalType"
@@ -2989,7 +2989,7 @@
           },
           "unique_link_key": {
             "type": "boolean",
-            "description": "It joined with an install code, so it has a link key of its own."
+            "description": "It has a Zigbee 3.0 unique trust center link key."
           },
           "endpoints": {
             "type": "array",
@@ -3049,7 +3049,7 @@
               "string",
               "null"
             ],
-            "description": "Why the last attempt stopped."
+            "description": "Why the interview stopped, if it did; it resumes when the device next\ntalks."
           }
         },
         "required": [

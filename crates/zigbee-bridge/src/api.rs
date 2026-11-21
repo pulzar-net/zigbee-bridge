@@ -1,9 +1,11 @@
 //! The MQTT API: every payload the bridge publishes or reads, as a type.
 //!
 //! The bridge serializes these and nothing else, so they are the contract.
-//! With the `schema` feature each one also derives a JSON Schema and an
-//! AsyncAPI message, and `tests/asyncapi.rs` assembles them into the
-//! AsyncAPI description the docs site renders as the MQTT reference.
+//! With the `unstable-asyncapi-docs` feature each one also derives a JSON
+//! Schema and an AsyncAPI message, and `tests/asyncapi.rs` assembles them
+//! into the AsyncAPI description the docs site renders as the MQTT
+//! reference. That feature is docs tooling, not API: it may change in any
+//! release, and the bridge's own builds never turn it on.
 //!
 //! Topics are under the base topic (`mqtt.base_topic`, default `zigbee`).
 //! `<device>` is the name a person gave the device, or its IEEE address as
@@ -12,9 +14,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value as Json};
 
-#[cfg(feature = "schema")]
+#[cfg(feature = "unstable-asyncapi-docs")]
 use asyncapi_rust::ToAsyncApiMessage;
-#[cfg(feature = "schema")]
+#[cfg(feature = "unstable-asyncapi-docs")]
 use schemars::JsonSchema;
 
 // ---------------------------------------------------------------------------
@@ -23,9 +25,12 @@ use schemars::JsonSchema;
 /// The bridge's availability, retained on `bridge/state`. The broker
 /// publishes `offline` as the bridge's last will when the connection drops.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "The bridge is online or offline")
 )]
 pub struct BridgeState {
@@ -36,7 +41,7 @@ pub struct BridgeState {
 
 /// Online or offline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Availability {
     /// Running and connected to the coordinator.
@@ -58,9 +63,12 @@ impl BridgeState {
 /// The bridge, its coordinator and its network, retained on `bridge/info`.
 /// Republished when any of it changes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "The bridge's version, coordinator, network and join state")
 )]
 pub struct BridgeInfo {
@@ -78,7 +86,7 @@ pub struct BridgeInfo {
 
 /// The coordinator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct CoordinatorInfo {
     /// Its IEEE address.
     pub ieee_address: String,
@@ -93,7 +101,7 @@ pub struct CoordinatorInfo {
 
 /// The Zigbee network.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct NetworkInfo {
     /// The radio channel, 11 to 26.
     pub channel: u8,
@@ -108,9 +116,12 @@ pub struct NetworkInfo {
 /// Every device in the network, retained on `bridge/devices`. Republished
 /// when one joins, leaves, is renamed or finishes its interview.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "Every device and its interview")
 )]
 #[serde(transparent)]
@@ -118,7 +129,7 @@ pub struct BridgeDevices(pub Vec<DeviceSummary>);
 
 /// A device.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct DeviceSummary {
     /// Its IEEE address.
     pub ieee_address: String,
@@ -131,18 +142,20 @@ pub struct DeviceSummary {
     pub manufacturer: Option<String>,
     /// From the Basic cluster.
     pub model: Option<String>,
-    /// From the Basic cluster: 1 mains, 3 battery, and so on.
+    /// From the Basic cluster: 1 mains, 3 battery, 4 DC; `null` until the
+    /// interview reads it.
     pub power_source: Option<u8>,
     /// From the Basic cluster.
     pub software_build_id: Option<String>,
     /// From the Basic cluster.
     pub date_code: Option<String>,
-    /// Its role, from the node descriptor.
+    /// Its role, from the node descriptor; `null` until the interview reads
+    /// it.
     #[serde(rename = "type")]
     pub kind: Option<LogicalType>,
     /// How far its interview got.
     pub interview: InterviewSummary,
-    /// It joined with an install code, so it has a link key of its own.
+    /// It has a Zigbee 3.0 unique trust center link key.
     pub unique_link_key: bool,
     /// Its endpoints, from the simple descriptors.
     pub endpoints: Vec<EndpointSummary>,
@@ -150,7 +163,7 @@ pub struct DeviceSummary {
 
 /// A device's role in the network.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum LogicalType {
     /// The coordinator.
@@ -176,19 +189,20 @@ impl From<zigbee_zdo::LogicalType> for LogicalType {
 
 /// How far an interview got.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct InterviewSummary {
     /// The stage it is at, or `done`.
     pub stage: InterviewStage,
     /// Every stage finished.
     pub done: bool,
-    /// Why the last attempt stopped.
+    /// Why the interview stopped, if it did; it resumes when the device next
+    /// talks.
     pub error: Option<String>,
 }
 
 /// An interview stage, in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum InterviewStage {
     /// Reading the node descriptor.
@@ -221,7 +235,7 @@ impl From<zigbee_host::InterviewStage> for InterviewStage {
 
 /// An endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct EndpointSummary {
     /// The endpoint number.
     pub endpoint: u8,
@@ -242,12 +256,18 @@ pub struct EndpointSummary {
 /// Something that happened in the network, on `bridge/event`. Not
 /// retained.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
 #[serde(tag = "type", content = "data")]
 pub enum BridgeEvent {
     /// Joining opened or closed.
     #[serde(rename = "permit_join")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "Joining opened or closed"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "Joining opened or closed")
+    )]
     PermitJoin {
         /// Seconds it stays open; 0 when closed.
         time: u8,
@@ -256,7 +276,10 @@ pub enum BridgeEvent {
     },
     /// A device joined, or rejoined.
     #[serde(rename = "device_joined")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "A device joined"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "A device joined")
+    )]
     DeviceJoined {
         /// Its IEEE address.
         ieee_address: String,
@@ -267,7 +290,10 @@ pub enum BridgeEvent {
     },
     /// A device announced itself, after joining or a power cycle.
     #[serde(rename = "device_announce")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "A device announced itself"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "A device announced itself")
+    )]
     DeviceAnnounce {
         /// Its IEEE address.
         ieee_address: String,
@@ -276,14 +302,20 @@ pub enum BridgeEvent {
     },
     /// A device left the network.
     #[serde(rename = "device_leave")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "A device left"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "A device left")
+    )]
     DeviceLeave {
         /// Its IEEE address.
         ieee_address: String,
     },
     /// The bridge removed a device.
     #[serde(rename = "device_removed")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "The bridge removed a device"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "The bridge removed a device")
+    )]
     DeviceRemoved {
         /// Its IEEE address.
         ieee_address: String,
@@ -293,7 +325,7 @@ pub enum BridgeEvent {
     /// An interview started, finished or failed.
     #[serde(rename = "device_interview")]
     #[cfg_attr(
-        feature = "schema",
+        feature = "unstable-asyncapi-docs",
         asyncapi(summary = "An interview started, finished or failed")
     )]
     DeviceInterview(InterviewEvent),
@@ -301,7 +333,7 @@ pub enum BridgeEvent {
     /// newer image for it.
     #[serde(rename = "ota_available")]
     #[cfg_attr(
-        feature = "schema",
+        feature = "unstable-asyncapi-docs",
         asyncapi(summary = "A firmware update is available")
     )]
     OtaAvailable {
@@ -317,7 +349,7 @@ pub enum BridgeEvent {
     /// A firmware download's progress.
     #[serde(rename = "ota_progress")]
     #[cfg_attr(
-        feature = "schema",
+        feature = "unstable-asyncapi-docs",
         asyncapi(summary = "A firmware download's progress")
     )]
     OtaProgress {
@@ -330,7 +362,10 @@ pub enum BridgeEvent {
     },
     /// A firmware update ended.
     #[serde(rename = "ota_finished")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "A firmware update ended"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "A firmware update ended")
+    )]
     OtaFinished {
         /// The device's name.
         device: String,
@@ -347,7 +382,10 @@ pub enum BridgeEvent {
     },
     /// The network moved to another channel.
     #[serde(rename = "channel_changed")]
-    #[cfg_attr(feature = "schema", asyncapi(summary = "The network changed channel"))]
+    #[cfg_attr(
+        feature = "unstable-asyncapi-docs",
+        asyncapi(summary = "The network changed channel")
+    )]
     ChannelChanged {
         /// The new channel.
         channel: u8,
@@ -358,7 +396,7 @@ pub enum BridgeEvent {
 
 /// An interview's progress, by `status`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(tag = "status")]
 pub enum InterviewEvent {
     /// The interview started or resumed.
@@ -402,12 +440,15 @@ pub enum InterviewEvent {
 /// second endpoint with the same cluster gets the endpoint number as a
 /// suffix, as in `temperature_2`.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(ToAsyncApiMessage))]
-#[cfg_attr(feature = "schema", asyncapi(summary = "A device's readings"))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(ToAsyncApiMessage))]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
+    asyncapi(summary = "A device's readings")
+)]
 #[serde(transparent)]
 pub struct DeviceState(pub Map<String, Json>);
 
-#[cfg(feature = "schema")]
+#[cfg(feature = "unstable-asyncapi-docs")]
 impl JsonSchema for DeviceState {
     fn schema_name() -> std::borrow::Cow<'static, str> {
         "DeviceState".into()
@@ -473,7 +514,7 @@ impl JsonSchema for DeviceState {
     }
 }
 
-#[cfg(feature = "schema")]
+#[cfg(feature = "unstable-asyncapi-docs")]
 fn capitalize(s: &str) -> String {
     let mut c = s.chars();
     match c.next() {
@@ -484,8 +525,14 @@ fn capitalize(s: &str) -> String {
 
 /// A command for a device, on `<device>/set`. Any combination of keys.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
-#[cfg_attr(feature = "schema", asyncapi(summary = "Switch, dim or tune a device"))]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
+    asyncapi(summary = "Switch, dim or tune a device")
+)]
 pub struct SetRequest {
     /// `ON`, `OFF` or `TOGGLE`, in any case. `ON` together with
     /// `brightness` sets the level and turns the light on in one command.
@@ -497,16 +544,20 @@ pub struct SetRequest {
     /// The color temperature in mireds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub color_temp: Option<u64>,
-    /// Seconds a `brightness` or `color_temp` change takes, in tenths.
+    /// How long a `brightness` or `color_temp` change takes, in seconds, to a
+    /// tenth.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transition: Option<f64>,
 }
 
 /// An attribute report, raw, on `<device>/report`. Not retained.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "Every attribute report, raw, by cluster and attribute name")
 )]
 pub struct AttributeReport {
@@ -521,9 +572,12 @@ pub struct AttributeReport {
 /// A cluster command the device sent, such as a button press or an
 /// alarm, on `<device>/action`. Not retained.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "A command the device sent: a button press, an alarm")
 )]
 pub struct DeviceAction {
@@ -542,7 +596,7 @@ pub struct DeviceAction {
 
 /// `ok` or `error`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Status {
     /// Done; `data` has the result.
@@ -558,8 +612,8 @@ macro_rules! response {
         /// A response is published once per request, to
         /// `bridge/response/<request>`, and is not retained.
         #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
-        #[cfg_attr(feature = "schema", asyncapi(summary = $summary))]
+        #[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema, ToAsyncApiMessage))]
+        #[cfg_attr(feature = "unstable-asyncapi-docs", asyncapi(summary = $summary))]
         pub struct $name {
             /// `ok` or `error`.
             pub status: Status,
@@ -590,8 +644,8 @@ macro_rules! request {
     ($(#[$doc:meta])* $name:ident, $summary:literal { $($(#[$fdoc:meta])* $field:ident : $ty:ty),* $(,)? }) => {
         $(#[$doc])*
         #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-        #[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
-        #[cfg_attr(feature = "schema", asyncapi(summary = $summary))]
+        #[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema, ToAsyncApiMessage))]
+        #[cfg_attr(feature = "unstable-asyncapi-docs", asyncapi(summary = $summary))]
         pub struct $name {
             $($(#[$fdoc])* #[serde(default)] pub $field: $ty,)*
             /// Any value; the response echoes it, so a client can match the
@@ -605,7 +659,8 @@ macro_rules! request {
 request!(
     /// Open or close joining, on `bridge/request/permit_join`.
     PermitJoinRequest, "Open or close joining" {
-        /// Seconds to keep joining open, 0 to 254; 0 closes it.
+        /// Seconds to keep joining open; 0 closes it. Values over 254 are
+        /// capped at 254.
         time: Option<u64>,
         /// `true` for 254 seconds, `false` to close; used when `time` is
         /// absent.
@@ -617,7 +672,7 @@ request!(
 
 /// The result of `permit_join`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct PermitJoinData {
     /// Seconds joining stays open.
     pub time: u8,
@@ -641,7 +696,7 @@ request!(
 
 /// A device, by the name it was published under.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct DeviceData {
     /// The device's name.
     pub device: String,
@@ -668,7 +723,7 @@ request!(
 
 /// The result of `rename`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct RenameData {
     /// The old name.
     pub from: String,
@@ -688,14 +743,15 @@ request!(
         /// The device's IEEE address (`device` also works).
         #[serde(alias = "device")]
         ieee_address: Option<String>,
-        /// The install code, as hex, with its CRC.
+        /// The install code in hex, as printed with its CRC; spaces, dashes
+        /// and colons are ignored.
         code: Option<String>,
     }
 );
 
 /// A device, by IEEE address.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct IeeeData {
     /// The device's IEEE address.
     pub ieee_address: String,
@@ -728,7 +784,7 @@ request!(
 
 /// The result of `backup`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct BackupData {
     /// Where the backup was written.
     pub path: String,
@@ -751,7 +807,7 @@ request!(
 
 /// The result of `topology`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct TopologyData {
     /// Every link.
     pub links: Vec<TopologyLink>,
@@ -760,7 +816,7 @@ pub struct TopologyData {
 /// A link from one device to another (towards the coordinator for links
 /// learned from traffic).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct TopologyLink {
     /// The sending device's IEEE address, when known.
     pub from: Option<String>,
@@ -782,7 +838,7 @@ pub struct TopologyLink {
 
 /// Where a link was learned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum LinkSource {
     /// The last hop of a message the coordinator received.
@@ -820,7 +876,7 @@ request!(
 
 /// The result of `scan_neighbors`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct ScanNeighborsData {
     /// The router's neighbor table.
     pub neighbors: Vec<Neighbor>,
@@ -828,7 +884,7 @@ pub struct ScanNeighborsData {
 
 /// A neighbor table entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct Neighbor {
     /// The neighbor's extended PAN id, as hex.
     pub extended_pan_id: String,
@@ -878,7 +934,7 @@ request!(
 
 /// The result of `ota_check` and `ota_update`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct OtaData {
     /// The device's name.
     pub device: String,
@@ -923,7 +979,7 @@ request!(
 
 /// The result of `change_channel`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct ChannelData {
     /// The channel now.
     pub channel: u8,
@@ -943,7 +999,7 @@ request!(
 
 /// The result of `energy_scan`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct EnergyScanData {
     /// Each channel's loudest signal.
     pub channels: Vec<ChannelEnergy>,
@@ -951,7 +1007,7 @@ pub struct EnergyScanData {
 
 /// One channel's energy.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct ChannelEnergy {
     /// The channel.
     pub channel: u8,
@@ -971,7 +1027,7 @@ request!(
 
 /// An empty result.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct Empty {}
 
 response!(
@@ -993,9 +1049,12 @@ response!(
 /// says `online`, the bridge publishes discovery again. Plain text, not
 /// JSON.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(
         summary = "Home Assistant started or stopped",
         content_type = "text/plain"
@@ -1006,7 +1065,7 @@ pub struct HomeAssistantStatus(pub HomeAssistantState);
 
 /// Whether Home Assistant runs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum HomeAssistantState {
     /// Home Assistant started.
@@ -1031,9 +1090,12 @@ impl HomeAssistantStatus {
 /// reading, light or switch. An empty retained message removes the entity.
 /// Keys are Home Assistant's; see its MQTT integration documentation.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema, ToAsyncApiMessage))]
 #[cfg_attr(
-    feature = "schema",
+    feature = "unstable-asyncapi-docs",
+    derive(JsonSchema, ToAsyncApiMessage)
+)]
+#[cfg_attr(
+    feature = "unstable-asyncapi-docs",
     asyncapi(summary = "A Home Assistant entity for one of a device's readings")
 )]
 pub struct DiscoveryConfig {
@@ -1102,7 +1164,7 @@ pub struct DiscoveryConfig {
 
 /// A binary sensor's value or a switch's command.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 #[serde(untagged)]
 pub enum DiscoveryPayload {
     /// A binary sensor's value.
@@ -1113,7 +1175,7 @@ pub enum DiscoveryPayload {
 
 /// Where Home Assistant reads availability.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct DiscoveryAvailability {
     /// The bridge's `bridge/state`.
     pub topic: String,
@@ -1123,7 +1185,7 @@ pub struct DiscoveryAvailability {
 
 /// The device an entity belongs to.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct DiscoveryDevice {
     /// `zigbee-bridge_<ieee>`.
     pub identifiers: Vec<String>,
@@ -1142,7 +1204,7 @@ pub struct DiscoveryDevice {
 
 /// The software that published the entity.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
+#[cfg_attr(feature = "unstable-asyncapi-docs", derive(JsonSchema))]
 pub struct DiscoveryOrigin {
     /// `zigbee-bridge`.
     pub name: String,
