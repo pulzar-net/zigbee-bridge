@@ -23,7 +23,7 @@ export default defineConfig({
 			description: 'A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust.',
 			plugins: pulzarPlugins({
 				project: 'zigbee-bridge',
-				linkExclude: ['/zigbee-bridge/api/**', '/zigbee-bridge/config.schema.json'],
+				linkExclude: ['/zigbee-bridge/api/**', '/zigbee-bridge/config.schema.json', '/zigbee-bridge/asyncapi.json'],
 			}),
 			sidebar,
 		}),
