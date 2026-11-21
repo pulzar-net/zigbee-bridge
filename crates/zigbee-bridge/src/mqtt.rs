@@ -6,6 +6,7 @@ use std::time::Duration;
 use rumqttc::{AsyncClient, Event, LastWill, MqttOptions, Packet, QoS};
 use tokio::sync::mpsc;
 
+use crate::api::{Availability, BridgeState};
 use crate::config::MqttConfig;
 
 /// Something from the broker.
@@ -42,7 +43,7 @@ pub fn connect(config: &MqttConfig) -> Result<(Mqtt, mpsc::Receiver<Incoming>), 
     options.set_max_packet_size(256 * 1024, 256 * 1024);
     options.set_last_will(LastWill::new(
         state_topic(&config.base_topic),
-        r#"{"state":"offline"}"#,
+        BridgeState::payload(Availability::Offline),
         QoS::AtLeastOnce,
         true,
     ));
@@ -105,11 +106,11 @@ impl Mqtt {
         }
     }
 
-    /// Publish JSON.
+    /// Publish a value as JSON.
     pub async fn publish_json(
         &self,
         topic: impl Into<String>,
-        value: &serde_json::Value,
+        value: &impl serde::Serialize,
         retain: bool,
     ) {
         self.publish(topic, serde_json::to_vec(value).unwrap_or_default(), retain)

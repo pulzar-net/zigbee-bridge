@@ -1,0 +1,3730 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "zigbee-bridge MQTT API",
+    "version": "0.3.0",
+    "description": "Everything zigbee-bridge publishes and accepts on MQTT.\n\nTopics here use the default base topic, `zigbee` (`mqtt.base_topic` in the configuration), and Home Assistant's default discovery prefix, `homeassistant` (`homeassistant.discovery_prefix`). `{device}` is the name a person gave a device, or its IEEE address as `0x00124b0001020304`.\n\nThe bridge publishes and subscribes at QoS 1. Payloads are JSON unless a message says otherwise. Requests go to `zigbee/bridge/request/<name>`; the answer comes on `zigbee/bridge/response/<name>`, echoing the request's `transaction` so a client can match the two. Network keys never appear on MQTT."
+  },
+  "servers": {
+    "broker": {
+      "host": "localhost:1883",
+      "protocol": "mqtt",
+      "description": "Your MQTT broker: `mqtt.host` and `mqtt.port` in the configuration. The bridge connects with a clean session, its `mqtt.client_id`, and `zigbee/bridge/state` set to offline as its last will.",
+      "bindings": {
+        "mqtt": {
+          "clientId": "zigbee-bridge",
+          "cleanSession": true,
+          "lastWill": {
+            "topic": "zigbee/bridge/state",
+            "qos": 1,
+            "message": "{\"state\":\"offline\"}",
+            "retain": true
+          },
+          "keepAlive": 30
+        }
+      }
+    }
+  },
+  "channels": {
+    "bridgeState": {
+      "address": "zigbee/bridge/state",
+      "messages": {
+        "BridgeState": {
+          "$ref": "#/components/messages/BridgeState"
+        }
+      }
+    },
+    "bridgeInfo": {
+      "address": "zigbee/bridge/info",
+      "messages": {
+        "BridgeInfo": {
+          "$ref": "#/components/messages/BridgeInfo"
+        }
+      }
+    },
+    "bridgeDevices": {
+      "address": "zigbee/bridge/devices",
+      "messages": {
+        "BridgeDevices": {
+          "$ref": "#/components/messages/BridgeDevices"
+        }
+      }
+    },
+    "bridgeEvent": {
+      "address": "zigbee/bridge/event",
+      "messages": {
+        "PermitJoin": {
+          "$ref": "#/components/messages/PermitJoin"
+        },
+        "DeviceJoined": {
+          "$ref": "#/components/messages/DeviceJoined"
+        },
+        "DeviceAnnounce": {
+          "$ref": "#/components/messages/DeviceAnnounce"
+        },
+        "DeviceLeave": {
+          "$ref": "#/components/messages/DeviceLeave"
+        },
+        "DeviceRemoved": {
+          "$ref": "#/components/messages/DeviceRemoved"
+        },
+        "DeviceInterview": {
+          "$ref": "#/components/messages/DeviceInterview"
+        },
+        "OtaAvailable": {
+          "$ref": "#/components/messages/OtaAvailable"
+        },
+        "OtaProgress": {
+          "$ref": "#/components/messages/OtaProgress"
+        },
+        "OtaFinished": {
+          "$ref": "#/components/messages/OtaFinished"
+        },
+        "ChannelChanged": {
+          "$ref": "#/components/messages/ChannelChanged"
+        }
+      }
+    },
+    "deviceState": {
+      "address": "zigbee/{device}",
+      "messages": {
+        "DeviceState": {
+          "$ref": "#/components/messages/DeviceState"
+        }
+      },
+      "parameters": {
+        "device": {
+          "description": "The device's name, or its IEEE address as `0x00124b0001020304`.",
+          "examples": [
+            "kitchen_light",
+            "0x00124b0001020304"
+          ]
+        }
+      }
+    },
+    "deviceSet": {
+      "address": "zigbee/{device}/set",
+      "messages": {
+        "SetRequest": {
+          "$ref": "#/components/messages/SetRequest"
+        }
+      },
+      "parameters": {
+        "device": {
+          "description": "The device's name, or its IEEE address as `0x00124b0001020304`.",
+          "examples": [
+            "kitchen_light",
+            "0x00124b0001020304"
+          ]
+        }
+      }
+    },
+    "deviceReport": {
+      "address": "zigbee/{device}/report",
+      "messages": {
+        "AttributeReport": {
+          "$ref": "#/components/messages/AttributeReport"
+        }
+      },
+      "parameters": {
+        "device": {
+          "description": "The device's name, or its IEEE address as `0x00124b0001020304`.",
+          "examples": [
+            "kitchen_light",
+            "0x00124b0001020304"
+          ]
+        }
+      }
+    },
+    "deviceAction": {
+      "address": "zigbee/{device}/action",
+      "messages": {
+        "DeviceAction": {
+          "$ref": "#/components/messages/DeviceAction"
+        }
+      },
+      "parameters": {
+        "device": {
+          "description": "The device's name, or its IEEE address as `0x00124b0001020304`.",
+          "examples": [
+            "kitchen_light",
+            "0x00124b0001020304"
+          ]
+        }
+      }
+    },
+    "permitJoinRequest": {
+      "address": "zigbee/bridge/request/permit_join",
+      "messages": {
+        "PermitJoinRequest": {
+          "$ref": "#/components/messages/PermitJoinRequest"
+        }
+      }
+    },
+    "permitJoinResponse": {
+      "address": "zigbee/bridge/response/permit_join",
+      "messages": {
+        "PermitJoinResponse": {
+          "$ref": "#/components/messages/PermitJoinResponse"
+        }
+      }
+    },
+    "removeRequest": {
+      "address": "zigbee/bridge/request/remove",
+      "messages": {
+        "RemoveRequest": {
+          "$ref": "#/components/messages/RemoveRequest"
+        }
+      }
+    },
+    "removeResponse": {
+      "address": "zigbee/bridge/response/remove",
+      "messages": {
+        "RemoveResponse": {
+          "$ref": "#/components/messages/RemoveResponse"
+        }
+      }
+    },
+    "renameRequest": {
+      "address": "zigbee/bridge/request/rename",
+      "messages": {
+        "RenameRequest": {
+          "$ref": "#/components/messages/RenameRequest"
+        }
+      }
+    },
+    "renameResponse": {
+      "address": "zigbee/bridge/response/rename",
+      "messages": {
+        "RenameResponse": {
+          "$ref": "#/components/messages/RenameResponse"
+        }
+      }
+    },
+    "installCodeRequest": {
+      "address": "zigbee/bridge/request/install_code",
+      "messages": {
+        "InstallCodeRequest": {
+          "$ref": "#/components/messages/InstallCodeRequest"
+        }
+      }
+    },
+    "installCodeResponse": {
+      "address": "zigbee/bridge/response/install_code",
+      "messages": {
+        "InstallCodeResponse": {
+          "$ref": "#/components/messages/InstallCodeResponse"
+        }
+      }
+    },
+    "interviewRequest": {
+      "address": "zigbee/bridge/request/interview",
+      "messages": {
+        "InterviewRequest": {
+          "$ref": "#/components/messages/InterviewRequest"
+        }
+      }
+    },
+    "interviewResponse": {
+      "address": "zigbee/bridge/response/interview",
+      "messages": {
+        "InterviewResponse": {
+          "$ref": "#/components/messages/InterviewResponse"
+        }
+      }
+    },
+    "backupRequest": {
+      "address": "zigbee/bridge/request/backup",
+      "messages": {
+        "BackupRequest": {
+          "$ref": "#/components/messages/BackupRequest"
+        }
+      }
+    },
+    "backupResponse": {
+      "address": "zigbee/bridge/response/backup",
+      "messages": {
+        "BackupResponse": {
+          "$ref": "#/components/messages/BackupResponse"
+        }
+      }
+    },
+    "topologyRequest": {
+      "address": "zigbee/bridge/request/topology",
+      "messages": {
+        "TopologyRequest": {
+          "$ref": "#/components/messages/TopologyRequest"
+        }
+      }
+    },
+    "topologyResponse": {
+      "address": "zigbee/bridge/response/topology",
+      "messages": {
+        "TopologyResponse": {
+          "$ref": "#/components/messages/TopologyResponse"
+        }
+      }
+    },
+    "scanNeighborsRequest": {
+      "address": "zigbee/bridge/request/scan_neighbors",
+      "messages": {
+        "ScanNeighborsRequest": {
+          "$ref": "#/components/messages/ScanNeighborsRequest"
+        }
+      }
+    },
+    "scanNeighborsResponse": {
+      "address": "zigbee/bridge/response/scan_neighbors",
+      "messages": {
+        "ScanNeighborsResponse": {
+          "$ref": "#/components/messages/ScanNeighborsResponse"
+        }
+      }
+    },
+    "otaCheckRequest": {
+      "address": "zigbee/bridge/request/ota_check",
+      "messages": {
+        "OtaCheckRequest": {
+          "$ref": "#/components/messages/OtaCheckRequest"
+        }
+      }
+    },
+    "otaCheckResponse": {
+      "address": "zigbee/bridge/response/ota_check",
+      "messages": {
+        "OtaCheckResponse": {
+          "$ref": "#/components/messages/OtaCheckResponse"
+        }
+      }
+    },
+    "otaUpdateRequest": {
+      "address": "zigbee/bridge/request/ota_update",
+      "messages": {
+        "OtaUpdateRequest": {
+          "$ref": "#/components/messages/OtaUpdateRequest"
+        }
+      }
+    },
+    "otaUpdateResponse": {
+      "address": "zigbee/bridge/response/ota_update",
+      "messages": {
+        "OtaUpdateResponse": {
+          "$ref": "#/components/messages/OtaUpdateResponse"
+        }
+      }
+    },
+    "changeChannelRequest": {
+      "address": "zigbee/bridge/request/change_channel",
+      "messages": {
+        "ChangeChannelRequest": {
+          "$ref": "#/components/messages/ChangeChannelRequest"
+        }
+      }
+    },
+    "changeChannelResponse": {
+      "address": "zigbee/bridge/response/change_channel",
+      "messages": {
+        "ChangeChannelResponse": {
+          "$ref": "#/components/messages/ChangeChannelResponse"
+        }
+      }
+    },
+    "energyScanRequest": {
+      "address": "zigbee/bridge/request/energy_scan",
+      "messages": {
+        "EnergyScanRequest": {
+          "$ref": "#/components/messages/EnergyScanRequest"
+        }
+      }
+    },
+    "energyScanResponse": {
+      "address": "zigbee/bridge/response/energy_scan",
+      "messages": {
+        "EnergyScanResponse": {
+          "$ref": "#/components/messages/EnergyScanResponse"
+        }
+      }
+    },
+    "devicesRequest": {
+      "address": "zigbee/bridge/request/devices",
+      "messages": {
+        "DevicesRequest": {
+          "$ref": "#/components/messages/DevicesRequest"
+        }
+      }
+    },
+    "devicesResponse": {
+      "address": "zigbee/bridge/response/devices",
+      "messages": {
+        "DevicesResponse": {
+          "$ref": "#/components/messages/DevicesResponse"
+        }
+      }
+    },
+    "homeAssistantDiscovery": {
+      "address": "homeassistant/{component}/{node_id}/{object_id}/config",
+      "messages": {
+        "DiscoveryConfig": {
+          "$ref": "#/components/messages/DiscoveryConfig"
+        }
+      },
+      "parameters": {
+        "component": {
+          "description": "The entity type.",
+          "enum": [
+            "sensor",
+            "binary_sensor",
+            "switch",
+            "light"
+          ]
+        },
+        "node_id": {
+          "description": "The device's IEEE address, as hex without `0x`.",
+          "examples": [
+            "00124b0001020304"
+          ]
+        },
+        "object_id": {
+          "description": "The reading: `temperature`, `battery`, `light`, `linkquality` and so on.",
+          "examples": [
+            "temperature",
+            "linkquality"
+          ]
+        }
+      }
+    },
+    "homeAssistantStatus": {
+      "address": "homeassistant/status",
+      "messages": {
+        "HomeAssistantStatus": {
+          "$ref": "#/components/messages/HomeAssistantStatus"
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishBridgeState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/bridgeState"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/bridgeState/messages/BridgeState"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": true
+        }
+      }
+    },
+    "publishBridgeInfo": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/bridgeInfo"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/bridgeInfo/messages/BridgeInfo"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": true
+        }
+      }
+    },
+    "publishBridgeDevices": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/bridgeDevices"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/bridgeDevices/messages/BridgeDevices"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": true
+        }
+      }
+    },
+    "publishBridgeEvent": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/bridgeEvent"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/bridgeEvent/messages/PermitJoin"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/DeviceJoined"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/DeviceAnnounce"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/DeviceLeave"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/DeviceRemoved"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/DeviceInterview"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/OtaAvailable"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/OtaProgress"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/OtaFinished"
+        },
+        {
+          "$ref": "#/channels/bridgeEvent/messages/ChannelChanged"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "publishDeviceState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/deviceState"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceState/messages/DeviceState"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": true
+        }
+      }
+    },
+    "publishDeviceReport": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/deviceReport"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceReport/messages/AttributeReport"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "publishDeviceAction": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/deviceAction"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceAction/messages/DeviceAction"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "publishDiscovery": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/homeAssistantDiscovery"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/homeAssistantDiscovery/messages/DiscoveryConfig"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": true
+        }
+      }
+    },
+    "receiveDeviceSet": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/deviceSet"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/deviceSet/messages/SetRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "receiveHomeAssistantStatus": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/homeAssistantStatus"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/homeAssistantStatus/messages/HomeAssistantStatus"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "receivePermitJoin": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/permitJoinRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/permitJoinRequest/messages/PermitJoinRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendPermitJoin": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/permitJoinResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/permitJoinResponse/messages/PermitJoinResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveRemove": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/removeRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/removeRequest/messages/RemoveRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendRemove": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/removeResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/removeResponse/messages/RemoveResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveRename": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/renameRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/renameRequest/messages/RenameRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendRename": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/renameResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/renameResponse/messages/RenameResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveInstallCode": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/installCodeRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/installCodeRequest/messages/InstallCodeRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendInstallCode": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/installCodeResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/installCodeResponse/messages/InstallCodeResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveInterview": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/interviewRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/interviewRequest/messages/InterviewRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendInterview": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/interviewResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/interviewResponse/messages/InterviewResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveBackup": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/backupRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/backupRequest/messages/BackupRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendBackup": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/backupResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/backupResponse/messages/BackupResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveTopology": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/topologyRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/topologyRequest/messages/TopologyRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendTopology": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/topologyResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/topologyResponse/messages/TopologyResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveScanNeighbors": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/scanNeighborsRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/scanNeighborsRequest/messages/ScanNeighborsRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendScanNeighbors": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/scanNeighborsResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/scanNeighborsResponse/messages/ScanNeighborsResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveOtaCheck": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/otaCheckRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/otaCheckRequest/messages/OtaCheckRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendOtaCheck": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/otaCheckResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/otaCheckResponse/messages/OtaCheckResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveOtaUpdate": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/otaUpdateRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/otaUpdateRequest/messages/OtaUpdateRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendOtaUpdate": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/otaUpdateResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/otaUpdateResponse/messages/OtaUpdateResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveChangeChannel": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/changeChannelRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/changeChannelRequest/messages/ChangeChannelRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendChangeChannel": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/changeChannelResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/changeChannelResponse/messages/ChangeChannelResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveEnergyScan": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/energyScanRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/energyScanRequest/messages/EnergyScanRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendEnergyScan": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/energyScanResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/energyScanResponse/messages/EnergyScanResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    },
+    "receiveDevices": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/devicesRequest"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/devicesRequest/messages/DevicesRequest"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1
+        }
+      }
+    },
+    "sendDevices": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/devicesResponse"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/devicesResponse/messages/DevicesResponse"
+        }
+      ],
+      "bindings": {
+        "mqtt": {
+          "qos": 1,
+          "retain": false
+        }
+      }
+    }
+  },
+  "components": {
+    "messages": {
+      "BridgeState": {
+        "name": "BridgeState",
+        "title": "BridgeState",
+        "summary": "The bridge is online or offline",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "$ref": "#/components/schemas/Availability"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "description": "The bridge's availability, retained on `bridge/state`. The broker\npublishes `offline` as the bridge's last will when the connection drops.",
+          "title": "BridgeState",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "BridgeInfo": {
+        "name": "BridgeInfo",
+        "title": "BridgeInfo",
+        "summary": "The bridge's version, coordinator, network and join state",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string",
+              "description": "The bridge's version."
+            },
+            "coordinator": {
+              "$ref": "#/components/schemas/CoordinatorInfo"
+            },
+            "network": {
+              "$ref": "#/components/schemas/NetworkInfo"
+            },
+            "permit_join": {
+              "type": "boolean",
+              "description": "Devices may join now."
+            },
+            "permit_join_timeout": {
+              "type": "integer",
+              "description": "Seconds joining stays open; 0 when closed.",
+              "format": "uint8",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "required": [
+            "version",
+            "coordinator",
+            "network",
+            "permit_join",
+            "permit_join_timeout"
+          ],
+          "description": "The bridge, its coordinator and its network, retained on `bridge/info`.\nRepublished when any of it changes.",
+          "title": "BridgeInfo",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "BridgeDevices": {
+        "name": "BridgeDevices",
+        "title": "BridgeDevices",
+        "summary": "Every device and its interview",
+        "contentType": "application/json",
+        "payload": {
+          "type": "array",
+          "description": "Every device in the network, retained on `bridge/devices`. Republished\nwhen one joins, leaves, is renamed or finishes its interview.",
+          "title": "BridgeDevices",
+          "items": {
+            "$ref": "#/components/schemas/DeviceSummary"
+          },
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "PermitJoin": {
+        "name": "PermitJoin",
+        "title": "PermitJoin",
+        "summary": "Joining opened or closed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "permit_join"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "integer",
+                  "description": "Seconds it stays open; 0 when closed.",
+                  "format": "uint8",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "device": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The router joining was opened through, when only one."
+                }
+              },
+              "required": [
+                "time"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "Joining opened or closed."
+        }
+      },
+      "DeviceJoined": {
+        "name": "DeviceJoined",
+        "title": "DeviceJoined",
+        "summary": "A device joined",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device_joined"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "network_address": {
+                  "type": "integer",
+                  "description": "Its network address.",
+                  "format": "uint16",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "rejoin": {
+                  "type": "boolean",
+                  "description": "A rejoin rather than a first join."
+                }
+              },
+              "required": [
+                "ieee_address",
+                "network_address",
+                "rejoin"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A device joined, or rejoined."
+        }
+      },
+      "DeviceAnnounce": {
+        "name": "DeviceAnnounce",
+        "title": "DeviceAnnounce",
+        "summary": "A device announced itself",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device_announce"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "network_address": {
+                  "type": "integer",
+                  "description": "Its network address.",
+                  "format": "uint16",
+                  "minimum": 0,
+                  "maximum": 65535
+                }
+              },
+              "required": [
+                "ieee_address",
+                "network_address"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A device announced itself, after joining or a power cycle."
+        }
+      },
+      "DeviceLeave": {
+        "name": "DeviceLeave",
+        "title": "DeviceLeave",
+        "summary": "A device left",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device_leave"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                }
+              },
+              "required": [
+                "ieee_address"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A device left the network."
+        }
+      },
+      "DeviceRemoved": {
+        "name": "DeviceRemoved",
+        "title": "DeviceRemoved",
+        "summary": "The bridge removed a device",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device_removed"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why."
+                }
+              },
+              "required": [
+                "ieee_address",
+                "reason"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "The bridge removed a device."
+        }
+      },
+      "DeviceInterview": {
+        "name": "DeviceInterview",
+        "title": "DeviceInterview",
+        "summary": "An interview started, finished or failed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "device_interview"
+            },
+            "data": {
+              "$ref": "#/components/schemas/InterviewEvent"
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "An interview started, finished or failed."
+        }
+      },
+      "OtaAvailable": {
+        "name": "OtaAvailable",
+        "title": "OtaAvailable",
+        "summary": "A firmware update is available",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "ota_available"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "device": {
+                  "type": "string",
+                  "description": "The device's name."
+                },
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "installed_version": {
+                  "type": "integer",
+                  "description": "The file version it runs.",
+                  "format": "uint32",
+                  "minimum": 0
+                },
+                "latest_version": {
+                  "type": "integer",
+                  "description": "The newest version in the OTA directory.",
+                  "format": "uint32",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "device",
+                "ieee_address",
+                "installed_version",
+                "latest_version"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A device asked for a firmware update and the OTA directory has a\nnewer image for it."
+        }
+      },
+      "OtaProgress": {
+        "name": "OtaProgress",
+        "title": "OtaProgress",
+        "summary": "A firmware download's progress",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "ota_progress"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "device": {
+                  "type": "string",
+                  "description": "The device's name."
+                },
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "progress": {
+                  "type": "integer",
+                  "description": "Percent downloaded.",
+                  "format": "uint8",
+                  "minimum": 0,
+                  "maximum": 255
+                }
+              },
+              "required": [
+                "device",
+                "ieee_address",
+                "progress"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A firmware download's progress."
+        }
+      },
+      "OtaFinished": {
+        "name": "OtaFinished",
+        "title": "OtaFinished",
+        "summary": "A firmware update ended",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "ota_finished"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "device": {
+                  "type": "string",
+                  "description": "The device's name."
+                },
+                "ieee_address": {
+                  "type": "string",
+                  "description": "Its IEEE address."
+                },
+                "from_version": {
+                  "type": "integer",
+                  "description": "The version it ran.",
+                  "format": "uint32",
+                  "minimum": 0
+                },
+                "to_version": {
+                  "type": "integer",
+                  "description": "The version it downloaded.",
+                  "format": "uint32",
+                  "minimum": 0
+                },
+                "success": {
+                  "type": "boolean",
+                  "description": "The device applied it."
+                },
+                "status": {
+                  "type": "integer",
+                  "description": "The device's upgrade end status (ZCL status code).",
+                  "format": "uint8",
+                  "minimum": 0,
+                  "maximum": 255
+                }
+              },
+              "required": [
+                "device",
+                "ieee_address",
+                "from_version",
+                "to_version",
+                "success",
+                "status"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "A firmware update ended."
+        }
+      },
+      "ChannelChanged": {
+        "name": "ChannelChanged",
+        "title": "ChannelChanged",
+        "summary": "The network changed channel",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "channel_changed"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "integer",
+                  "description": "The new channel.",
+                  "format": "uint8",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "update_id": {
+                  "type": "integer",
+                  "description": "The new network update id.",
+                  "format": "uint8",
+                  "minimum": 0,
+                  "maximum": 255
+                }
+              },
+              "required": [
+                "channel",
+                "update_id"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "data"
+          ],
+          "description": "The network moved to another channel."
+        }
+      },
+      "DeviceState": {
+        "name": "DeviceState",
+        "title": "DeviceState",
+        "summary": "A device's readings",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "description": "On/off cluster: the switch or light is on.",
+              "enum": [
+                "ON",
+                "OFF"
+              ]
+            },
+            "brightness": {
+              "type": "integer",
+              "description": "Level control cluster: the current level.",
+              "minimum": 0,
+              "maximum": 254
+            },
+            "temperature": {
+              "type": "number",
+              "description": "Temperature measurement, in °C."
+            },
+            "humidity": {
+              "type": "number",
+              "description": "Relative humidity measurement, in %."
+            },
+            "pressure": {
+              "type": "number",
+              "description": "Pressure measurement, in hPa."
+            },
+            "illuminance": {
+              "type": "number",
+              "description": "Illuminance measurement, in lx."
+            },
+            "flow": {
+              "type": "number",
+              "description": "Flow measurement, in m³/h."
+            },
+            "soil_moisture": {
+              "type": "number",
+              "description": "Soil moisture measurement, in %."
+            },
+            "co2": {
+              "type": "number",
+              "description": "Carbon dioxide measurement, in ppm."
+            },
+            "pm25": {
+              "type": "number",
+              "description": "Pm25 measurement, in µg/m³."
+            },
+            "occupancy": {
+              "type": "boolean",
+              "description": "Occupancy sensing."
+            },
+            "battery": {
+              "type": "number",
+              "description": "Power configuration, in %."
+            },
+            "battery_voltage": {
+              "type": "number",
+              "description": "Power configuration, in mV."
+            },
+            "power": {
+              "type": "number",
+              "description": "Electrical measurement, in W."
+            },
+            "voltage": {
+              "type": "number",
+              "description": "Electrical measurement, in V."
+            },
+            "current": {
+              "type": "number",
+              "description": "Electrical measurement, in A."
+            },
+            "energy": {
+              "type": "number",
+              "description": "Metering, in kWh."
+            },
+            "local_temperature": {
+              "type": "number",
+              "description": "Thermostat, in °C."
+            },
+            "device_temperature": {
+              "type": "integer",
+              "description": "Device temperature configuration, in °C."
+            },
+            "alarm": {
+              "type": "boolean",
+              "description": "IAS zone: alarm."
+            },
+            "tamper": {
+              "type": "boolean",
+              "description": "IAS zone: tamper."
+            },
+            "battery_low": {
+              "type": "boolean",
+              "description": "IAS zone: battery low."
+            },
+            "contact": {
+              "type": "boolean",
+              "description": "IAS zone: contact."
+            },
+            "water_leak": {
+              "type": "boolean",
+              "description": "IAS zone: water leak."
+            },
+            "smoke": {
+              "type": "boolean",
+              "description": "IAS zone: smoke."
+            },
+            "carbon_monoxide": {
+              "type": "boolean",
+              "description": "IAS zone: carbon monoxide."
+            },
+            "vibration": {
+              "type": "boolean",
+              "description": "IAS zone: vibration."
+            },
+            "linkquality": {
+              "type": "integer",
+              "description": "The link quality of the device's last message, 0 to 255.",
+              "minimum": 0,
+              "maximum": 255
+            }
+          },
+          "description": "The device's readings. Which keys appear depends on its clusters; a reading from a second endpoint with the same cluster has the endpoint number as a suffix, as in `temperature_2`.",
+          "title": "DeviceState",
+          "additionalProperties": true,
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "AttributeReport": {
+        "name": "AttributeReport",
+        "title": "AttributeReport",
+        "summary": "Every attribute report, raw, by cluster and attribute name",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "endpoint": {
+              "type": "integer",
+              "description": "The endpoint it came from.",
+              "format": "uint8",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "cluster": {
+              "type": "string",
+              "description": "The cluster, by name, or as hex when the bridge does not know it."
+            },
+            "attributes": {
+              "type": "object",
+              "description": "Each attribute's value, by name or hex id.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "endpoint",
+            "cluster",
+            "attributes"
+          ],
+          "description": "An attribute report, raw, on `<device>/report`. Not retained.",
+          "title": "AttributeReport",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "DeviceAction": {
+        "name": "DeviceAction",
+        "title": "DeviceAction",
+        "summary": "A command the device sent: a button press, an alarm",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "endpoint": {
+              "type": "integer",
+              "description": "The endpoint it came from.",
+              "format": "uint8",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "cluster": {
+              "type": "string",
+              "description": "The cluster, by name or hex."
+            },
+            "command": {
+              "type": "string",
+              "description": "The command, by name, or as hex when the bridge does not know it."
+            },
+            "fields": {
+              "type": "object",
+              "description": "The command's fields, by name.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "endpoint",
+            "cluster",
+            "command",
+            "fields"
+          ],
+          "description": "A cluster command the device sent, such as a button press or an\nalarm, on `<device>/action`. Not retained.",
+          "title": "DeviceAction",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "DiscoveryConfig": {
+        "name": "DiscoveryConfig",
+        "title": "DiscoveryConfig",
+        "summary": "A Home Assistant entity for one of a device's readings",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The entity's name."
+            },
+            "unique_id": {
+              "type": "string",
+              "description": "Unique across Home Assistant: `<ieee>_<field>_zigbee-bridge`."
+            },
+            "object_id": {
+              "type": "string",
+              "description": "The entity id Home Assistant derives: `<device>_<field>`."
+            },
+            "state_topic": {
+              "type": "string",
+              "description": "The device's state topic."
+            },
+            "value_template": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Picks the reading out of the state."
+            },
+            "availability": {
+              "type": "array",
+              "description": "The bridge's availability.",
+              "items": {
+                "$ref": "#/components/schemas/DiscoveryAvailability"
+              }
+            },
+            "device": {
+              "$ref": "#/components/schemas/DiscoveryDevice"
+            },
+            "origin": {
+              "$ref": "#/components/schemas/DiscoveryOrigin"
+            },
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "`json` for lights: state and commands are JSON."
+            },
+            "command_topic": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device's `/set` topic, for lights and switches."
+            },
+            "brightness": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Lights: supports brightness."
+            },
+            "brightness_scale": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Lights: the highest level.",
+              "format": "uint16",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "supported_color_modes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "Lights: `color_temp` when the light has color control.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unit_of_measurement": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The reading's unit."
+            },
+            "device_class": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Home Assistant's device class for the reading."
+            },
+            "state_class": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Home Assistant's state class for the reading."
+            },
+            "entity_category": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "`diagnostic` for battery, link quality and tamper."
+            },
+            "payload_on": {
+              "description": "Binary sensors: the value that means on. Switches: the command that\nturns it on.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DiscoveryPayload"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "payload_off": {
+              "description": "Binary sensors: the value that means off. Switches: the command that\nturns it off.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DiscoveryPayload"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "state_on": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Switches: the state that means on."
+            },
+            "state_off": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Switches: the state that means off."
+            },
+            "icon": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The entity's icon."
+            }
+          },
+          "required": [
+            "name",
+            "unique_id",
+            "object_id",
+            "state_topic",
+            "availability",
+            "device",
+            "origin"
+          ],
+          "description": "A Home Assistant MQTT discovery config, retained on\n`<discovery_prefix>/<component>/<ieee>/<field>/config`: one entity per\nreading, light or switch. An empty retained message removes the entity.\nKeys are Home Assistant's; see its MQTT integration documentation.",
+          "title": "DiscoveryConfig",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "SetRequest": {
+        "name": "SetRequest",
+        "title": "SetRequest",
+        "summary": "Switch, dim or tune a device",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "`ON`, `OFF` or `TOGGLE`, in any case. `ON` together with\n`brightness` sets the level and turns the light on in one command."
+            },
+            "brightness": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The level, 0 to 254.",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "color_temp": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The color temperature in mireds.",
+              "format": "uint64",
+              "minimum": 0
+            },
+            "transition": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Seconds a `brightness` or `color_temp` change takes, in tenths.",
+              "format": "double"
+            }
+          },
+          "description": "A command for a device, on `<device>/set`. Any combination of keys.",
+          "title": "SetRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "HomeAssistantStatus": {
+        "name": "HomeAssistantStatus",
+        "title": "HomeAssistantStatus",
+        "summary": "Home Assistant started or stopped",
+        "contentType": "text/plain",
+        "payload": {
+          "$ref": "#/components/schemas/HomeAssistantState"
+        }
+      },
+      "PermitJoinRequest": {
+        "name": "PermitJoinRequest",
+        "title": "PermitJoinRequest",
+        "summary": "Open or close joining",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "time": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Seconds to keep joining open, 0 to 254; 0 closes it.",
+              "format": "uint64",
+              "minimum": 0,
+              "default": null
+            },
+            "value": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "`true` for 254 seconds, `false` to close; used when `time` is\nabsent.",
+              "default": null
+            },
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Open joining through this router only, by name or IEEE address.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Open or close joining, on `bridge/request/permit_join`.",
+          "title": "PermitJoinRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "PermitJoinResponse": {
+        "name": "PermitJoinResponse",
+        "title": "PermitJoinResponse",
+        "summary": "Joining is open or closed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PermitJoinData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `permit_join`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "PermitJoinResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "RemoveRequest": {
+        "name": "RemoveRequest",
+        "title": "RemoveRequest",
+        "summary": "Remove a device",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device, by name or IEEE address (`id` also works).",
+              "default": null
+            },
+            "force": {
+              "type": "boolean",
+              "description": "Forget the device even if it does not answer the leave request.",
+              "default": false
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Remove a device, on `bridge/request/remove`.",
+          "title": "RemoveRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "RemoveResponse": {
+        "name": "RemoveResponse",
+        "title": "RemoveResponse",
+        "summary": "The device is removed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DeviceData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `remove`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "RemoveResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "RenameRequest": {
+        "name": "RenameRequest",
+        "title": "RenameRequest",
+        "summary": "Rename a device",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device, by name or IEEE address (`device` also works).",
+              "default": null
+            },
+            "to": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The new name (`name` also works). Not empty, no `+` or `#`, no\nleading or trailing `/`, not ending in `/set`, not `bridge`.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Rename a device, on `bridge/request/rename`. Its topics move to the\nnew name; the readings stay.",
+          "title": "RenameRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "RenameResponse": {
+        "name": "RenameResponse",
+        "title": "RenameResponse",
+        "summary": "The device is renamed",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RenameData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `rename`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "RenameResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "InstallCodeRequest": {
+        "name": "InstallCodeRequest",
+        "title": "InstallCodeRequest",
+        "summary": "Let a device join with its install code",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "ieee_address": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device's IEEE address (`device` also works).",
+              "default": null
+            },
+            "code": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The install code, as hex, with its CRC.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Add an install code, on `bridge/request/install_code`, so the device\nwith it can join.",
+          "title": "InstallCodeRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "InstallCodeResponse": {
+        "name": "InstallCodeResponse",
+        "title": "InstallCodeResponse",
+        "summary": "The install code is added",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/IeeeData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `install_code`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "InstallCodeResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "InterviewRequest": {
+        "name": "InterviewRequest",
+        "title": "InterviewRequest",
+        "summary": "Interview a device again",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device, by name or IEEE address.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Interview a device again, on `bridge/request/interview`.",
+          "title": "InterviewRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "InterviewResponse": {
+        "name": "InterviewResponse",
+        "title": "InterviewResponse",
+        "summary": "The interview is queued",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DeviceData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `interview`; `bridge/event` follows the interview.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "InterviewResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "BackupRequest": {
+        "name": "BackupRequest",
+        "title": "BackupRequest",
+        "summary": "Back up the network",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Write a backup of the network to the data directory, on\n`bridge/request/backup`. The backup holds the network key, so it is\nnever published.",
+          "title": "BackupRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "BackupResponse": {
+        "name": "BackupResponse",
+        "title": "BackupResponse",
+        "summary": "The backup is written",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BackupData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `backup`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "BackupResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "TopologyRequest": {
+        "name": "TopologyRequest",
+        "title": "TopologyRequest",
+        "summary": "The network's links",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "The network's links as the bridge knows them, on\n`bridge/request/topology`.",
+          "title": "TopologyRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "TopologyResponse": {
+        "name": "TopologyResponse",
+        "title": "TopologyResponse",
+        "summary": "The network's links",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TopologyData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `topology`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "TopologyResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "ScanNeighborsRequest": {
+        "name": "ScanNeighborsRequest",
+        "title": "ScanNeighborsRequest",
+        "summary": "Read a router's neighbor table",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The router, by name or IEEE address; the coordinator when absent.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Ask a router for its neighbor table, on\n`bridge/request/scan_neighbors`.",
+          "title": "ScanNeighborsRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "ScanNeighborsResponse": {
+        "name": "ScanNeighborsResponse",
+        "title": "ScanNeighborsResponse",
+        "summary": "The router's neighbors",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ScanNeighborsData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `scan_neighbors`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "ScanNeighborsResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "OtaCheckRequest": {
+        "name": "OtaCheckRequest",
+        "title": "OtaCheckRequest",
+        "summary": "Check a device for a firmware update",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device, by name or IEEE address.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Ask whether the OTA directory has newer firmware for a device, on\n`bridge/request/ota_check`. A sleepy device answers when it next\nwakes, so the response can take a while.",
+          "title": "OtaCheckRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "OtaCheckResponse": {
+        "name": "OtaCheckResponse",
+        "title": "OtaCheckResponse",
+        "summary": "Whether a firmware update is available",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OtaData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `ota_check`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "OtaCheckResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "OtaUpdateRequest": {
+        "name": "OtaUpdateRequest",
+        "title": "OtaUpdateRequest",
+        "summary": "Update a device's firmware",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "device": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The device, by name or IEEE address.",
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Update a device's firmware from the OTA directory, on\n`bridge/request/ota_update`. The response comes once the device\nstarts the download; `bridge/event` reports the rest.",
+          "title": "OtaUpdateRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "OtaUpdateResponse": {
+        "name": "OtaUpdateResponse",
+        "title": "OtaUpdateResponse",
+        "summary": "The firmware update started",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OtaData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `ota_update`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "OtaUpdateResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "ChangeChannelRequest": {
+        "name": "ChangeChannelRequest",
+        "title": "ChangeChannelRequest",
+        "summary": "Move the network to another channel",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "The new channel, 11 to 26.",
+              "format": "uint64",
+              "minimum": 0,
+              "default": null
+            },
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Move the network to another channel without pairing again, on\n`bridge/request/change_channel`.",
+          "title": "ChangeChannelRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "ChangeChannelResponse": {
+        "name": "ChangeChannelResponse",
+        "title": "ChangeChannelResponse",
+        "summary": "The network changed channel",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChannelData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `change_channel`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "ChangeChannelResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "EnergyScanRequest": {
+        "name": "EnergyScanRequest",
+        "title": "EnergyScanRequest",
+        "summary": "Measure the noise on every channel",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Measure the noise on every channel, on `bridge/request/energy_scan`.",
+          "title": "EnergyScanRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "EnergyScanResponse": {
+        "name": "EnergyScanResponse",
+        "title": "EnergyScanResponse",
+        "summary": "Each channel's noise",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EnergyScanData"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `energy_scan`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "EnergyScanResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "DevicesRequest": {
+        "name": "DevicesRequest",
+        "title": "DevicesRequest",
+        "summary": "Publish the device list again",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "transaction": {
+              "description": "Any value; the response echoes it, so a client can match the\ntwo."
+            }
+          },
+          "description": "Publish `bridge/devices` again, on `bridge/request/devices`.",
+          "title": "DevicesRequest",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      },
+      "DevicesResponse": {
+        "name": "DevicesResponse",
+        "title": "DevicesResponse",
+        "summary": "The device list is published",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "$ref": "#/components/schemas/Status"
+            },
+            "data": {
+              "description": "The result, when `status` is `ok`.",
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Empty"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "error": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "What went wrong, when `status` is `error`."
+            },
+            "transaction": {
+              "description": "The request's `transaction`, echoed when it had one."
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "description": "The response to `devices`.\n\nA response is published once per request, to\n`bridge/response/<request>`, and is not retained.",
+          "title": "DevicesResponse",
+          "$schema": "https://json-schema.org/draft/2020-12/schema"
+        }
+      }
+    },
+    "schemas": {
+      "Availability": {
+        "description": "Online or offline.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Running and connected to the coordinator.",
+            "const": "online"
+          },
+          {
+            "type": "string",
+            "description": "Stopped, or the MQTT connection dropped.",
+            "const": "offline"
+          }
+        ]
+      },
+      "CoordinatorInfo": {
+        "type": "object",
+        "properties": {
+          "ieee_address": {
+            "type": "string",
+            "description": "Its IEEE address."
+          },
+          "type": {
+            "type": "string",
+            "description": "The firmware family: `ezsp`, `znp` or `deconz`."
+          },
+          "firmware": {
+            "type": "string",
+            "description": "The firmware version."
+          },
+          "protocol": {
+            "type": "integer",
+            "description": "The serial protocol version.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "ieee_address",
+          "type",
+          "firmware",
+          "protocol"
+        ],
+        "description": "The coordinator."
+      },
+      "NetworkInfo": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "description": "The radio channel, 11 to 26.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "pan_id": {
+            "type": "integer",
+            "description": "The PAN id.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "extended_pan_id": {
+            "type": "string",
+            "description": "The extended PAN id, as hex."
+          },
+          "update_id": {
+            "type": "integer",
+            "description": "The network update id, raised by each channel change.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "channel",
+          "pan_id",
+          "extended_pan_id",
+          "update_id"
+        ],
+        "description": "The Zigbee network."
+      },
+      "DeviceSummary": {
+        "type": "object",
+        "properties": {
+          "ieee_address": {
+            "type": "string",
+            "description": "Its IEEE address."
+          },
+          "network_address": {
+            "type": "integer",
+            "description": "Its current network address.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "friendly_name": {
+            "type": "string",
+            "description": "The name it is published under: the name a person gave it, or its\nIEEE address."
+          },
+          "manufacturer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "power_source": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "From the Basic cluster: 1 mains, 3 battery, and so on.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "software_build_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "date_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "type": {
+            "description": "Its role, from the node descriptor.",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LogicalType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interview": {
+            "$ref": "#/components/schemas/InterviewSummary"
+          },
+          "unique_link_key": {
+            "type": "boolean",
+            "description": "It joined with an install code, so it has a link key of its own."
+          },
+          "endpoints": {
+            "type": "array",
+            "description": "Its endpoints, from the simple descriptors.",
+            "items": {
+              "$ref": "#/components/schemas/EndpointSummary"
+            }
+          }
+        },
+        "required": [
+          "ieee_address",
+          "network_address",
+          "friendly_name",
+          "interview",
+          "unique_link_key",
+          "endpoints"
+        ],
+        "description": "A device."
+      },
+      "LogicalType": {
+        "description": "A device's role in the network.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "The coordinator.",
+            "const": "coordinator"
+          },
+          {
+            "type": "string",
+            "description": "A router: mains powered, relays for others.",
+            "const": "router"
+          },
+          {
+            "type": "string",
+            "description": "An end device: often sleepy, talks through its parent.",
+            "const": "end_device"
+          },
+          {
+            "type": "string",
+            "description": "A reserved value.",
+            "const": "unknown"
+          }
+        ]
+      },
+      "InterviewSummary": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "$ref": "#/components/schemas/InterviewStage"
+          },
+          "done": {
+            "type": "boolean",
+            "description": "Every stage finished."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last attempt stopped."
+          }
+        },
+        "required": [
+          "stage",
+          "done"
+        ],
+        "description": "How far an interview got."
+      },
+      "InterviewStage": {
+        "description": "An interview stage, in order.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Reading the node descriptor.",
+            "const": "node_descriptor"
+          },
+          {
+            "type": "string",
+            "description": "Reading the endpoint list.",
+            "const": "active_endpoints"
+          },
+          {
+            "type": "string",
+            "description": "Reading each endpoint's clusters.",
+            "const": "simple_descriptors"
+          },
+          {
+            "type": "string",
+            "description": "Reading the Basic cluster.",
+            "const": "basic"
+          },
+          {
+            "type": "string",
+            "description": "Binding and configuring reporting.",
+            "const": "configure"
+          },
+          {
+            "type": "string",
+            "description": "Finished.",
+            "const": "done"
+          }
+        ]
+      },
+      "EndpointSummary": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "integer",
+            "description": "The endpoint number.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "profile_id": {
+            "type": "integer",
+            "description": "The application profile (0x0104 Home Automation).",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "device_id": {
+            "type": "integer",
+            "description": "The device type within the profile.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "input_clusters": {
+            "type": "array",
+            "description": "Server clusters, by name, or as hex when the bridge does not know\nthe cluster.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "output_clusters": {
+            "type": "array",
+            "description": "Client clusters, by name or hex.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "endpoint",
+          "profile_id",
+          "device_id",
+          "input_clusters",
+          "output_clusters"
+        ],
+        "description": "An endpoint."
+      },
+      "InterviewEvent": {
+        "description": "An interview's progress, by `status`.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "started"
+              },
+              "ieee_address": {
+                "type": "string",
+                "description": "The device's IEEE address."
+              }
+            },
+            "required": [
+              "status",
+              "ieee_address"
+            ],
+            "description": "The interview started or resumed."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "successful"
+              },
+              "ieee_address": {
+                "type": "string",
+                "description": "The device's IEEE address."
+              },
+              "manufacturer": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "From the Basic cluster."
+              },
+              "model": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "From the Basic cluster."
+              },
+              "definition": {
+                "$ref": "#/components/schemas/DeviceSummary"
+              }
+            },
+            "required": [
+              "status",
+              "ieee_address",
+              "definition"
+            ],
+            "description": "The interview finished."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "failed"
+              },
+              "ieee_address": {
+                "type": "string",
+                "description": "The device's IEEE address."
+              },
+              "stage": {
+                "$ref": "#/components/schemas/InterviewStage"
+              },
+              "error": {
+                "type": "string",
+                "description": "Why."
+              }
+            },
+            "required": [
+              "status",
+              "ieee_address",
+              "stage",
+              "error"
+            ],
+            "description": "The interview stopped; the bridge retries it later."
+          }
+        ]
+      },
+      "DiscoveryAvailability": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "The bridge's `bridge/state`."
+          },
+          "value_template": {
+            "type": "string",
+            "description": "Picks `state` out of it."
+          }
+        },
+        "required": [
+          "topic",
+          "value_template"
+        ],
+        "description": "Where Home Assistant reads availability."
+      },
+      "DiscoveryDevice": {
+        "type": "object",
+        "properties": {
+          "identifiers": {
+            "type": "array",
+            "description": "`zigbee-bridge_<ieee>`.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "The device's name."
+          },
+          "manufacturer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          },
+          "sw_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the Basic cluster."
+          }
+        },
+        "required": [
+          "identifiers",
+          "name"
+        ],
+        "description": "The device an entity belongs to."
+      },
+      "DiscoveryOrigin": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "`zigbee-bridge`."
+          },
+          "sw_version": {
+            "type": "string",
+            "description": "The bridge's version."
+          }
+        },
+        "required": [
+          "name",
+          "sw_version"
+        ],
+        "description": "The software that published the entity."
+      },
+      "DiscoveryPayload": {
+        "description": "A binary sensor's value or a switch's command.",
+        "anyOf": [
+          {
+            "type": "boolean",
+            "description": "A binary sensor's value."
+          },
+          {
+            "type": "string",
+            "description": "A switch's command, as JSON text."
+          }
+        ]
+      },
+      "HomeAssistantState": {
+        "description": "Whether Home Assistant runs.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Home Assistant started.",
+            "const": "online"
+          },
+          {
+            "type": "string",
+            "description": "Home Assistant stopped.",
+            "const": "offline"
+          }
+        ]
+      },
+      "Status": {
+        "description": "`ok` or `error`.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Done; `data` has the result.",
+            "const": "ok"
+          },
+          {
+            "type": "string",
+            "description": "Not done; `error` says why.",
+            "const": "error"
+          }
+        ]
+      },
+      "PermitJoinData": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "integer",
+            "description": "Seconds joining stays open.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "description": "The result of `permit_join`."
+      },
+      "DeviceData": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "string",
+            "description": "The device's name."
+          }
+        },
+        "required": [
+          "device"
+        ],
+        "description": "A device, by the name it was published under."
+      },
+      "RenameData": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The old name."
+          },
+          "to": {
+            "type": "string",
+            "description": "The new name."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "description": "The result of `rename`."
+      },
+      "IeeeData": {
+        "type": "object",
+        "properties": {
+          "ieee_address": {
+            "type": "string",
+            "description": "The device's IEEE address."
+          }
+        },
+        "required": [
+          "ieee_address"
+        ],
+        "description": "A device, by IEEE address."
+      },
+      "BackupData": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Where the backup was written."
+          },
+          "devices": {
+            "type": "integer",
+            "description": "How many devices it has.",
+            "format": "uint",
+            "minimum": 0
+          },
+          "frame_counter": {
+            "type": "integer",
+            "description": "The network key's outgoing frame counter.",
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "path",
+          "devices",
+          "frame_counter"
+        ],
+        "description": "The result of `backup`."
+      },
+      "TopologyData": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "description": "Every link.",
+            "items": {
+              "$ref": "#/components/schemas/TopologyLink"
+            }
+          }
+        },
+        "required": [
+          "links"
+        ],
+        "description": "The result of `topology`."
+      },
+      "TopologyLink": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The sending device's IEEE address, when known."
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The receiving device's IEEE address, when known."
+          },
+          "from_network_address": {
+            "type": "integer",
+            "description": "The sending device's network address.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "to_network_address": {
+            "type": "integer",
+            "description": "The receiving device's network address.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "lqi": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Link quality, 0 to 255.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "rssi": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Signal strength in dBm.",
+            "format": "int8",
+            "minimum": -128,
+            "maximum": 127
+          },
+          "source": {
+            "$ref": "#/components/schemas/LinkSource"
+          },
+          "seen": {
+            "type": "integer",
+            "description": "When it was last seen, in Unix seconds.",
+            "format": "uint64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "from_network_address",
+          "to_network_address",
+          "source",
+          "seen"
+        ],
+        "description": "A link from one device to another (towards the coordinator for links\nlearned from traffic)."
+      },
+      "LinkSource": {
+        "description": "Where a link was learned.",
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "The last hop of a message the coordinator received.",
+            "const": "last_hop"
+          },
+          {
+            "type": "string",
+            "description": "A hop in a route record.",
+            "const": "route_record"
+          },
+          {
+            "type": "string",
+            "description": "A router's neighbor table.",
+            "const": "neighbor_table"
+          }
+        ]
+      },
+      "ScanNeighborsData": {
+        "type": "object",
+        "properties": {
+          "neighbors": {
+            "type": "array",
+            "description": "The router's neighbor table.",
+            "items": {
+              "$ref": "#/components/schemas/Neighbor"
+            }
+          }
+        },
+        "required": [
+          "neighbors"
+        ],
+        "description": "The result of `scan_neighbors`."
+      },
+      "Neighbor": {
+        "type": "object",
+        "properties": {
+          "extended_pan_id": {
+            "type": "string",
+            "description": "The neighbor's extended PAN id, as hex."
+          },
+          "ieee": {
+            "type": "string",
+            "description": "Its IEEE address, as hex without `0x`."
+          },
+          "nwk": {
+            "type": "integer",
+            "description": "Its network address.",
+            "format": "uint16",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "flags": {
+            "type": "integer",
+            "description": "Device type (bits 0-1), receiver on when idle (2-3), relationship\n(4-6).",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "permit_joining": {
+            "type": "integer",
+            "description": "Permit joining (bits 0-1).",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "depth": {
+            "type": "integer",
+            "description": "Tree depth.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "lqi": {
+            "type": "integer",
+            "description": "Link quality, 0 to 255.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "extended_pan_id",
+          "ieee",
+          "nwk",
+          "flags",
+          "permit_joining",
+          "depth",
+          "lqi"
+        ],
+        "description": "A neighbor table entry."
+      },
+      "OtaData": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "string",
+            "description": "The device's name."
+          },
+          "installed_version": {
+            "type": "integer",
+            "description": "The file version it runs.",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "latest_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The newest newer version in the OTA directory.",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "That image's size in bytes.",
+            "format": "uint32",
+            "minimum": 0
+          },
+          "updating": {
+            "type": "boolean",
+            "description": "An update started; `bridge/event` reports its progress."
+          }
+        },
+        "required": [
+          "device",
+          "installed_version",
+          "updating"
+        ],
+        "description": "The result of `ota_check` and `ota_update`."
+      },
+      "ChannelData": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "description": "The channel now.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "update_id": {
+            "type": "integer",
+            "description": "The network update id now.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "required": [
+          "channel",
+          "update_id"
+        ],
+        "description": "The result of `change_channel`."
+      },
+      "EnergyScanData": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "description": "Each channel's loudest signal.",
+            "items": {
+              "$ref": "#/components/schemas/ChannelEnergy"
+            }
+          }
+        },
+        "required": [
+          "channels"
+        ],
+        "description": "The result of `energy_scan`."
+      },
+      "ChannelEnergy": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "description": "The channel.",
+            "format": "uint8",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "max_rssi": {
+            "type": "integer",
+            "description": "The loudest signal on it, in dBm.",
+            "format": "int8",
+            "minimum": -128,
+            "maximum": 127
+          }
+        },
+        "required": [
+          "channel",
+          "max_rssi"
+        ],
+        "description": "One channel's energy."
+      },
+      "Empty": {
+        "type": "object",
+        "description": "An empty result."
+      }
+    }
+  }
+}

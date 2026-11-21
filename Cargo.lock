@@ -117,6 +117,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "asyncapi-rust"
+version = "0.5.0"
+source = "git+https://github.com/mlilback/asyncapi-rust?rev=84677a0e655e79e814e8b8b84b79752bad184e63#84677a0e655e79e814e8b8b84b79752bad184e63"
+dependencies = [
+ "asyncapi-rust-codegen",
+ "asyncapi-rust-models",
+ "indexmap",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "asyncapi-rust-codegen"
+version = "0.5.0"
+source = "git+https://github.com/mlilback/asyncapi-rust?rev=84677a0e655e79e814e8b8b84b79752bad184e63#84677a0e655e79e814e8b8b84b79752bad184e63"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "schemars",
+ "serde",
+ "serde_json",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "asyncapi-rust-models"
+version = "0.5.0"
+source = "git+https://github.com/mlilback/asyncapi-rust?rev=84677a0e655e79e814e8b8b84b79752bad184e63#84677a0e655e79e814e8b8b84b79752bad184e63"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -779,6 +815,8 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -2266,6 +2304,7 @@ dependencies = [
 name = "zigbee-bridge"
 version = "0.3.0"
 dependencies = [
+ "asyncapi-rust",
  "lexopt",
  "rumqttc",
  "rumqttd",

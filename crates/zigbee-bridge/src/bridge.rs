@@ -1,32 +1,20 @@
 //! The bridge: host events to MQTT, MQTT requests to the host.
 //!
-//! Topics, under the base topic (default `zigbee`):
-//!
-//! | Topic | Retained | What |
-//! |---|---|---|
-//! | `bridge/state` | yes | `{"state":"online"}` / `"offline"` (last will) |
-//! | `bridge/info` | yes | version, coordinator, network, join state |
-//! | `bridge/devices` | yes | every device and its interview |
-//! | `bridge/event` | no | joins, announces, leaves, removals, interviews |
-//! | `bridge/request/<name>` | no | requests: `permit_join`, `remove`, `rename`, `install_code`, `interview`, `backup`, `topology`, `scan_neighbors`, `energy_scan`, `change_channel`, `ota_check`, `ota_update` |
-//! | `bridge/response/<name>` | no | `{"status":"ok","data":...}` or `{"status":"error","error":...}`, echoing `transaction` |
-//! | `<device>` | configurable | the device's state: standard readings and `linkquality` |
-//! | `<device>/set` | no | `{"state":"ON"}`, `{"brightness":128}`, `{"color_temp":300}` |
-//! | `<device>/report` | no | every attribute report, raw, by cluster and attribute name |
-//! | `<device>/action` | no | cluster commands the device sends (buttons, alarms) |
-//!
-//! `<device>` is the name a person gave it, or its IEEE address as
-//! `0x00124b0001020304`. Keys never appear on MQTT.
+//! Every payload is a type in [`crate::api`]; the MQTT reference on the
+//! docs site is generated from those types, topic by topic.
 
 use std::collections::HashMap;
 use std::time::Duration;
 
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::{json, Map, Value as Json};
 use tokio::sync::mpsc;
-use zigbee_host::{AnyAdapter, Device, Host, HostEvent, InterviewStage};
+use zigbee_host::{AnyAdapter, Device, Host, HostEvent};
 use zigbee_primitives::Ieee;
 use zigbee_zcl::{cluster_id, Value};
 
+use crate::api::{self, Availability, BridgeEvent, InterviewEvent};
 use crate::config::Config;
 use crate::exposes::{self, DiscoveryContext};
 use crate::mqtt::{self, Incoming, Mqtt};
@@ -44,23 +32,19 @@ pub struct Bridge {
     permit_join: u8,
 }
 
-fn ok(data: Json) -> Json {
-    json!({"status": "ok", "data": data})
+fn to_json(value: &impl Serialize) -> Json {
+    serde_json::to_value(value).unwrap_or(Json::Null)
 }
 
-fn error(message: impl std::fmt::Display) -> Json {
-    json!({"status": "error", "error": message.to_string()})
+/// A request's body as its type.
+fn parse<T: DeserializeOwned>(name: &str, body: &Json) -> Result<T, String> {
+    serde_json::from_value(body.clone()).map_err(|e| format!("invalid {name} request: {e}"))
 }
 
-fn interview_name(stage: InterviewStage) -> &'static str {
-    match stage {
-        InterviewStage::NodeDescriptor => "node_descriptor",
-        InterviewStage::ActiveEndpoints => "active_endpoints",
-        InterviewStage::SimpleDescriptors => "simple_descriptors",
-        InterviewStage::Basic => "basic",
-        InterviewStage::Configure => "configure",
-        InterviewStage::Done => "done",
-    }
+fn cluster_name(cluster: u16) -> String {
+    zigbee_zcl::cluster(cluster)
+        .map(|c| c.name.to_string())
+        .unwrap_or_else(|| format!("{cluster:#06x}"))
 }
 
 impl Bridge {
@@ -106,72 +90,79 @@ impl Bridge {
             .find(|d| d.name.as_deref() == Some(name))
     }
 
-    fn device_summary(device: &Device) -> Json {
-        json!({
-            "ieee_address": device.ieee.to_prefixed_hex(),
-            "network_address": device.nwk,
-            "friendly_name": Self::friendly(device),
-            "manufacturer": device.manufacturer,
-            "model": device.model,
-            "power_source": device.power_source,
-            "software_build_id": device.sw_build_id,
-            "date_code": device.date_code,
-            "type": device.node_descriptor.map(|d| match d.logical_type() {
-                zigbee_zdo::LogicalType::Coordinator => "coordinator",
-                zigbee_zdo::LogicalType::Router => "router",
-                zigbee_zdo::LogicalType::EndDevice => "end_device",
-                zigbee_zdo::LogicalType::Reserved(_) => "unknown",
-            }),
-            "interview": {"stage": interview_name(device.interview.stage), "done": device.interview.is_done(), "error": device.interview.error},
-            "unique_link_key": device.unique_link_key,
-            "endpoints": device.endpoints.iter().map(|e| json!({
-                "endpoint": e.endpoint,
-                "profile_id": e.profile_id,
-                "device_id": e.device_id,
-                "input_clusters": e.input_clusters.iter().map(|c| zigbee_zcl::cluster(*c).map(|d| d.name.to_string()).unwrap_or_else(|| format!("{c:#06x}"))).collect::<Vec<_>>(),
-                "output_clusters": e.output_clusters.iter().map(|c| zigbee_zcl::cluster(*c).map(|d| d.name.to_string()).unwrap_or_else(|| format!("{c:#06x}"))).collect::<Vec<_>>(),
-            })).collect::<Vec<_>>(),
-        })
+    fn device_summary(device: &Device) -> api::DeviceSummary {
+        let clusters = |ids: &[u16]| ids.iter().map(|c| cluster_name(*c)).collect();
+        api::DeviceSummary {
+            ieee_address: device.ieee.to_prefixed_hex(),
+            network_address: device.nwk,
+            friendly_name: Self::friendly(device),
+            manufacturer: device.manufacturer.clone(),
+            model: device.model.clone(),
+            power_source: device.power_source,
+            software_build_id: device.sw_build_id.clone(),
+            date_code: device.date_code.clone(),
+            kind: device.node_descriptor.map(|d| d.logical_type().into()),
+            interview: api::InterviewSummary {
+                stage: device.interview.stage.into(),
+                done: device.interview.is_done(),
+                error: device.interview.error.clone(),
+            },
+            unique_link_key: device.unique_link_key,
+            endpoints: device
+                .endpoints
+                .iter()
+                .map(|e| api::EndpointSummary {
+                    endpoint: e.endpoint,
+                    profile_id: e.profile_id,
+                    device_id: e.device_id,
+                    input_clusters: clusters(&e.input_clusters),
+                    output_clusters: clusters(&e.output_clusters),
+                })
+                .collect(),
+        }
     }
 
     async fn publish_info(&self) {
         let n = self.host.network();
         let a = self.host.adapter_info();
-        let info = json!({
-            "version": VERSION,
-            "coordinator": {"ieee_address": n.ieee.to_prefixed_hex(), "type": a.kind, "firmware": a.firmware, "protocol": a.protocol},
-            "network": {"channel": n.channel, "pan_id": n.pan_id, "extended_pan_id": n.extended_pan_id.to_string(), "update_id": n.nwk_update_id},
-            "permit_join": self.permit_join > 0,
-            "permit_join_timeout": self.permit_join,
-        });
+        let info = api::BridgeInfo {
+            version: VERSION.into(),
+            coordinator: api::CoordinatorInfo {
+                ieee_address: n.ieee.to_prefixed_hex(),
+                kind: a.kind.into(),
+                firmware: a.firmware,
+                protocol: a.protocol,
+            },
+            network: api::NetworkInfo {
+                channel: n.channel,
+                pan_id: n.pan_id,
+                extended_pan_id: n.extended_pan_id.to_string(),
+                update_id: n.nwk_update_id,
+            },
+            permit_join: self.permit_join > 0,
+            permit_join_timeout: self.permit_join,
+        };
         self.mqtt
             .publish_json(format!("{}/bridge/info", self.base()), &info, true)
             .await;
     }
 
     async fn publish_devices(&self) {
-        let devices: Vec<Json> = self
-            .host
-            .devices()
-            .iter()
-            .map(Self::device_summary)
-            .collect();
+        let devices = api::BridgeDevices(
+            self.host
+                .devices()
+                .iter()
+                .map(Self::device_summary)
+                .collect(),
+        );
         self.mqtt
-            .publish_json(
-                format!("{}/bridge/devices", self.base()),
-                &Json::Array(devices),
-                true,
-            )
+            .publish_json(format!("{}/bridge/devices", self.base()), &devices, true)
             .await;
     }
 
-    async fn event(&self, kind: &str, data: Json) {
+    async fn event(&self, event: BridgeEvent) {
         self.mqtt
-            .publish_json(
-                format!("{}/bridge/event", self.base()),
-                &json!({"type": kind, "data": data}),
-                false,
-            )
+            .publish_json(format!("{}/bridge/event", self.base()), &event, false)
             .await;
     }
 
@@ -213,7 +204,7 @@ impl Bridge {
             self.mqtt
                 .publish_json(
                     topic,
-                    &Json::Object(state.clone()),
+                    &api::DeviceState(state.clone()),
                     self.config.mqtt.retain_state,
                 )
                 .await;
@@ -233,7 +224,11 @@ impl Bridge {
             self.mqtt.subscribe(&status).await;
         }
         self.mqtt
-            .publish(mqtt::state_topic(&base), r#"{"state":"online"}"#, true)
+            .publish(
+                mqtt::state_topic(&base),
+                api::BridgeState::payload(Availability::Online),
+                true,
+            )
             .await;
         self.publish_info().await;
         self.publish_devices().await;
@@ -249,20 +244,25 @@ impl Bridge {
             HostEvent::PermitJoin { seconds, via } => {
                 self.permit_join = seconds;
                 self.publish_info().await;
-                self.event(
-                    "permit_join",
-                    json!({"time": seconds, "device": via.map(|i| i.to_prefixed_hex())}),
-                )
+                self.event(BridgeEvent::PermitJoin {
+                    time: seconds,
+                    device: via.map(|i| i.to_prefixed_hex()),
+                })
                 .await;
             }
             HostEvent::DeviceJoined { ieee, nwk, rejoin } => {
-                self.event("device_joined", json!({"ieee_address": ieee.to_prefixed_hex(), "network_address": nwk, "rejoin": rejoin})).await;
+                self.event(BridgeEvent::DeviceJoined {
+                    ieee_address: ieee.to_prefixed_hex(),
+                    network_address: nwk,
+                    rejoin,
+                })
+                .await;
             }
             HostEvent::DeviceAnnounced { ieee, nwk } => {
-                self.event(
-                    "device_announce",
-                    json!({"ieee_address": ieee.to_prefixed_hex(), "network_address": nwk}),
-                )
+                self.event(BridgeEvent::DeviceAnnounce {
+                    ieee_address: ieee.to_prefixed_hex(),
+                    network_address: nwk,
+                })
                 .await;
             }
             HostEvent::OtaQuery {
@@ -270,14 +270,23 @@ impl Bridge {
                 current_version,
                 available,
             } => {
-                if available.is_some() {
-                    let name = self.name_of(ieee);
-                    self.event("ota_available", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "installed_version": current_version, "latest_version": available})).await;
+                if let Some(latest_version) = available {
+                    self.event(BridgeEvent::OtaAvailable {
+                        device: self.name_of(ieee),
+                        ieee_address: ieee.to_prefixed_hex(),
+                        installed_version: current_version,
+                        latest_version,
+                    })
+                    .await;
                 }
             }
             HostEvent::OtaProgress { ieee, percent } => {
-                let name = self.name_of(ieee);
-                self.event("ota_progress", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "progress": percent})).await;
+                self.event(BridgeEvent::OtaProgress {
+                    device: self.name_of(ieee),
+                    ieee_address: ieee.to_prefixed_hex(),
+                    progress: percent,
+                })
+                .await;
             }
             HostEvent::OtaFinished {
                 ieee,
@@ -286,8 +295,15 @@ impl Bridge {
                 success,
                 status,
             } => {
-                let name = self.name_of(ieee);
-                self.event("ota_finished", json!({"device": name, "ieee_address": ieee.to_prefixed_hex(), "from_version": from, "to_version": to, "success": success, "status": status})).await;
+                self.event(BridgeEvent::OtaFinished {
+                    device: self.name_of(ieee),
+                    ieee_address: ieee.to_prefixed_hex(),
+                    from_version: from,
+                    to_version: to,
+                    success,
+                    status,
+                })
+                .await;
             }
             HostEvent::ChannelChanged { network } => {
                 // A re-formation after a coordinator reset uses the new
@@ -303,49 +319,54 @@ impl Bridge {
                     Err(e) => tracing::warn!(error = %e, "reading the network file"),
                 }
                 self.publish_info().await;
-                self.event(
-                    "channel_changed",
-                    json!({"channel": network.channel, "update_id": network.nwk_update_id}),
-                )
+                self.event(BridgeEvent::ChannelChanged {
+                    channel: network.channel,
+                    update_id: network.nwk_update_id,
+                })
                 .await;
             }
             HostEvent::DeviceLeft { ieee } => {
                 self.clear_device(ieee, &ieee.to_prefixed_hex()).await;
-                self.event(
-                    "device_leave",
-                    json!({"ieee_address": ieee.to_prefixed_hex()}),
-                )
+                self.event(BridgeEvent::DeviceLeave {
+                    ieee_address: ieee.to_prefixed_hex(),
+                })
                 .await;
                 self.publish_devices().await;
             }
             HostEvent::DeviceRemoved { ieee, reason } => {
                 self.clear_device(ieee, &ieee.to_prefixed_hex()).await;
-                self.event(
-                    "device_removed",
-                    json!({"ieee_address": ieee.to_prefixed_hex(), "reason": reason}),
-                )
+                self.event(BridgeEvent::DeviceRemoved {
+                    ieee_address: ieee.to_prefixed_hex(),
+                    reason,
+                })
                 .await;
                 self.publish_devices().await;
             }
             HostEvent::InterviewStarted { ieee } => {
-                self.event(
-                    "device_interview",
-                    json!({"ieee_address": ieee.to_prefixed_hex(), "status": "started"}),
-                )
+                self.event(BridgeEvent::DeviceInterview(InterviewEvent::Started {
+                    ieee_address: ieee.to_prefixed_hex(),
+                }))
                 .await;
             }
             HostEvent::InterviewStep { .. } => {}
             HostEvent::InterviewDone { device } => {
-                self.event(
-                    "device_interview",
-                    json!({"ieee_address": device.ieee.to_prefixed_hex(), "status": "successful", "manufacturer": device.manufacturer, "model": device.model, "definition": Self::device_summary(&device)}),
-                )
+                self.event(BridgeEvent::DeviceInterview(InterviewEvent::Successful {
+                    ieee_address: device.ieee.to_prefixed_hex(),
+                    manufacturer: device.manufacturer.clone(),
+                    model: device.model.clone(),
+                    definition: Box::new(Self::device_summary(&device)),
+                }))
                 .await;
                 self.publish_devices().await;
                 self.publish_discovery(&device).await;
             }
             HostEvent::InterviewFailed { ieee, stage, error } => {
-                self.event("device_interview", json!({"ieee_address": ieee.to_prefixed_hex(), "status": "failed", "stage": interview_name(stage), "error": error})).await;
+                self.event(BridgeEvent::DeviceInterview(InterviewEvent::Failed {
+                    ieee_address: ieee.to_prefixed_hex(),
+                    stage: stage.into(),
+                    error,
+                }))
+                .await;
             }
             HostEvent::Attributes {
                 ieee,
@@ -390,10 +411,14 @@ impl Bridge {
                     })
                     .collect();
                 let topic = format!("{}/{}/action", self.base(), Self::friendly(&device));
-                let cluster_name = zigbee_zcl::cluster(cluster)
-                    .map(|c| c.name.to_string())
-                    .unwrap_or_else(|| format!("{cluster:#06x}"));
-                let action = json!({"endpoint": endpoint, "cluster": cluster_name, "command": name.map(str::to_string).unwrap_or_else(|| format!("{command:#04x}")), "fields": fields});
+                let action = api::DeviceAction {
+                    endpoint,
+                    cluster: cluster_name(cluster),
+                    command: name
+                        .map(str::to_string)
+                        .unwrap_or_else(|| format!("{command:#04x}")),
+                    fields,
+                };
                 self.mqtt.publish_json(topic, &action, false).await;
             }
             // The bridge publishes decoded readings; raw frames are for
@@ -436,7 +461,11 @@ impl Bridge {
                 (name, serde_json::to_value(v).unwrap_or(Json::Null))
             })
             .collect();
-        let report = json!({"endpoint": endpoint, "cluster": def.map(|c| c.name.to_string()).unwrap_or_else(|| format!("{cluster:#06x}")), "attributes": raw});
+        let report = api::AttributeReport {
+            endpoint,
+            cluster: cluster_name(cluster),
+            attributes: raw,
+        };
         self.mqtt
             .publish_json(
                 format!("{}/{}/report", self.base(), Self::friendly(&device)),
@@ -477,7 +506,7 @@ impl Bridge {
     pub async fn on_message(&mut self, topic: &str, payload: &[u8]) {
         let base = self.base().to_string();
         if self.config.homeassistant.enabled && topic == self.config.homeassistant.status_topic {
-            if payload == b"online" {
+            if api::HomeAssistantStatus::parse(payload) == Some(api::HomeAssistantState::Online) {
                 for device in self.host.devices() {
                     self.publish_discovery(&device).await;
                 }
@@ -493,15 +522,10 @@ impl Bridge {
             serde_json::from_slice(payload).unwrap_or(Json::Null)
         };
         if let Some(name) = rest.strip_prefix("bridge/request/") {
-            let transaction = body.get("transaction").cloned();
-            let mut response = self.request(name, &body).await;
-            if response.is_null() {
-                // Answered by a task of its own (a long OTA request).
+            // None: answered by a task of its own (a long OTA request).
+            let Some(response) = self.request(name, &body).await else {
                 return;
-            }
-            if let (Some(t), Some(o)) = (transaction, response.as_object_mut()) {
-                o.insert("transaction".into(), t);
-            }
+            };
             self.mqtt
                 .publish_json(format!("{base}/bridge/response/{name}"), &response, false)
                 .await;
@@ -512,217 +536,281 @@ impl Bridge {
         }
     }
 
-    async fn request(&mut self, name: &str, body: &Json) -> Json {
-        let device = |key: &str| body.get(key).and_then(Json::as_str).map(str::to_string);
-        match name {
-            "permit_join" => {
-                let time = body
-                    .get("time")
-                    .and_then(Json::as_u64)
-                    .or_else(|| {
-                        body.get("value")
-                            .and_then(Json::as_bool)
-                            .map(|b| if b { 254 } else { 0 })
-                    })
-                    .unwrap_or(0);
-                let via = match device("device") {
-                    Some(name) => match self.resolve(&name) {
-                        Some(d) => Some(d.ieee),
-                        None => return error(format!("unknown device {name}")),
-                    },
-                    None => None,
+    /// Answer a request; `None` when a task of its own answers it.
+    async fn request(&mut self, name: &str, body: &Json) -> Option<Json> {
+        let transaction = body.get("transaction").cloned();
+        macro_rules! answer {
+            ($response:ty, $handler:ident) => {{
+                let result = match parse(name, body) {
+                    Ok(request) => self.$handler(request).await,
+                    Err(e) => Err(e),
                 };
-                match self.host.permit_join(time.min(254) as u8, via).await {
-                    Ok(()) => ok(json!({"time": time.min(254)})),
-                    Err(e) => error(e),
-                }
-            }
-            "remove" => {
-                let Some(d) = device("device")
-                    .or(device("id"))
-                    .and_then(|n| self.resolve(&n))
-                else {
-                    return error("unknown device");
-                };
-                let force = body.get("force").and_then(Json::as_bool).unwrap_or(false);
-                let friendly = Self::friendly(&d);
-                match self.host.remove(d.ieee, force).await {
-                    Ok(()) => {
-                        self.clear_device(d.ieee, &friendly).await;
-                        ok(json!({"device": friendly}))
-                    }
-                    Err(e) => error(e),
-                }
-            }
-            "rename" => {
-                let Some(d) = device("from")
-                    .or(device("device"))
-                    .and_then(|n| self.resolve(&n))
-                else {
-                    return error("unknown device");
-                };
-                let Some(to) = device("to").or(device("name")) else {
-                    return error("missing \"to\"");
-                };
-                if to.is_empty()
-                    || to.contains(['+', '#'])
-                    || to.starts_with('/')
-                    || to.ends_with('/')
-                    || to.ends_with("/set")
-                    || to == "bridge"
-                {
-                    return error("not a usable name");
-                }
-                let old = Self::friendly(&d);
-                // Clear the old retained topics, keep the readings.
-                let state = self.states.remove(&d.ieee);
-                self.clear_device(d.ieee, &old).await;
-                if let Err(e) = self.host.set_name(d.ieee, Some(to.clone())) {
-                    return error(e);
-                }
-                if let Some(state) = state {
-                    self.states.insert(d.ieee, state);
-                }
-                if let Some(d) = self.host.device(d.ieee) {
-                    self.publish_discovery(&d).await;
-                    self.publish_state(&d).await;
-                }
-                self.publish_devices().await;
-                ok(json!({"from": old, "to": to}))
-            }
-            "install_code" => {
-                let Some(ieee) = device("ieee_address")
-                    .or(device("device"))
-                    .and_then(|t| t.parse::<Ieee>().ok())
-                else {
-                    return error("missing ieee_address");
-                };
-                let Some(code) = device("code") else {
-                    return error("missing code");
-                };
-                let bytes = match zigbee_host::install_code::parse_hex(&code) {
-                    Ok(b) => b,
-                    Err(e) => return error(e),
-                };
-                match self.host.add_install_code(ieee, &bytes).await {
-                    Ok(()) => ok(json!({"ieee_address": ieee.to_prefixed_hex()})),
-                    Err(e) => error(e),
-                }
-            }
-            "interview" => {
-                let Some(d) = device("device").and_then(|n| self.resolve(&n)) else {
-                    return error("unknown device");
-                };
-                match self.host.reinterview(d.ieee) {
-                    Ok(()) => ok(json!({"device": Self::friendly(&d)})),
-                    Err(e) => error(e),
-                }
-            }
-            "backup" => match self.host.backup().await {
-                // The backup holds the network key: it goes to the data
-                // directory, never onto MQTT.
-                Ok(b) => ok(
-                    json!({"path": self.config.data.dir.join(crate::BACKUP_FILE).display().to_string(), "devices": b.devices.len(), "frame_counter": b.network_key.frame_counter}),
-                ),
-                Err(e) => error(e),
-            },
-            "topology" => {
-                let links: Vec<Json> = self
-                    .host
-                    .topology()
-                    .into_iter()
-                    .map(|(from, to, l)| {
-                        json!({
-                            "from": from.map(|i| i.to_prefixed_hex()), "to": to.map(|i| i.to_prefixed_hex()),
-                            "from_network_address": l.from, "to_network_address": l.to,
-                            "lqi": l.lqi, "rssi": l.rssi, "source": l.source, "seen": l.seen_unix,
-                        })
-                    })
-                    .collect();
-                ok(json!({"links": links}))
-            }
-            "scan_neighbors" => {
-                let target = match device("device") {
-                    Some(n) => match self.resolve(&n) {
-                        Some(d) => d.ieee,
-                        None => return error(format!("unknown device {n}")),
-                    },
-                    None => self.host.network().ieee,
-                };
-                match self.host.scan_neighbors(target).await {
-                    Ok(neighbors) => ok(json!({"neighbors": neighbors})),
-                    Err(e) => error(e),
-                }
-            }
-            "ota_check" | "ota_update" => {
-                let Some(d) = device("device").and_then(|n| self.resolve(&n)) else {
-                    return error("unknown device");
-                };
-                // A sleepy device answers when it next wakes: answer from a
-                // task so the bridge keeps working meanwhile.
-                let host = self.host.clone();
-                let mqtt = self.mqtt.clone();
-                let topic = format!("{}/bridge/response/{name}", self.base());
-                let transaction = body.get("transaction").cloned();
-                let update = name == "ota_update";
-                let friendly = Self::friendly(&d);
-                tokio::spawn(async move {
-                    let result = if update {
-                        host.ota_update(d.ieee).await
-                    } else {
-                        host.ota_check(d.ieee).await
-                    };
-                    let mut response = match result {
-                        Ok(o) => ok(json!({
-                            "device": friendly,
-                            "installed_version": o.current_version,
-                            "latest_version": o.available,
-                            "size": o.size,
-                            "updating": update,
-                        })),
-                        Err(e) => error(e),
-                    };
-                    if let (Some(t), Some(o)) = (transaction, response.as_object_mut()) {
-                        o.insert("transaction".into(), t);
-                    }
-                    mqtt.publish_json(topic, &response, false).await;
-                });
-                Json::Null
-            }
-            "change_channel" => {
-                let Some(channel) = body.get("channel").and_then(Json::as_u64) else {
-                    return error("change_channel needs {\"channel\": 11..26}");
-                };
-                match self.host.change_channel(channel.min(255) as u8).await {
-                    Ok(n) => ok(json!({"channel": n.channel, "update_id": n.nwk_update_id})),
-                    Err(e) => error(e),
-                }
-            }
-            "energy_scan" => match self.host.energy_scan().await {
-                Ok(results) => ok(
-                    json!({"channels": results.iter().map(|(c, r)| json!({"channel": c, "max_rssi": r})).collect::<Vec<_>>()}),
-                ),
-                Err(e) => error(e),
-            },
-            "devices" => {
-                self.publish_devices().await;
-                ok(json!({}))
-            }
-            other => error(format!("unknown request {other}")),
+                to_json(&<$response>::new(result, transaction))
+            }};
         }
+        Some(match name {
+            "permit_join" => answer!(api::PermitJoinResponse, permit_join),
+            "remove" => answer!(api::RemoveResponse, remove),
+            "rename" => answer!(api::RenameResponse, rename),
+            "install_code" => answer!(api::InstallCodeResponse, install_code),
+            "interview" => answer!(api::InterviewResponse, interview),
+            "backup" => answer!(api::BackupResponse, backup),
+            "topology" => answer!(api::TopologyResponse, topology),
+            "scan_neighbors" => answer!(api::ScanNeighborsResponse, scan_neighbors),
+            "change_channel" => answer!(api::ChangeChannelResponse, change_channel),
+            "energy_scan" => answer!(api::EnergyScanResponse, energy_scan),
+            "devices" => answer!(api::DevicesResponse, devices),
+            "ota_check" => match parse::<api::OtaCheckRequest>(name, body) {
+                Ok(r) => return self.ota(r.device, false, transaction),
+                Err(e) => to_json(&api::OtaCheckResponse::new(Err(e), transaction)),
+            },
+            "ota_update" => match parse::<api::OtaUpdateRequest>(name, body) {
+                Ok(r) => return self.ota(r.device, true, transaction),
+                Err(e) => to_json(&api::OtaUpdateResponse::new(Err(e), transaction)),
+            },
+            other => to_json(&api::UnknownResponse::new(
+                Err(format!("unknown request {other}")),
+                transaction,
+            )),
+        })
+    }
+
+    fn device_named(&self, name: Option<String>) -> Result<Device, String> {
+        match name {
+            Some(n) => self
+                .resolve(&n)
+                .ok_or_else(|| format!("unknown device {n}")),
+            None => Err("unknown device".into()),
+        }
+    }
+
+    async fn permit_join(
+        &mut self,
+        r: api::PermitJoinRequest,
+    ) -> Result<api::PermitJoinData, String> {
+        let time = r
+            .time
+            .or(r.value.map(|open| if open { 254 } else { 0 }))
+            .unwrap_or(0)
+            .min(254) as u8;
+        let via = match r.device {
+            Some(name) => Some(self.device_named(Some(name))?.ieee),
+            None => None,
+        };
+        self.host
+            .permit_join(time, via)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(api::PermitJoinData { time })
+    }
+
+    async fn remove(&mut self, r: api::RemoveRequest) -> Result<api::DeviceData, String> {
+        let d = self.device_named(r.device)?;
+        let friendly = Self::friendly(&d);
+        self.host
+            .remove(d.ieee, r.force)
+            .await
+            .map_err(|e| e.to_string())?;
+        self.clear_device(d.ieee, &friendly).await;
+        Ok(api::DeviceData { device: friendly })
+    }
+
+    async fn rename(&mut self, r: api::RenameRequest) -> Result<api::RenameData, String> {
+        let d = self.device_named(r.from)?;
+        let to = r.to.ok_or("missing \"to\"")?;
+        if to.is_empty()
+            || to.contains(['+', '#'])
+            || to.starts_with('/')
+            || to.ends_with('/')
+            || to.ends_with("/set")
+            || to == "bridge"
+        {
+            return Err("not a usable name".into());
+        }
+        let old = Self::friendly(&d);
+        // Clear the old retained topics, keep the readings.
+        let state = self.states.remove(&d.ieee);
+        self.clear_device(d.ieee, &old).await;
+        self.host
+            .set_name(d.ieee, Some(to.clone()))
+            .map_err(|e| e.to_string())?;
+        if let Some(state) = state {
+            self.states.insert(d.ieee, state);
+        }
+        if let Some(d) = self.host.device(d.ieee) {
+            self.publish_discovery(&d).await;
+            self.publish_state(&d).await;
+        }
+        self.publish_devices().await;
+        Ok(api::RenameData { from: old, to })
+    }
+
+    async fn install_code(&mut self, r: api::InstallCodeRequest) -> Result<api::IeeeData, String> {
+        let ieee = r
+            .ieee_address
+            .and_then(|t| t.parse::<Ieee>().ok())
+            .ok_or("missing ieee_address")?;
+        let code = r.code.ok_or("missing code")?;
+        let bytes = zigbee_host::install_code::parse_hex(&code).map_err(|e| e.to_string())?;
+        self.host
+            .add_install_code(ieee, &bytes)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(api::IeeeData {
+            ieee_address: ieee.to_prefixed_hex(),
+        })
+    }
+
+    async fn interview(&mut self, r: api::InterviewRequest) -> Result<api::DeviceData, String> {
+        let d = self.device_named(r.device)?;
+        self.host.reinterview(d.ieee).map_err(|e| e.to_string())?;
+        Ok(api::DeviceData {
+            device: Self::friendly(&d),
+        })
+    }
+
+    async fn backup(&mut self, _: api::BackupRequest) -> Result<api::BackupData, String> {
+        // The backup holds the network key: it goes to the data directory,
+        // never onto MQTT.
+        let b = self.host.backup().await.map_err(|e| e.to_string())?;
+        Ok(api::BackupData {
+            path: self
+                .config
+                .data
+                .dir
+                .join(crate::BACKUP_FILE)
+                .display()
+                .to_string(),
+            devices: b.devices.len(),
+            frame_counter: b.network_key.frame_counter,
+        })
+    }
+
+    async fn topology(&mut self, _: api::TopologyRequest) -> Result<api::TopologyData, String> {
+        let links = self
+            .host
+            .topology()
+            .into_iter()
+            .map(|(from, to, l)| api::TopologyLink {
+                from: from.map(|i| i.to_prefixed_hex()),
+                to: to.map(|i| i.to_prefixed_hex()),
+                from_network_address: l.from,
+                to_network_address: l.to,
+                lqi: l.lqi,
+                rssi: l.rssi,
+                source: l.source.into(),
+                seen: l.seen_unix,
+            })
+            .collect();
+        Ok(api::TopologyData { links })
+    }
+
+    async fn scan_neighbors(
+        &mut self,
+        r: api::ScanNeighborsRequest,
+    ) -> Result<api::ScanNeighborsData, String> {
+        let target = match r.device {
+            Some(n) => self.device_named(Some(n))?.ieee,
+            None => self.host.network().ieee,
+        };
+        let neighbors = self
+            .host
+            .scan_neighbors(target)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(api::ScanNeighborsData {
+            neighbors: neighbors.into_iter().map(Into::into).collect(),
+        })
+    }
+
+    /// Check or update a device's firmware. A sleepy device answers when it
+    /// next wakes: answer from a task so the bridge keeps working meanwhile.
+    fn ota(&self, device: Option<String>, update: bool, transaction: Option<Json>) -> Option<Json> {
+        let respond = move |result, transaction| {
+            if update {
+                to_json(&api::OtaUpdateResponse::new(result, transaction))
+            } else {
+                to_json(&api::OtaCheckResponse::new(result, transaction))
+            }
+        };
+        let d = match self.device_named(device) {
+            Ok(d) => d,
+            Err(_) => return Some(respond(Err("unknown device".into()), transaction)),
+        };
+        let host = self.host.clone();
+        let mqtt = self.mqtt.clone();
+        let name = if update { "ota_update" } else { "ota_check" };
+        let topic = format!("{}/bridge/response/{name}", self.base());
+        let friendly = Self::friendly(&d);
+        tokio::spawn(async move {
+            let result = if update {
+                host.ota_update(d.ieee).await
+            } else {
+                host.ota_check(d.ieee).await
+            };
+            let result = result
+                .map(|o| api::OtaData {
+                    device: friendly,
+                    installed_version: o.current_version,
+                    latest_version: o.available,
+                    size: o.size,
+                    updating: update,
+                })
+                .map_err(|e| e.to_string());
+            mqtt.publish_json(topic, &respond(result, transaction), false)
+                .await;
+        });
+        None
+    }
+
+    async fn change_channel(
+        &mut self,
+        r: api::ChangeChannelRequest,
+    ) -> Result<api::ChannelData, String> {
+        let channel = r
+            .channel
+            .ok_or("change_channel needs {\"channel\": 11..26}")?;
+        let n = self
+            .host
+            .change_channel(channel.min(255) as u8)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(api::ChannelData {
+            channel: n.channel,
+            update_id: n.nwk_update_id,
+        })
+    }
+
+    async fn energy_scan(
+        &mut self,
+        _: api::EnergyScanRequest,
+    ) -> Result<api::EnergyScanData, String> {
+        let results = self.host.energy_scan().await.map_err(|e| e.to_string())?;
+        Ok(api::EnergyScanData {
+            channels: results
+                .into_iter()
+                .map(|(channel, max_rssi)| api::ChannelEnergy { channel, max_rssi })
+                .collect(),
+        })
+    }
+
+    async fn devices(&mut self, _: api::DevicesRequest) -> Result<api::Empty, String> {
+        self.publish_devices().await;
+        Ok(api::Empty {})
     }
 
     async fn set(&mut self, name: &str, body: &Json) -> Result<(), String> {
         let device = self
             .resolve(name)
             .ok_or_else(|| format!("unknown device {name}"))?;
+        let r: api::SetRequest =
+            serde_json::from_value(body.clone()).map_err(|e| format!("invalid set: {e}"))?;
         let ep = |cluster: u16| device.endpoint_with(cluster).map(|e| e.endpoint);
-        let transition = body
-            .get("transition")
-            .and_then(Json::as_f64)
+        let transition = r
+            .transition
             .map(|s| (s * 10.0).round().clamp(0.0, 65534.0) as u16)
             .unwrap_or(0);
-        if let Some(level) = body.get("brightness").and_then(Json::as_u64) {
+        if let Some(level) = r.brightness {
             let endpoint = ep(cluster_id::LEVEL_CONTROL).ok_or("no level control")?;
             let level = level.min(254) as u8;
             self.host
@@ -740,7 +828,7 @@ impl Bridge {
                 .or_default()
                 .insert("brightness".into(), json!(level));
         }
-        if let Some(mireds) = body.get("color_temp").and_then(Json::as_u64) {
+        if let Some(mireds) = r.color_temp {
             let endpoint = ep(cluster_id::COLOR_CONTROL).ok_or("no color control")?;
             self.host
                 .command(
@@ -756,14 +844,14 @@ impl Bridge {
                 .await
                 .map_err(|e| e.to_string())?;
         }
-        if let Some(state) = body.get("state").and_then(Json::as_str) {
+        if let Some(state) = &r.state {
             let command = match state.to_ascii_uppercase().as_str() {
                 "ON" => "on",
                 "OFF" => "off",
                 "TOGGLE" => "toggle",
                 other => return Err(format!("state {other} is not ON, OFF or TOGGLE")),
             };
-            if !(command == "on" && body.get("brightness").is_some()) {
+            if !(command == "on" && r.brightness.is_some()) {
                 let endpoint = ep(cluster_id::ON_OFF).ok_or("no on/off cluster")?;
                 self.host
                     .command(device.ieee, endpoint, cluster_id::ON_OFF, command, &[])
@@ -801,7 +889,11 @@ pub async fn run_loop(
     let base = bridge.base().to_string();
     bridge
         .mqtt
-        .publish(mqtt::state_topic(&base), r#"{"state":"offline"}"#, true)
+        .publish(
+            mqtt::state_topic(&base),
+            api::BridgeState::payload(Availability::Offline),
+            true,
+        )
         .await;
     tokio::time::sleep(Duration::from_millis(200)).await;
     bridge.mqtt.disconnect().await;

@@ -5,10 +5,14 @@
 //! device that implements the cluster: no per-device code. Device quirks
 //! belong in device definitions, not here.
 
-use serde_json::{json, Map, Value as Json};
+use serde_json::{json, Value as Json};
 use zigbee_host::Device;
 use zigbee_primitives::Ieee;
 use zigbee_zcl::{attr, cluster_id, Value};
+
+use crate::api::{
+    DiscoveryAvailability, DiscoveryConfig, DiscoveryDevice, DiscoveryOrigin, DiscoveryPayload,
+};
 
 /// How a raw attribute becomes a JSON value.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -405,38 +409,32 @@ pub fn discovery(
     ctx: &DiscoveryContext<'_>,
     device: &Device,
     friendly: &str,
-) -> Vec<(String, Json)> {
+) -> Vec<(String, DiscoveryConfig)> {
     let ieee = id(device.ieee);
     let state_topic = format!("{}/{friendly}", ctx.base);
-    let device_info = {
-        let mut d = Map::new();
-        d.insert(
-            "identifiers".into(),
-            json!([format!("zigbee-bridge_{ieee}")]),
-        );
-        d.insert("name".into(), json!(friendly));
-        if let Some(m) = &device.manufacturer {
-            d.insert("manufacturer".into(), json!(m));
-        }
-        if let Some(m) = &device.model {
-            d.insert("model".into(), json!(m));
-        }
-        if let Some(v) = &device.sw_build_id {
-            d.insert("sw_version".into(), json!(v));
-        }
-        Json::Object(d)
+    let device_info = DiscoveryDevice {
+        identifiers: vec![format!("zigbee-bridge_{ieee}")],
+        name: friendly.to_string(),
+        manufacturer: device.manufacturer.clone(),
+        model: device.model.clone(),
+        sw_version: device.sw_build_id.clone(),
     };
-    let base_payload = |field: &str, name: String| {
-        json!({
-            "name": name,
-            "unique_id": format!("{ieee}_{field}_zigbee-bridge"),
-            "object_id": format!("{}_{field}", friendly.replace(['/', ' '], "_")),
-            "state_topic": state_topic,
-            "value_template": format!("{{{{ value_json.{field} }}}}"),
-            "availability": [{"topic": format!("{}/bridge/state", ctx.base), "value_template": "{{ value_json.state }}"}],
-            "device": device_info,
-            "origin": {"name": "zigbee-bridge", "sw_version": ctx.version},
-        })
+    let base_payload = |field: &str, name: String| DiscoveryConfig {
+        name,
+        unique_id: format!("{ieee}_{field}_zigbee-bridge"),
+        object_id: format!("{}_{field}", friendly.replace(['/', ' '], "_")),
+        state_topic: state_topic.clone(),
+        value_template: Some(format!("{{{{ value_json.{field} }}}}")),
+        availability: vec![DiscoveryAvailability {
+            topic: format!("{}/bridge/state", ctx.base),
+            value_template: "{{ value_json.state }}".into(),
+        }],
+        device: device_info.clone(),
+        origin: DiscoveryOrigin {
+            name: "zigbee-bridge".into(),
+            sw_version: ctx.version.into(),
+        },
+        ..DiscoveryConfig::default()
     };
     let config_topic = |component: &str, field: &str| {
         format!(
@@ -445,6 +443,7 @@ pub fn discovery(
             ieee.trim_start_matches("0x")
         )
     };
+    let text = |s: &str| Some(s.to_string());
     let mut out = Vec::new();
     for ep in &device.endpoints {
         let has = |c: u16| ep.input_clusters.contains(&c);
@@ -458,17 +457,16 @@ pub fn discovery(
                 Some(first) if first.endpoint != ep.endpoint => format!("light_{}", ep.endpoint),
                 _ => "light".to_string(),
             };
-            let mut p = base_payload(&field, "Light".into());
-            if let Some(o) = p.as_object_mut() {
-                o.remove("value_template");
-                o.insert("schema".into(), json!("json"));
-                o.insert("command_topic".into(), json!(format!("{state_topic}/set")));
-                o.insert("brightness".into(), json!(true));
-                o.insert("brightness_scale".into(), json!(254));
-                if has(cluster_id::COLOR_CONTROL) {
-                    o.insert("supported_color_modes".into(), json!(["color_temp"]));
-                }
-            }
+            let p = DiscoveryConfig {
+                value_template: None,
+                schema: text("json"),
+                command_topic: Some(format!("{state_topic}/set")),
+                brightness: Some(true),
+                brightness_scale: Some(254),
+                supported_color_modes: has(cluster_id::COLOR_CONTROL)
+                    .then(|| vec!["color_temp".to_string()]),
+                ..base_payload(&field, "Light".into())
+            };
             out.push((config_topic("light", &field), p));
         }
         for e in EXPOSES.iter().filter(|e| has(e.cluster)) {
@@ -484,66 +482,52 @@ pub fn discovery(
                 continue;
             }
             let field = field_name(device, ep.endpoint, e);
-            let mut p = base_payload(&field, title(&field));
-            if let Some(o) = p.as_object_mut() {
-                if let Some(u) = e.unit {
-                    o.insert("unit_of_measurement".into(), json!(u));
+            let mut p = DiscoveryConfig {
+                unit_of_measurement: e.unit.map(str::to_string),
+                device_class: e.device_class.map(str::to_string),
+                state_class: e.state_class.map(str::to_string),
+                entity_category: e.diagnostic.then(|| "diagnostic".to_string()),
+                ..base_payload(&field, title(&field))
+            };
+            match e.component {
+                Component::BinarySensor => {
+                    p.payload_on = Some(DiscoveryPayload::Bool(true));
+                    p.payload_off = Some(DiscoveryPayload::Bool(false));
                 }
-                if let Some(c) = e.device_class {
-                    o.insert("device_class".into(), json!(c));
+                Component::Switch => {
+                    p.command_topic = Some(format!("{state_topic}/set"));
+                    p.payload_on = Some(DiscoveryPayload::Text(r#"{"state":"ON"}"#.into()));
+                    p.payload_off = Some(DiscoveryPayload::Text(r#"{"state":"OFF"}"#.into()));
+                    p.state_on = text("ON");
+                    p.state_off = text("OFF");
                 }
-                if let Some(s) = e.state_class {
-                    o.insert("state_class".into(), json!(s));
-                }
-                if e.diagnostic {
-                    o.insert("entity_category".into(), json!("diagnostic"));
-                }
-                match e.component {
-                    Component::BinarySensor => {
-                        o.insert("payload_on".into(), json!(true));
-                        o.insert("payload_off".into(), json!(false));
-                    }
-                    Component::Switch => {
-                        o.insert("command_topic".into(), json!(format!("{state_topic}/set")));
-                        o.insert("payload_on".into(), json!(r#"{"state":"ON"}"#));
-                        o.insert("payload_off".into(), json!(r#"{"state":"OFF"}"#));
-                        o.insert("state_on".into(), json!("ON"));
-                        o.insert("state_off".into(), json!("OFF"));
-                    }
-                    Component::Sensor => {}
-                }
+                Component::Sensor => {}
             }
             out.push((config_topic(e.component.name(), &field), p));
         }
         if has(cluster_id::IAS_ZONE) {
             for (field, _) in ias_fields(device.ias_zone_type, 0) {
-                let mut p = base_payload(field, title(field));
-                if let Some(o) = p.as_object_mut() {
-                    o.insert("payload_on".into(), json!(field != "contact"));
-                    o.insert("payload_off".into(), json!(field == "contact"));
-                    if let Some(c) = ias_class(field) {
-                        o.insert("device_class".into(), json!(c));
-                    }
-                    if field == "contact" {
-                        // HA's door class is "on" when open.
-                        o.insert("payload_on".into(), json!(false));
-                        o.insert("payload_off".into(), json!(true));
-                    }
-                    if matches!(field, "tamper" | "battery_low") {
-                        o.insert("entity_category".into(), json!("diagnostic"));
-                    }
-                }
+                // HA's door class is "on" when open, and `contact` is true
+                // when closed.
+                let p = DiscoveryConfig {
+                    payload_on: Some(DiscoveryPayload::Bool(field != "contact")),
+                    payload_off: Some(DiscoveryPayload::Bool(field == "contact")),
+                    device_class: ias_class(field).map(str::to_string),
+                    entity_category: matches!(field, "tamper" | "battery_low")
+                        .then(|| "diagnostic".to_string()),
+                    ..base_payload(field, title(field))
+                };
                 out.push((config_topic("binary_sensor", field), p));
             }
         }
     }
-    let mut lq = base_payload("linkquality", "Link quality".into());
-    if let Some(o) = lq.as_object_mut() {
-        o.insert("unit_of_measurement".into(), json!("lqi"));
-        o.insert("state_class".into(), json!("measurement"));
-        o.insert("entity_category".into(), json!("diagnostic"));
-        o.insert("icon".into(), json!("mdi:signal"));
-    }
+    let lq = DiscoveryConfig {
+        unit_of_measurement: text("lqi"),
+        state_class: text("measurement"),
+        entity_category: text("diagnostic"),
+        icon: text("mdi:signal"),
+        ..base_payload("linkquality", "Link quality".into())
+    };
     out.push((config_topic("sensor", "linkquality"), lq));
     out
 }
@@ -609,12 +593,12 @@ mod tests {
             .iter()
             .find(|(t, _)| t.ends_with("/temperature/config"))
             .unwrap();
-        assert_eq!(t["state_topic"], "zigbee/0x00124b0000000001");
-        assert_eq!(t["value_template"], "{{ value_json.temperature }}");
-        assert_eq!(t["device_class"], "temperature");
+        assert_eq!(t.state_topic, "zigbee/0x00124b0000000001");
         assert_eq!(
-            t["unique_id"],
-            "0x00124b0000000001_temperature_zigbee-bridge"
+            t.value_template.as_deref(),
+            Some("{{ value_json.temperature }}")
         );
+        assert_eq!(t.device_class.as_deref(), Some("temperature"));
+        assert_eq!(t.unique_id, "0x00124b0000000001_temperature_zigbee-bridge");
     }
 }

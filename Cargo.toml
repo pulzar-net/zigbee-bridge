@@ -58,3 +58,12 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+# asyncapi-rust from upstream main until a release has "Derive channel and
+# operation messages" (mlilback/asyncapi-rust#17): the MQTT reference
+# (crates/zigbee-bridge/tests/asyncapi.rs) lists each channel's messages with
+# it. Only the docs build uses it; drop this once a release has it.
+[patch.crates-io]
+asyncapi-rust = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
+asyncapi-rust-codegen = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
+asyncapi-rust-models = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
