@@ -38,7 +38,7 @@ but **no release has been tested on real hardware yet**. Pages that
 describe something only real hardware can confirm say so.
 
 Features added after the first release are marked with the version that
-brought them ("since 0.2.0"). The [changelog](/zigbee-bridge/changelog.html) lists what each
+brought them ("since 0.2.0"). The [release notes](https://github.com/pulzar-net/zigbee-bridge/releases) list what each
 release contains.
 
 ## Terms used in these docs

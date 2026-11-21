@@ -33,7 +33,7 @@ cargo add zigbee-host
 
 Every crate shares the workspace version and is released together. While
 the project is at 0.x, minor versions may break the API; the
-[changelog](/zigbee-bridge/changelog.html) says what changed.
+[release notes](https://github.com/pulzar-net/zigbee-bridge/releases) say what changed.
 
 ## Conventions shared by every crate
 

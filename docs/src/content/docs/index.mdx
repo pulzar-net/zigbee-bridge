@@ -11,20 +11,20 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 	title="zigbee-bridge"
 	tagline="A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust. One static binary with no runtime, small enough for routers and gateways, with Home Assistant discovery."
 	actions={[
-		{ text: 'Get started', link: '/zigbee-bridge/getting-started.html', icon: 'right-arrow' },
+		{ text: 'Get started', link: '/zigbee-bridge/getting-started.html' },
 		{ text: 'MQTT API', link: '/zigbee-bridge/mqtt.html', variant: 'minimal' },
-		{ text: 'GitHub', link: 'https://github.com/pulzar-net/zigbee-bridge', variant: 'minimal', icon: 'github' },
+		{ text: 'GitHub', link: 'https://github.com/pulzar-net/zigbee-bridge', variant: 'minimal' },
 	]}
 />
 
 <Features
 	items={[
-		{ title: 'Three coordinator families', body: 'Silicon Labs EmberZNet, Texas Instruments Z-Stack and ConBee/RaspBee, over USB serial or TCP, detected on the port.', icon: 'seti:hex', link: '/zigbee-bridge/hardware.html' },
-		{ title: 'Home Assistant', body: 'Devices appear through MQTT discovery as soon as their interview finishes. No custom integration.', icon: 'puzzle', link: '/zigbee-bridge/home-assistant.html' },
-		{ title: 'Never lose the network', body: 'Backups in the open coordinator format, restored onto a new coordinator of any family without pairing again.', icon: 'approve-check', link: '/zigbee-bridge/backup.html' },
-		{ title: 'Small and static', body: 'Under 4 MB, under 16 MB of memory with 200 devices. Runs on MIPS routers and Raspberry Pis.', icon: 'rocket', link: '/zigbee-bridge/installation.html' },
+		{ title: 'Three coordinator families', body: 'Silicon Labs EmberZNet, Texas Instruments Z-Stack and ConBee/RaspBee, over USB serial or TCP, detected on the port.', link: '/zigbee-bridge/hardware.html' },
+		{ title: 'Home Assistant', body: 'Devices appear through MQTT discovery as soon as their interview finishes. No custom integration.', link: '/zigbee-bridge/home-assistant.html' },
+		{ title: 'Never lose the network', body: 'Backups in the open coordinator format, restored onto a new coordinator of any family without pairing again.', link: '/zigbee-bridge/backup.html' },
+		{ title: 'Small and static', body: 'Under 4 MB, under 16 MB of memory with 200 devices. Runs on MIPS routers and Raspberry Pis.', link: '/zigbee-bridge/installation.html' },
 		{ title: 'A Rust library', body: 'The coordinator host, the ZCL and ZDO, EZSP, ZNP and deCONZ as crates you can embed.', mark: 'rust', link: '/zigbee-bridge/library.html' },
-		{ title: 'Tested without hardware', body: 'A coordinator simulator drives every test, and the docs\' quick start runs in CI.', icon: 'laptop', link: '/zigbee-bridge/testing.html' },
+		{ title: 'Tested without hardware', body: 'A coordinator simulator drives every test, and the docs\' quick start runs in CI.', link: '/zigbee-bridge/testing.html' },
 	]}
 />
 

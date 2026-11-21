@@ -25,7 +25,7 @@ Rust.
 **[Hardware](#supported-hardware)** |
 **[MQTT API](https://oss.pulzr.net/zigbee-bridge/mqtt.html)** |
 **[Library](#use-it-as-a-library)** |
-**[Changelog](CHANGELOG.md)**
+**[Releases](https://github.com/pulzar-net/zigbee-bridge/releases)**
 
 ## Status
 

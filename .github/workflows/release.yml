@@ -89,15 +89,24 @@ jobs:
         with:
           path: ${{ runner.temp }}/assets
           merge-multiple: true
-      - name: Release notes from the changelog
+      - name: Release notes from the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          version="${TAG#v}"
-          awk -v v="${version}" '
-            $0 ~ "^## \\[" v "\\]" { on = 1; next }
-            on && /^## \[/ { exit }
-            on { print }
-          ' CHANGELOG.md > notes.md
-          [ -s notes.md ] || { echo "no changelog section for ${version}" >&2; exit 1; }
+          # The annotated tag's message (git tag -a vX.Y.Z --cleanup=whitespace
+          # -F notes.md), else GitHub's generated notes; never none.
+          set -euo pipefail
+          notes="${RUNNER_TEMP}/notes.md"
+          git fetch -q --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          : > "${notes}"
+          if [ "$(git cat-file -t "refs/tags/${TAG}")" = tag ]; then
+            git cat-file tag "refs/tags/${TAG}" | sed '1,/^$/d; /^-----BEGIN [A-Z ]*SIGNATURE-----$/,$d' > "${notes}"
+          fi
+          if ! awk -v t="${TAG}" 'NF && $0 != t { f = 1 } END { exit !f }' "${notes}"; then
+            gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" -f tag_name="${TAG}" -q .body > "${notes}"
+            awk 'NF && !/Full Changelog/ { f = 1 } END { exit !f }' "${notes}" || {
+              echo "::error::${TAG} has no release notes: tag it with git tag -a and the notes as its message"; exit 1; }
+          fi
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -105,7 +114,7 @@ jobs:
           set -euo pipefail
           cd "${RUNNER_TEMP}/assets"
           sha256sum zigbee-bridge-* > SHA256SUMS
-          gh release create "${TAG}" ./* --repo "${GITHUB_REPOSITORY}" --title "${TAG}" --notes-file "${GITHUB_WORKSPACE}/notes.md" --verify-tag
+          gh release create "${TAG}" ./* --repo "${GITHUB_REPOSITORY}" --title "${TAG}" --notes-file "${RUNNER_TEMP}/notes.md" --verify-tag
 
   # The crates, dependencies first; a version crates.io already has is
   # skipped, so a rerun finishes a run that stopped part way. The token is the
