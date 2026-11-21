@@ -60,12 +60,13 @@ strip = true
 panic = "abort"
 
 # The MQTT reference (crates/zigbee-bridge/tests/asyncapi.rs, feature
-# unstable-asyncapi-docs) needs channel and operation messages, which are on
-# asyncapi-rust's main but in no release yet (mlilback/asyncapi-rust#17).
-# Default and release builds never use asyncapi-rust, and `cargo publish`
-# ignores this patch. It moves to the pulzar-net/asyncapi-rust fork for
-# changes of our own, and goes once a release has what the reference needs.
+# unstable-asyncapi-docs) needs what no asyncapi-rust release has yet:
+# channel and operation messages (upstream main, mlilback/asyncapi-rust#17),
+# and channel and operation descriptions, titles and summaries (our fork,
+# offered upstream). Pinned to pulzar-net/asyncapi-rust, which is never
+# published. Default and release builds never use asyncapi-rust, and
+# `cargo publish` ignores this patch. Remove it once a release has all three.
 [patch.crates-io]
-asyncapi-rust = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
-asyncapi-rust-codegen = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
-asyncapi-rust-models = { git = "https://github.com/mlilback/asyncapi-rust", rev = "84677a0e655e79e814e8b8b84b79752bad184e63" }
+asyncapi-rust = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }
+asyncapi-rust-codegen = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }
+asyncapi-rust-models = { git = "https://github.com/pulzar-net/asyncapi-rust", rev = "803554834aa9742594d1b9fc9f31157461f529a3" }

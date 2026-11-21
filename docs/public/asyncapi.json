@@ -28,6 +28,7 @@
   "channels": {
     "bridgeState": {
       "address": "zigbee/bridge/state",
+      "description": "The bridge's availability, retained. `offline` is also the bridge's last will.",
       "messages": {
         "BridgeState": {
           "$ref": "#/components/messages/BridgeState"
@@ -36,6 +37,7 @@
     },
     "bridgeInfo": {
       "address": "zigbee/bridge/info",
+      "description": "The bridge, its coordinator and its network, retained.",
       "messages": {
         "BridgeInfo": {
           "$ref": "#/components/messages/BridgeInfo"
@@ -44,6 +46,7 @@
     },
     "bridgeDevices": {
       "address": "zigbee/bridge/devices",
+      "description": "Every device and its interview, retained.",
       "messages": {
         "BridgeDevices": {
           "$ref": "#/components/messages/BridgeDevices"
@@ -52,6 +55,7 @@
     },
     "bridgeEvent": {
       "address": "zigbee/bridge/event",
+      "description": "Joins, announcements, departures, removals, interviews, firmware updates and channel changes, as they happen. `type` names the event and `data` holds it.",
       "messages": {
         "PermitJoin": {
           "$ref": "#/components/messages/PermitJoin"
@@ -87,6 +91,7 @@
     },
     "deviceState": {
       "address": "zigbee/{device}",
+      "description": "A device's readings, merged as they arrive. Retained unless `mqtt.retain_state` is off. An empty retained message clears it when the device leaves or is renamed.",
       "messages": {
         "DeviceState": {
           "$ref": "#/components/messages/DeviceState"
@@ -104,6 +109,7 @@
     },
     "deviceSet": {
       "address": "zigbee/{device}/set",
+      "description": "Commands for a device: switch it, dim it, set its color temperature.",
       "messages": {
         "SetRequest": {
           "$ref": "#/components/messages/SetRequest"
@@ -121,6 +127,7 @@
     },
     "deviceReport": {
       "address": "zigbee/{device}/report",
+      "description": "Every attribute report the device sends, raw, by cluster and attribute name.",
       "messages": {
         "AttributeReport": {
           "$ref": "#/components/messages/AttributeReport"
@@ -138,6 +145,7 @@
     },
     "deviceAction": {
       "address": "zigbee/{device}/action",
+      "description": "Cluster commands the device sends: button presses, scene recalls, alarms.",
       "messages": {
         "DeviceAction": {
           "$ref": "#/components/messages/DeviceAction"
@@ -155,6 +163,7 @@
     },
     "permitJoinRequest": {
       "address": "zigbee/bridge/request/permit_join",
+      "description": "Open or close joining.",
       "messages": {
         "PermitJoinRequest": {
           "$ref": "#/components/messages/PermitJoinRequest"
@@ -163,6 +172,7 @@
     },
     "permitJoinResponse": {
       "address": "zigbee/bridge/response/permit_join",
+      "description": "The answer to `permit_join`.",
       "messages": {
         "PermitJoinResponse": {
           "$ref": "#/components/messages/PermitJoinResponse"
@@ -171,6 +181,7 @@
     },
     "removeRequest": {
       "address": "zigbee/bridge/request/remove",
+      "description": "Remove a device from the network.",
       "messages": {
         "RemoveRequest": {
           "$ref": "#/components/messages/RemoveRequest"
@@ -179,6 +190,7 @@
     },
     "removeResponse": {
       "address": "zigbee/bridge/response/remove",
+      "description": "The answer to `remove`.",
       "messages": {
         "RemoveResponse": {
           "$ref": "#/components/messages/RemoveResponse"
@@ -187,6 +199,7 @@
     },
     "renameRequest": {
       "address": "zigbee/bridge/request/rename",
+      "description": "Rename a device. Its topics move to the new name; its readings stay.",
       "messages": {
         "RenameRequest": {
           "$ref": "#/components/messages/RenameRequest"
@@ -195,6 +208,7 @@
     },
     "renameResponse": {
       "address": "zigbee/bridge/response/rename",
+      "description": "The answer to `rename`.",
       "messages": {
         "RenameResponse": {
           "$ref": "#/components/messages/RenameResponse"
@@ -203,6 +217,7 @@
     },
     "installCodeRequest": {
       "address": "zigbee/bridge/request/install_code",
+      "description": "Let a device join with its install code.",
       "messages": {
         "InstallCodeRequest": {
           "$ref": "#/components/messages/InstallCodeRequest"
@@ -211,6 +226,7 @@
     },
     "installCodeResponse": {
       "address": "zigbee/bridge/response/install_code",
+      "description": "The answer to `install_code`.",
       "messages": {
         "InstallCodeResponse": {
           "$ref": "#/components/messages/InstallCodeResponse"
@@ -219,6 +235,7 @@
     },
     "interviewRequest": {
       "address": "zigbee/bridge/request/interview",
+      "description": "Interview a device again.",
       "messages": {
         "InterviewRequest": {
           "$ref": "#/components/messages/InterviewRequest"
@@ -227,6 +244,7 @@
     },
     "interviewResponse": {
       "address": "zigbee/bridge/response/interview",
+      "description": "The answer to `interview`.",
       "messages": {
         "InterviewResponse": {
           "$ref": "#/components/messages/InterviewResponse"
@@ -235,6 +253,7 @@
     },
     "backupRequest": {
       "address": "zigbee/bridge/request/backup",
+      "description": "Write a backup of the network to the data directory. The backup holds the network key, so it is never published.",
       "messages": {
         "BackupRequest": {
           "$ref": "#/components/messages/BackupRequest"
@@ -243,6 +262,7 @@
     },
     "backupResponse": {
       "address": "zigbee/bridge/response/backup",
+      "description": "The answer to `backup`.",
       "messages": {
         "BackupResponse": {
           "$ref": "#/components/messages/BackupResponse"
@@ -251,6 +271,7 @@
     },
     "topologyRequest": {
       "address": "zigbee/bridge/request/topology",
+      "description": "The network's links as the bridge knows them.",
       "messages": {
         "TopologyRequest": {
           "$ref": "#/components/messages/TopologyRequest"
@@ -259,6 +280,7 @@
     },
     "topologyResponse": {
       "address": "zigbee/bridge/response/topology",
+      "description": "The answer to `topology`.",
       "messages": {
         "TopologyResponse": {
           "$ref": "#/components/messages/TopologyResponse"
@@ -267,6 +289,7 @@
     },
     "scanNeighborsRequest": {
       "address": "zigbee/bridge/request/scan_neighbors",
+      "description": "Read a router's neighbor table.",
       "messages": {
         "ScanNeighborsRequest": {
           "$ref": "#/components/messages/ScanNeighborsRequest"
@@ -275,6 +298,7 @@
     },
     "scanNeighborsResponse": {
       "address": "zigbee/bridge/response/scan_neighbors",
+      "description": "The answer to `scan_neighbors`.",
       "messages": {
         "ScanNeighborsResponse": {
           "$ref": "#/components/messages/ScanNeighborsResponse"
@@ -283,6 +307,7 @@
     },
     "otaCheckRequest": {
       "address": "zigbee/bridge/request/ota_check",
+      "description": "Check a device for a firmware update. A sleepy device answers when it next wakes.",
       "messages": {
         "OtaCheckRequest": {
           "$ref": "#/components/messages/OtaCheckRequest"
@@ -291,6 +316,7 @@
     },
     "otaCheckResponse": {
       "address": "zigbee/bridge/response/ota_check",
+      "description": "The answer to `ota_check`.",
       "messages": {
         "OtaCheckResponse": {
           "$ref": "#/components/messages/OtaCheckResponse"
@@ -299,6 +325,7 @@
     },
     "otaUpdateRequest": {
       "address": "zigbee/bridge/request/ota_update",
+      "description": "Update a device's firmware from the OTA directory.",
       "messages": {
         "OtaUpdateRequest": {
           "$ref": "#/components/messages/OtaUpdateRequest"
@@ -307,6 +334,7 @@
     },
     "otaUpdateResponse": {
       "address": "zigbee/bridge/response/ota_update",
+      "description": "The answer to `ota_update`, once the device starts the download.",
       "messages": {
         "OtaUpdateResponse": {
           "$ref": "#/components/messages/OtaUpdateResponse"
@@ -315,6 +343,7 @@
     },
     "changeChannelRequest": {
       "address": "zigbee/bridge/request/change_channel",
+      "description": "Move the network to another channel without pairing again.",
       "messages": {
         "ChangeChannelRequest": {
           "$ref": "#/components/messages/ChangeChannelRequest"
@@ -323,6 +352,7 @@
     },
     "changeChannelResponse": {
       "address": "zigbee/bridge/response/change_channel",
+      "description": "The answer to `change_channel`.",
       "messages": {
         "ChangeChannelResponse": {
           "$ref": "#/components/messages/ChangeChannelResponse"
@@ -331,6 +361,7 @@
     },
     "energyScanRequest": {
       "address": "zigbee/bridge/request/energy_scan",
+      "description": "Measure the noise on every channel.",
       "messages": {
         "EnergyScanRequest": {
           "$ref": "#/components/messages/EnergyScanRequest"
@@ -339,6 +370,7 @@
     },
     "energyScanResponse": {
       "address": "zigbee/bridge/response/energy_scan",
+      "description": "The answer to `energy_scan`.",
       "messages": {
         "EnergyScanResponse": {
           "$ref": "#/components/messages/EnergyScanResponse"
@@ -347,6 +379,7 @@
     },
     "devicesRequest": {
       "address": "zigbee/bridge/request/devices",
+      "description": "Publish `zigbee/bridge/devices` again.",
       "messages": {
         "DevicesRequest": {
           "$ref": "#/components/messages/DevicesRequest"
@@ -355,6 +388,7 @@
     },
     "devicesResponse": {
       "address": "zigbee/bridge/response/devices",
+      "description": "The answer to `devices`.",
       "messages": {
         "DevicesResponse": {
           "$ref": "#/components/messages/DevicesResponse"
@@ -363,6 +397,7 @@
     },
     "homeAssistantDiscovery": {
       "address": "homeassistant/{component}/{node_id}/{object_id}/config",
+      "description": "Home Assistant MQTT discovery: one retained config per entity, sent when a device finishes its interview, when it is renamed, and when Home Assistant comes online. An empty retained message removes an entity. Only with `homeassistant.enabled`.",
       "messages": {
         "DiscoveryConfig": {
           "$ref": "#/components/messages/DiscoveryConfig"
@@ -395,6 +430,7 @@
     },
     "homeAssistantStatus": {
       "address": "homeassistant/status",
+      "description": "Home Assistant's birth and last will (`homeassistant.status_topic`). When it says `online`, the bridge publishes discovery again.",
       "messages": {
         "HomeAssistantStatus": {
           "$ref": "#/components/messages/HomeAssistantStatus"
@@ -408,6 +444,8 @@
       "channel": {
         "$ref": "#/channels/bridgeState"
       },
+      "summary": "The bridge is online or offline",
+      "description": "Published `online` on connecting and `offline` on stopping.",
       "messages": [
         {
           "$ref": "#/channels/bridgeState/messages/BridgeState"
@@ -425,6 +463,8 @@
       "channel": {
         "$ref": "#/channels/bridgeInfo"
       },
+      "summary": "The bridge's version, coordinator and network",
+      "description": "Published on connecting and whenever the coordinator, the network or the join state changes.",
       "messages": [
         {
           "$ref": "#/channels/bridgeInfo/messages/BridgeInfo"
@@ -442,6 +482,8 @@
       "channel": {
         "$ref": "#/channels/bridgeDevices"
       },
+      "summary": "Every device and its interview",
+      "description": "Published on connecting and whenever a device joins, leaves, is renamed or finishes its interview.",
       "messages": [
         {
           "$ref": "#/channels/bridgeDevices/messages/BridgeDevices"
@@ -459,6 +501,8 @@
       "channel": {
         "$ref": "#/channels/bridgeEvent"
       },
+      "summary": "Something happened in the network",
+      "description": "Published as each event happens.",
       "messages": [
         {
           "$ref": "#/channels/bridgeEvent/messages/PermitJoin"
@@ -503,6 +547,8 @@
       "channel": {
         "$ref": "#/channels/deviceState"
       },
+      "summary": "A device's readings",
+      "description": "Published after each reading.",
       "messages": [
         {
           "$ref": "#/channels/deviceState/messages/DeviceState"
@@ -520,6 +566,8 @@
       "channel": {
         "$ref": "#/channels/deviceReport"
       },
+      "summary": "An attribute report, raw",
+      "description": "Published for each attribute report.",
       "messages": [
         {
           "$ref": "#/channels/deviceReport/messages/AttributeReport"
@@ -537,6 +585,8 @@
       "channel": {
         "$ref": "#/channels/deviceAction"
       },
+      "summary": "A command the device sent",
+      "description": "Published for each command the device sends.",
       "messages": [
         {
           "$ref": "#/channels/deviceAction/messages/DeviceAction"
@@ -554,6 +604,8 @@
       "channel": {
         "$ref": "#/channels/homeAssistantDiscovery"
       },
+      "summary": "A Home Assistant entity",
+      "description": "Published per entity.",
       "messages": [
         {
           "$ref": "#/channels/homeAssistantDiscovery/messages/DiscoveryConfig"
@@ -571,6 +623,8 @@
       "channel": {
         "$ref": "#/channels/deviceSet"
       },
+      "summary": "Switch, dim or tune a device",
+      "description": "Any combination of keys in one message.",
       "messages": [
         {
           "$ref": "#/channels/deviceSet/messages/SetRequest"
@@ -587,6 +641,8 @@
       "channel": {
         "$ref": "#/channels/homeAssistantStatus"
       },
+      "summary": "Home Assistant started or stopped",
+      "description": "Read only with `homeassistant.enabled`.",
       "messages": [
         {
           "$ref": "#/channels/homeAssistantStatus/messages/HomeAssistantStatus"
@@ -603,6 +659,7 @@
       "channel": {
         "$ref": "#/channels/permitJoinRequest"
       },
+      "summary": "Open or close joining",
       "messages": [
         {
           "$ref": "#/channels/permitJoinRequest/messages/PermitJoinRequest"
@@ -619,6 +676,7 @@
       "channel": {
         "$ref": "#/channels/permitJoinResponse"
       },
+      "summary": "Joining is open or closed",
       "messages": [
         {
           "$ref": "#/channels/permitJoinResponse/messages/PermitJoinResponse"
@@ -636,6 +694,7 @@
       "channel": {
         "$ref": "#/channels/removeRequest"
       },
+      "summary": "Remove a device",
       "messages": [
         {
           "$ref": "#/channels/removeRequest/messages/RemoveRequest"
@@ -652,6 +711,7 @@
       "channel": {
         "$ref": "#/channels/removeResponse"
       },
+      "summary": "The device is removed",
       "messages": [
         {
           "$ref": "#/channels/removeResponse/messages/RemoveResponse"
@@ -669,6 +729,7 @@
       "channel": {
         "$ref": "#/channels/renameRequest"
       },
+      "summary": "Rename a device",
       "messages": [
         {
           "$ref": "#/channels/renameRequest/messages/RenameRequest"
@@ -685,6 +746,7 @@
       "channel": {
         "$ref": "#/channels/renameResponse"
       },
+      "summary": "The device is renamed",
       "messages": [
         {
           "$ref": "#/channels/renameResponse/messages/RenameResponse"
@@ -702,6 +764,7 @@
       "channel": {
         "$ref": "#/channels/installCodeRequest"
       },
+      "summary": "Let a device join with its install code",
       "messages": [
         {
           "$ref": "#/channels/installCodeRequest/messages/InstallCodeRequest"
@@ -718,6 +781,7 @@
       "channel": {
         "$ref": "#/channels/installCodeResponse"
       },
+      "summary": "The install code is added",
       "messages": [
         {
           "$ref": "#/channels/installCodeResponse/messages/InstallCodeResponse"
@@ -735,6 +799,7 @@
       "channel": {
         "$ref": "#/channels/interviewRequest"
       },
+      "summary": "Interview a device again",
       "messages": [
         {
           "$ref": "#/channels/interviewRequest/messages/InterviewRequest"
@@ -751,6 +816,7 @@
       "channel": {
         "$ref": "#/channels/interviewResponse"
       },
+      "summary": "The interview is queued",
       "messages": [
         {
           "$ref": "#/channels/interviewResponse/messages/InterviewResponse"
@@ -768,6 +834,7 @@
       "channel": {
         "$ref": "#/channels/backupRequest"
       },
+      "summary": "Back up the network",
       "messages": [
         {
           "$ref": "#/channels/backupRequest/messages/BackupRequest"
@@ -784,6 +851,7 @@
       "channel": {
         "$ref": "#/channels/backupResponse"
       },
+      "summary": "The backup is written",
       "messages": [
         {
           "$ref": "#/channels/backupResponse/messages/BackupResponse"
@@ -801,6 +869,7 @@
       "channel": {
         "$ref": "#/channels/topologyRequest"
       },
+      "summary": "Ask for the network's links",
       "messages": [
         {
           "$ref": "#/channels/topologyRequest/messages/TopologyRequest"
@@ -817,6 +886,7 @@
       "channel": {
         "$ref": "#/channels/topologyResponse"
       },
+      "summary": "The network's links",
       "messages": [
         {
           "$ref": "#/channels/topologyResponse/messages/TopologyResponse"
@@ -834,6 +904,7 @@
       "channel": {
         "$ref": "#/channels/scanNeighborsRequest"
       },
+      "summary": "Read a router's neighbor table",
       "messages": [
         {
           "$ref": "#/channels/scanNeighborsRequest/messages/ScanNeighborsRequest"
@@ -850,6 +921,7 @@
       "channel": {
         "$ref": "#/channels/scanNeighborsResponse"
       },
+      "summary": "The router's neighbors",
       "messages": [
         {
           "$ref": "#/channels/scanNeighborsResponse/messages/ScanNeighborsResponse"
@@ -867,6 +939,7 @@
       "channel": {
         "$ref": "#/channels/otaCheckRequest"
       },
+      "summary": "Check a device for a firmware update",
       "messages": [
         {
           "$ref": "#/channels/otaCheckRequest/messages/OtaCheckRequest"
@@ -883,6 +956,7 @@
       "channel": {
         "$ref": "#/channels/otaCheckResponse"
       },
+      "summary": "Whether an update is available",
       "messages": [
         {
           "$ref": "#/channels/otaCheckResponse/messages/OtaCheckResponse"
@@ -900,6 +974,7 @@
       "channel": {
         "$ref": "#/channels/otaUpdateRequest"
       },
+      "summary": "Update a device's firmware",
       "messages": [
         {
           "$ref": "#/channels/otaUpdateRequest/messages/OtaUpdateRequest"
@@ -916,6 +991,7 @@
       "channel": {
         "$ref": "#/channels/otaUpdateResponse"
       },
+      "summary": "The firmware update started",
       "messages": [
         {
           "$ref": "#/channels/otaUpdateResponse/messages/OtaUpdateResponse"
@@ -933,6 +1009,7 @@
       "channel": {
         "$ref": "#/channels/changeChannelRequest"
       },
+      "summary": "Move the network to another channel",
       "messages": [
         {
           "$ref": "#/channels/changeChannelRequest/messages/ChangeChannelRequest"
@@ -949,6 +1026,7 @@
       "channel": {
         "$ref": "#/channels/changeChannelResponse"
       },
+      "summary": "The network changed channel",
       "messages": [
         {
           "$ref": "#/channels/changeChannelResponse/messages/ChangeChannelResponse"
@@ -966,6 +1044,7 @@
       "channel": {
         "$ref": "#/channels/energyScanRequest"
       },
+      "summary": "Measure the noise on every channel",
       "messages": [
         {
           "$ref": "#/channels/energyScanRequest/messages/EnergyScanRequest"
@@ -982,6 +1061,7 @@
       "channel": {
         "$ref": "#/channels/energyScanResponse"
       },
+      "summary": "Each channel's noise",
       "messages": [
         {
           "$ref": "#/channels/energyScanResponse/messages/EnergyScanResponse"
@@ -999,6 +1079,7 @@
       "channel": {
         "$ref": "#/channels/devicesRequest"
       },
+      "summary": "Publish the device list again",
       "messages": [
         {
           "$ref": "#/channels/devicesRequest/messages/DevicesRequest"
@@ -1015,6 +1096,7 @@
       "channel": {
         "$ref": "#/channels/devicesResponse"
       },
+      "summary": "The device list is published",
       "messages": [
         {
           "$ref": "#/channels/devicesResponse/messages/DevicesResponse"
