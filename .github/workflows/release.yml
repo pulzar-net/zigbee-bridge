@@ -33,7 +33,7 @@ jobs:
       matrix:
         target: [aarch64-unknown-linux-musl, mipsel-unknown-linux-musl, x86_64-unknown-linux-musl]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ env.TAG }}
       - name: The tag matches the workspace version
@@ -69,7 +69,7 @@ jobs:
           # Not dist/: that is the repository's packaging files.
           mkdir -p "${RUNNER_TEMP}/assets"
           cp "${bin}" "${RUNNER_TEMP}/assets/zigbee-bridge-${TAG}-${TARGET}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           path: ${{ runner.temp }}/assets/*
@@ -82,10 +82,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ env.TAG }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/assets
           merge-multiple: true
@@ -132,7 +132,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
