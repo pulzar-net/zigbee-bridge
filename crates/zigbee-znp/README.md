@@ -13,7 +13,7 @@ Written from TI's public MT API documentation; no code was copied from
 any other implementation.
 
 Part of [zigbee-bridge](https://github.com/pulzar-net/zigbee-bridge), maintained by
-[Pulzar](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
+[Pulzr](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
 [library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html) and the
 [API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_znp/index.html).
 

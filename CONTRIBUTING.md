@@ -65,7 +65,7 @@ UPDATE_DOCS=1 cargo test -p zigbee-bridge --features unstable-asyncapi-docs --te
 
 The [MQTT reference](https://oss.pulzr.net/zigbee-bridge/mqtt-reference.html)
 is an AsyncAPI 3.0 description generated from the bridge's own payload
-types, so it cannot drift from what the bridge publishes. The other Pulzar
+types, so it cannot drift from what the bridge publishes. The other Pulzr
 bridges follow the same pattern:
 
 - **One module holds every payload** (`crates/zigbee-bridge/src/api.rs`): each

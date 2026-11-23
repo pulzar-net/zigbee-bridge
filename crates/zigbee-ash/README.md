@@ -14,7 +14,7 @@ UG101).
   `AsyncRead + AsyncWrite`, such as a serial port or a TCP socket.
 
 Part of [zigbee-bridge](https://github.com/pulzar-net/zigbee-bridge), maintained by
-[Pulzar](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
+[Pulzr](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
 [library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html) and the
 [API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_ash/index.html).
 

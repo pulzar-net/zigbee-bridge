@@ -370,7 +370,7 @@ The implementation follows the Zigbee specification and Silicon Labs' and
 Texas Instruments' public protocol documentation. zigbee-herdsman (MIT) was
 studied as a reference; no code was copied from any project.
 
-## Maintained by Pulzar
+## Maintained by Pulzr
 
-zigbee-bridge is maintained by [Pulzar](https://pulzr.net), which uses it in
+zigbee-bridge is maintained by [Pulzr](https://pulzr.net), which uses it in
 its own gateways. It is developed in the open, for anyone to use.

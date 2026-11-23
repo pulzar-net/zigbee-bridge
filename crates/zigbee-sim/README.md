@@ -17,7 +17,7 @@ The `zigbee-ncp-sim` binary serves it over TCP, so a bridge can be pointed
 at `tcp://127.0.0.1:<port>`.
 
 Part of [zigbee-bridge](https://github.com/pulzar-net/zigbee-bridge), maintained by
-[Pulzar](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
+[Pulzr](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
 [library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html) and the
 [API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_sim/index.html).
 

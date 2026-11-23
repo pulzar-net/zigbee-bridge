@@ -1,4 +1,4 @@
-// The zigbee-bridge docs: Starlight with the shared Pulzar theme
+// The zigbee-bridge docs: Starlight with the shared Pulzr theme
 // (github.com/pulzar-net/docs-theme). Pages are in src/content/docs; the
 // configuration reference there is generated from the code
 // (crates/zigbee-bridge/tests/config_reference.rs). Built and published by

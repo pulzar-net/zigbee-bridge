@@ -16,7 +16,7 @@ Nothing here is written per cluster: adding a cluster or an attribute is
 an edit to the data file.
 
 Part of [zigbee-bridge](https://github.com/pulzar-net/zigbee-bridge), maintained by
-[Pulzar](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
+[Pulzr](https://pulzr.net). See the [user guide](https://oss.pulzr.net/zigbee-bridge/), the
 [library guide](https://oss.pulzr.net/zigbee-bridge/library/index.html) and the
 [API documentation](https://oss.pulzr.net/zigbee-bridge/api/zigbee_zcl/index.html).
 
