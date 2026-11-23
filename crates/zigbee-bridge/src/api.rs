@@ -680,7 +680,9 @@ pub struct PermitJoinData {
 
 response!(
     /// The response to `permit_join`.
-    PermitJoinResponse, PermitJoinData, "Joining is open or closed"
+    PermitJoinResponse,
+    PermitJoinData,
+    "Joining is open or closed"
 );
 
 request!(
@@ -704,7 +706,9 @@ pub struct DeviceData {
 
 response!(
     /// The response to `remove`.
-    RemoveResponse, DeviceData, "The device is removed"
+    RemoveResponse,
+    DeviceData,
+    "The device is removed"
 );
 
 request!(
@@ -733,7 +737,9 @@ pub struct RenameData {
 
 response!(
     /// The response to `rename`.
-    RenameResponse, RenameData, "The device is renamed"
+    RenameResponse,
+    RenameData,
+    "The device is renamed"
 );
 
 request!(
@@ -759,7 +765,9 @@ pub struct IeeeData {
 
 response!(
     /// The response to `install_code`.
-    InstallCodeResponse, IeeeData, "The install code is added"
+    InstallCodeResponse,
+    IeeeData,
+    "The install code is added"
 );
 
 request!(
@@ -772,7 +780,9 @@ request!(
 
 response!(
     /// The response to `interview`; `bridge/event` follows the interview.
-    InterviewResponse, DeviceData, "The interview is queued"
+    InterviewResponse,
+    DeviceData,
+    "The interview is queued"
 );
 
 request!(
@@ -796,7 +806,9 @@ pub struct BackupData {
 
 response!(
     /// The response to `backup`.
-    BackupResponse, BackupData, "The backup is written"
+    BackupResponse,
+    BackupData,
+    "The backup is written"
 );
 
 request!(
@@ -862,7 +874,9 @@ impl From<zigbee_host::topology::LinkSource> for LinkSource {
 
 response!(
     /// The response to `topology`.
-    TopologyResponse, TopologyData, "The network's links"
+    TopologyResponse,
+    TopologyData,
+    "The network's links"
 );
 
 request!(
@@ -919,7 +933,9 @@ impl From<zigbee_zdo::Neighbor> for Neighbor {
 
 response!(
     /// The response to `scan_neighbors`.
-    ScanNeighborsResponse, ScanNeighborsData, "The router's neighbors"
+    ScanNeighborsResponse,
+    ScanNeighborsData,
+    "The router's neighbors"
 );
 
 request!(
@@ -950,7 +966,9 @@ pub struct OtaData {
 
 response!(
     /// The response to `ota_check`.
-    OtaCheckResponse, OtaData, "Whether a firmware update is available"
+    OtaCheckResponse,
+    OtaData,
+    "Whether a firmware update is available"
 );
 
 request!(
@@ -965,7 +983,9 @@ request!(
 
 response!(
     /// The response to `ota_update`.
-    OtaUpdateResponse, OtaData, "The firmware update started"
+    OtaUpdateResponse,
+    OtaData,
+    "The firmware update started"
 );
 
 request!(
@@ -989,7 +1009,9 @@ pub struct ChannelData {
 
 response!(
     /// The response to `change_channel`.
-    ChangeChannelResponse, ChannelData, "The network changed channel"
+    ChangeChannelResponse,
+    ChannelData,
+    "The network changed channel"
 );
 
 request!(
@@ -1017,7 +1039,9 @@ pub struct ChannelEnergy {
 
 response!(
     /// The response to `energy_scan`.
-    EnergyScanResponse, EnergyScanData, "Each channel's noise"
+    EnergyScanResponse,
+    EnergyScanData,
+    "Each channel's noise"
 );
 
 request!(
@@ -1032,13 +1056,17 @@ pub struct Empty {}
 
 response!(
     /// The response to `devices`.
-    DevicesResponse, Empty, "The device list is published"
+    DevicesResponse,
+    Empty,
+    "The device list is published"
 );
 
 response!(
     /// The response to a request the bridge does not know; `error` names
     /// it.
-    UnknownResponse, Empty, "The request is unknown"
+    UnknownResponse,
+    Empty,
+    "The request is unknown"
 );
 
 // ---------------------------------------------------------------------------
