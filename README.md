@@ -62,7 +62,7 @@ example Mosquitto) that Home Assistant's MQTT integration already uses.
 
 <!-- quickstart:download -->
 ```sh
-VERSION=0.4.0
+VERSION=0.3.0
 ARCH=$(uname -m)   # x86_64 or aarch64
 BASE=https://github.com/pulzar-net/zigbee-bridge/releases/download/v$VERSION
 curl -fsSLO "$BASE/zigbee-bridge-v$VERSION-$ARCH-unknown-linux-musl"
