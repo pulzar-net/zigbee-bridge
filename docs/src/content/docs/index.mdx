@@ -4,7 +4,7 @@ description: A Zigbee coordinator stack and Zigbee to MQTT bridge in Rust, as on
 template: splash
 ---
 
-import { Hero, Features, ReleaseDownload, StatusMatrix } from '@pulzr/docs-theme/components';
+import { Hero, Features, ReleaseDownload } from '@pulzr/docs-theme/components';
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 <Hero
@@ -30,26 +30,10 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 ## Install
 
-<ReleaseDownload repo="pulzar-net/zigbee-bridge" version="0.3.0" binary="zigbee-bridge" asset="{binary}-v{version}-{arch}-unknown-linux-musl" />
+<ReleaseDownload repo="pulzar-net/zigbee-bridge" version="0.4.0" binary="zigbee-bridge" asset="{binary}-v{version}-{arch}-unknown-linux-musl" />
 
 Then follow [getting started](/zigbee-bridge/getting-started.html) to pair a device, or
 [install it as a service](/zigbee-bridge/installation.html).
-
-## Status
-
-zigbee-bridge is 0.x: the whole stack is tested in CI against a coordinator simulator, but no release has been tested on real hardware yet.
-
-<StatusMatrix
-	rows={[
-		{ feature: 'Silicon Labs EmberZNet 7.4 and 8.x coordinators', status: 'done', note: '0.1.0' },
-		{ feature: 'Zigbee 3.0 trust center, interview, reporting, Home Assistant discovery', status: 'done', note: '0.1.0' },
-		{ feature: 'Backup and restore in the open coordinator backup format', status: 'done', note: '0.1.0' },
-		{ feature: 'Texas Instruments Z-Stack and ConBee/RaspBee coordinators', status: 'done', note: '0.2.0' },
-		{ feature: 'Channel change, device firmware updates (OTA), cross-family restore', status: 'done', note: '0.2.0' },
-		{ feature: 'Testing on real coordinators and devices', status: 'progress' },
-		{ feature: 'Manufacturer-specific clusters, groups and scenes', status: 'planned' },
-	]}
-/>
 
 ## Where to go next
 

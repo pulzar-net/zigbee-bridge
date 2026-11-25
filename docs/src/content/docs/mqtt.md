@@ -37,7 +37,7 @@ stop. Home Assistant uses this topic for availability.
 
 ```json
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "coordinator": {
     "ieee_address": "0x000d6ffffe000001",
     "type": "ezsp",

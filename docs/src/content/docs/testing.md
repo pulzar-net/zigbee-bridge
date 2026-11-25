@@ -87,9 +87,5 @@ Rust version, and every relative link resolves.
 
 ## Real hardware
 
-> Not done yet. Testing on real coordinators and devices is the next
-> milestone.
-
-Until then, anything that only real hardware can confirm (radio behavior,
-specific firmware versions, specific devices) is marked as such in these
-docs.
+Tested on an EM357 coordinator on EmberZNet 6.7.10 (EZSP 8), in a Control4 CA-1. Anything
+tested only against the simulator is marked as such in these docs.
