@@ -27,37 +27,6 @@ Rust.
 **[Library](#use-it-as-a-library)** |
 **[Releases](https://github.com/pulzar-net/zigbee-bridge/releases)**
 
-## Status
-
-zigbee-bridge is **0.x and young**. Version 0.3.0 is the third release and the first on crates.io. The
-whole stack is tested in CI against a coordinator simulator, but **it has not
-yet been tested on real hardware**. Expect rough edges and breaking changes
-between 0.x releases, and keep a backup of your network
-([backup and restore](https://oss.pulzr.net/zigbee-bridge/backup.html)).
-
-| Feature | State |
-|---|---|
-| Silicon Labs EmberZNet 7.4 and 8.x coordinators (EZSP 13 to 19) | done in 0.1.0 |
-| Silicon Labs EmberZNet 6.7 to 6.10 coordinators (EZSP 8), including the EM35x | unreleased; tested on an EM357 |
-| Network formation, resume, and refusal to wipe an unknown network | done in 0.1.0 |
-| Zigbee 3.0 trust center: unique link keys, install codes, join policy | done in 0.1.0 |
-| Device interview, binding and reporting configuration, IAS zone enrollment | done in 0.1.0 |
-| Readings from the standard ZCL clusters (no per-device converters needed) | done in 0.1.0 |
-| On/off, brightness and color temperature control | done in 0.1.0 |
-| Home Assistant MQTT discovery | done in 0.1.0 |
-| Backup and restore in the open coordinator backup format, dongle migration | done in 0.1.0 |
-| Network topology, neighbor scans, energy scan | done in 0.1.0 |
-| Read-only coordinator probe (`zigbee-bridge probe`) | done in 0.1.0 |
-| Texas Instruments Z-Stack 3 coordinators (ZNP) | done in 0.2.0 |
-| dresden elektronik ConBee and RaspBee (deCONZ) | done in 0.2.0 |
-| Channel change without re-pairing | done in 0.2.0 |
-| Device firmware updates (OTA) from image files you provide | done in 0.2.0 |
-| Restore a backup onto a coordinator of another family | done in 0.2.0 |
-| Testing on real coordinators and devices | in progress |
-| Manufacturer-specific clusters and per-device quirks | planned |
-| Groups, scenes and binding requests over MQTT | planned |
-| A web frontend | not planned; the bridge is headless by design |
-
 ## Supported hardware
 
 The coordinator is a radio module with network co-processor (NCP) firmware.
@@ -340,8 +309,7 @@ change for the other, but the two are not interchangeable.
 
 ## Roadmap
 
-- **Next:** the first reports from real hardware.
-- **After that:** manufacturer-specific clusters and device quirks, groups and
+- **Next:** manufacturer-specific clusters and device quirks, groups and
   scenes, binding over MQTT.
 
 Questions go in [Discussions](https://github.com/pulzar-net/zigbee-bridge/discussions); bugs and requests in [issues](https://github.com/pulzar-net/zigbee-bridge/issues).

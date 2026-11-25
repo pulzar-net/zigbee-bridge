@@ -26,7 +26,7 @@ zigpy (ZHA) and Zigbee2MQTT also write:
   "metadata": {
     "format": "zigpy/open-coordinator-backup",
     "version": 1,
-    "source": "zigbee-bridge@0.3.0",
+    "source": "zigbee-bridge@0.4.0",
     "internal": { "created_unix": 1795136470, "ezspVersion": 13, "firmware": "7.4.4.0" }
   },
   "stack_specific": { "ezsp": { "hashed_tclk": "<32 hex digits>" } },

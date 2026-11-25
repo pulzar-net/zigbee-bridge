@@ -29,13 +29,11 @@ cover every type and function.
 | understand how it works | [Architecture](/zigbee-bridge/architecture.html) |
 | fix a problem | [Troubleshooting and FAQ](/zigbee-bridge/troubleshooting.html) |
 
-## Status
+## Versions
 
-zigbee-bridge is at 0.x. Version 0.3.0 supports Silicon Labs EmberZNet,
-Texas Instruments Z-Stack and dresden elektronik ConBee/RaspBee
-coordinators. Everything is tested in CI against a coordinator simulator,
-but **no release has been tested on real hardware yet**. Pages that
-describe something only real hardware can confirm say so.
+zigbee-bridge supports Silicon Labs EmberZNet, Texas Instruments Z-Stack
+and dresden elektronik ConBee/RaspBee coordinators. Pages that describe
+something tested only against the simulator say so.
 
 Features added after the first release are marked with the version that
 brought them ("since 0.2.0"). The [release notes](https://github.com/pulzar-net/zigbee-bridge/releases) list what each

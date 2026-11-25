@@ -2,7 +2,7 @@
   "asyncapi": "3.0.0",
   "info": {
     "title": "zigbee-bridge MQTT API",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Everything zigbee-bridge publishes and accepts on MQTT.\n\nTopics here use the default base topic, `zigbee` (`mqtt.base_topic` in the configuration), and Home Assistant's default discovery prefix, `homeassistant` (`homeassistant.discovery_prefix`). `{device}` is the name a person gave a device, or its IEEE address as `0x00124b0001020304`.\n\nThe bridge publishes and subscribes at QoS 1. Payloads are JSON unless a message says otherwise. Requests go to `zigbee/bridge/request/<name>`; the answer comes on `zigbee/bridge/response/<name>`, echoing the request's `transaction` so a client can match the two. Network keys never appear on MQTT."
   },
   "servers": {

@@ -15,7 +15,7 @@ members = [
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.89"
 license = "MIT"
@@ -24,15 +24,15 @@ homepage = "https://oss.pulzr.net/zigbee-bridge/"
 authors = ["Pulzar LLC"]
 
 [workspace.dependencies]
-zigbee-primitives = { path = "crates/zigbee-primitives", version = "0.3.0" }
-zigbee-ash = { path = "crates/zigbee-ash", version = "0.3.0" }
-zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.3.0", default-features = false }
-zigbee-znp = { path = "crates/zigbee-znp", version = "0.3.0", default-features = false }
-zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.3.0", default-features = false }
-zigbee-zcl = { path = "crates/zigbee-zcl", version = "0.3.0" }
-zigbee-zdo = { path = "crates/zigbee-zdo", version = "0.3.0" }
-zigbee-host = { path = "crates/zigbee-host", version = "0.3.0" }
-zigbee-sim = { path = "crates/zigbee-sim", version = "0.3.0" }
+zigbee-primitives = { path = "crates/zigbee-primitives", version = "0.4.0" }
+zigbee-ash = { path = "crates/zigbee-ash", version = "0.4.0" }
+zigbee-ezsp = { path = "crates/zigbee-ezsp", version = "0.4.0", default-features = false }
+zigbee-znp = { path = "crates/zigbee-znp", version = "0.4.0", default-features = false }
+zigbee-deconz = { path = "crates/zigbee-deconz", version = "0.4.0", default-features = false }
+zigbee-zcl = { path = "crates/zigbee-zcl", version = "0.4.0" }
+zigbee-zdo = { path = "crates/zigbee-zdo", version = "0.4.0" }
+zigbee-host = { path = "crates/zigbee-host", version = "0.4.0" }
+zigbee-sim = { path = "crates/zigbee-sim", version = "0.4.0" }
 
 aes = "0.9"
 crc = "3"

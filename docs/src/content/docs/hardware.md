@@ -7,9 +7,9 @@ zigbee-bridge drives a Zigbee coordinator: a radio module running network
 co-processor (NCP) firmware, attached over USB serial, a UART, or TCP. The
 firmware decides whether it works, more than the hardware does.
 
-> **No release has been tested on real hardware yet.** Everything below
-> "expected" is what the stack implements and the simulator covers. Reports
-> that something works, or does not, are very welcome: open a
+> **Tested on** an EM357 coordinator on EmberZNet 6.7.10 (EZSP 8), in a Control4 CA-1.
+> "Expected" below is what the stack implements and the simulator covers.
+> Reports that something works, or does not, are very welcome: open a
 > [hardware report](https://github.com/pulzar-net/zigbee-bridge/issues/new?template=device.yml).
 
 ## Coordinators

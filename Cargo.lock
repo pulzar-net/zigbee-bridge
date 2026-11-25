@@ -2346,7 +2346,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-ash"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "crc",
  "thiserror 2.0.21",
@@ -2356,7 +2356,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-bridge"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "asyncapi-rust",
  "lexopt",
@@ -2380,7 +2380,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-deconz"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "thiserror 2.0.21",
  "tokio",
@@ -2390,7 +2390,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-ezsp"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "thiserror 2.0.21",
  "tokio",
@@ -2401,7 +2401,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-host"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "aes",
  "crc",
@@ -2425,7 +2425,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-primitives"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
@@ -2433,7 +2433,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-sim"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "thiserror 2.0.21",
  "tokio",
@@ -2450,7 +2450,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-zcl"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "half",
  "serde",
@@ -2462,7 +2462,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-zdo"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
@@ -2471,7 +2471,7 @@ dependencies = [
 
 [[package]]
 name = "zigbee-znp"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "thiserror 2.0.21",
  "tokio",
